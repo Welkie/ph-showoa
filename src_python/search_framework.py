@@ -456,7 +456,7 @@ def _init_single_solution_worker(task):
     return index, s
 
 
-def initialization(pop, pop_fit, pop_argrank, data, executor=None):
+def initialization(pop, pop_fit, pop_argrank, data, run, executor=None):
     length = len(pop)
     for i in range(length):
         pop[i].clear(data)
@@ -465,7 +465,7 @@ def initialization(pop, pop_fit, pop_argrank, data, executor=None):
     tasks = []
     for i in range(length):
         lambda_gamma = data.latin[i] if data.init in {RCRS, "sa"} else None
-        seed = data.seed + 100000 + i
+        seed = data.seed + 100000 + run * 1000 + i
         tasks.append((i, data.init, data, seed, lambda_gamma))
         
     if executor is None:
@@ -1179,7 +1179,7 @@ def search_framework(data, best_s):
     try:
         while run <= data.runs:
             print("---------------------------------Run %d---------------------------" % run)
-            initialization(pop, pop_fit, pop_argrank, data, executor)
+            initialization(pop, pop_fit, pop_argrank, data, run, executor)
             used = int(time.perf_counter() - stime)
             print("already consumed %d sec" % used)
     

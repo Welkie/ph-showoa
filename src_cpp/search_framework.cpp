@@ -319,7 +319,7 @@ void search_framework(Data& data, Solution& best_s) {
         std::printf("Initialization, using %s method\n", data.init.c_str());
         for (int i = 0; i < p_size; ++i) {
             pop[i].clear(data);
-            std::mt19937 seed_rng(data.seed + 100000 + i);
+            std::mt19937 seed_rng(data.seed + 100000 + run * 1000 + i);
             new_route_insertion(pop[i], data, backend, seed_rng);
             if (data.init == "sa") {
                 pop[i] = _sa_initialization(pop[i], data, backend, seed_rng);
