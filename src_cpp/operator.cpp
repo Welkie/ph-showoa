@@ -593,7 +593,6 @@ void find_local_optima(Solution& s, const Data& data, BaseComputeBackend* backen
             }
         }
         if (min_delta_cost < -0.001) {
-            std::printf("Applying LS move: opt=%s, delta=%.4f, current_len=%d\n", data.small_opts[best_index].c_str(), min_delta_cost, length);
             apply_move(s, move_list[best_index], data);
             length = s.len();
             

@@ -344,7 +344,6 @@ void search_framework(Data& data, Solution& best_s) {
             }
 
             pop_fit[i] = pop[i].cost;
-            std::printf("Solution %d, cost %.4f\n", i, pop_fit[i]);
         }
         argsort(pop_fit, pop_argrank);
         std::printf("Initialization done.\n");
@@ -410,7 +409,6 @@ void search_framework(Data& data, Solution& best_s) {
 
             // Periodic deep local search
             if (gen % data.local_search_interval == 0) {
-                std::printf("Periodic deep local search on global best.\n");
                 Solution elite = best_s.clone();
                 
                 // Perform local searches
@@ -428,7 +426,6 @@ void search_framework(Data& data, Solution& best_s) {
 
             // Stagnation diversification
             if (gen % data.stagnation_interval == 0 && gen - last_improvement_gen >= data.stagnation_interval) {
-                std::printf("Stagnation detected. Diversifying 40%% of non-elite population.\n");
                 _diversify_pop(pop, pop_fit, pop_argrank, best_s, data, backend, global_rng);
                 last_improvement_gen = gen;
             }
@@ -437,10 +434,10 @@ void search_framework(Data& data, Solution& best_s) {
                 elapsed = std::chrono::high_resolution_clock::now() - stime;
                 used = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
                 double avg_cost = mean(pop_fit);
-                std::printf("Gen: %d. a %.4f, p_hybrid %.4f, accepted %d. Avg %.4f, Best %.4f, Worst %.4f, Best vehicles %d\n",
-                    gen, a, p_mode, accepted_count, avg_cost, best_s.cost, pop_fit[pop_argrank.back()], best_s.len());
-                std::printf("Gen %d done, no improvement for %d gens, already consumed %d sec\n",
-                    gen, gen - last_improvement_gen, used);
+                std::printf("[Gen %4d] a=%.3f ph=%.3f acc=%d | avg=%.1f best=%.4f(%dv) worst=%.1f | no_imp=%d t=%ds\n",
+                    gen, a, p_mode, accepted_count, avg_cost,
+                    best_s.cost, best_s.len(), pop_fit[pop_argrank.back()],
+                    gen - last_improvement_gen, used);
             }
         }
 
