@@ -53,7 +53,7 @@ public:
     double sho_mutation_prob = 0.35;
     std::string hybrid_mode = "ph_showoa";
     std::string compute_backend = "auto";
-    std::string init = "rcrs";
+    std::string init = "rcrs_grasp";   // Options: "rcrs_grasp"/"rcg" (RCG, default), "sa", "rcrs"
     int k_init = -1;
     std::string cross_repair = "rcrs";
     int k_crossover = -1;

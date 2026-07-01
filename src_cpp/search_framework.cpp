@@ -315,15 +315,34 @@ void search_framework(Data& data, Solution& best_s) {
     while (run <= data.runs) {
         std::printf("---------------------------------Run %d---------------------------\n", run);
         
-        // Initialization using RCRS & Simulated Annealing
+        // ── Algorithm 2: Population Initialisation ────────────────────────────
+        // Three modes controlled by data.init:
+        //   "rcrs_grasp" / "rcg" → RCRS-GRASP hybrid (RCG framework, new default)
+        //   "sa"                 → legacy Simulated Annealing post-processing
+        //   anything else        → pure RCRS greedy (new_route_insertion only)
         std::printf("Initialization, using %s method\n", data.init.c_str());
+
+        // Pre-compute α range for GRASP: each individual draws its own α from
+        // [alpha_lo, alpha_hi] to ensure population-level diversity.
+        double alpha_lo = 0.10;
+        double alpha_hi = 0.40;
+
         for (int i = 0; i < p_size; ++i) {
             pop[i].clear(data);
             std::mt19937 seed_rng(data.seed + 100000 + run * 1000 + i);
-            new_route_insertion(pop[i], data, backend, seed_rng);
-            if (data.init == "sa") {
-                pop[i] = _sa_initialization(pop[i], data, backend, seed_rng);
+
+            if (data.init == "rcrs_grasp" || data.init == "rcg") {
+                // Per-individual α drawn from [alpha_lo, alpha_hi]
+                double ind_alpha = randdouble(alpha_lo, alpha_hi, seed_rng);
+                pop[i] = rcrs_grasp_initialization(data, backend, seed_rng, ind_alpha);
+            } else {
+                // RCRS greedy base construction
+                new_route_insertion(pop[i], data, backend, seed_rng);
+                if (data.init == "sa") {
+                    pop[i] = _sa_initialization(pop[i], data, backend, seed_rng);
+                }
             }
+
             pop_fit[i] = pop[i].cost;
             std::printf("Solution %d, cost %.4f\n", i, pop_fit[i]);
         }

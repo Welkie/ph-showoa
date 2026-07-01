@@ -720,40 +720,110 @@ void regret_insertion(Solution& s, const Data& data, BaseComputeBackend* backend
     s.cal_cost(data);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// RCRS score helper
+// ─────────────────────────────────────────────────────────────────────────────
+// Returns a composite insertion score for placing customer `c` at position
+// `pos` inside route `r` (0-indexed into node_list, 1-based insertion).
+//
+//   score = w_td * ΔTD  +  w_rc * RC_penalty  +  w_rs * RS_penalty
+//
+// ΔTD  : extra travel distance caused by the insertion.
+// RC   : residual capacity penalty = max(0, C_H_new - capacity * rc_threshold)
+//        This penalises insertions that exhaust route capacity too early,
+//        preserving slack (buffer) for later customers (RCRS key idea).
+// RS   : radial surcharge = angle deviation of the detour from the
+//        depot–customer axis, discouraging route cross-overs.
+//
+// All three weights are tunable; defaults reflect the relative importance
+// described in the research report.
+// ─────────────────────────────────────────────────────────────────────────────
+static double _rcrs_score(
+    const Route& r,
+    const Data&  data,
+    int          c,          // customer to insert
+    int          pos,        // insertion position (1 … |node_list|-1)
+    double       w_td   = 1.0,
+    double       w_rc   = 0.5,
+    double       w_rs   = 0.3,
+    double       rc_thr = 0.70   // fraction of capacity considered "safe"
+) {
+    const auto& nl    = r.node_list;
+    int         prev  = nl[pos - 1];
+    int         next  = nl[pos];
+
+    // ── ΔTD ──────────────────────────────────────────────────────────────────
+    double delta_td = data.dist[prev][c] + data.dist[c][next] - data.dist[prev][next];
+
+    // ── RC penalty ───────────────────────────────────────────────────────────
+    // Route self attribute already reflects the current route WITHOUT c.
+    // After inserting c, C_H (peak load) rises by at least the larger of
+    // delivery and pickup of c.  We approximate conservatively.
+    double C_H_new = r.self.C_H
+                   + std::max(data.node[c].delivery, data.node[c].pickup);
+    double capacity    = data.vehicle.capacity;
+    double rc_penalty  = std::max(0.0, C_H_new - capacity * rc_thr);
+
+    // ── RS (Radial Surcharge) ─────────────────────────────────────────────────
+    // Angle between vector (DC → prev) and vector (prev → c).
+    // A large deviation means the vehicle is going away from the depot axis.
+    double dx_prev = data.dist[data.DC][prev];   // proxy: use distances
+    double dx_c    = data.dist[data.DC][c];
+    // Simple geometric proxy: |dist(DC, prev) + dist(prev, c) - dist(DC, c)|
+    // penalises triangular detours that create crossing routes.
+    double rs_penalty  = std::abs(dx_prev + data.dist[prev][c] - dx_c);
+
+    return w_td * delta_td + w_rc * rc_penalty + w_rs * rs_penalty;
+}
+
 void new_route_insertion(Solution& s, const Data& data, BaseComputeBackend* backend, std::mt19937& rng, int initial_node) {
-    // Khởi tạo RCRS chèn dần khách hàng
+    // ── Collect unrouted customers ────────────────────────────────────────────
     std::vector<int> record(data.customer_num + 1, 0);
-    for (int i = 0; i < s.len(); ++i) {
-        for (int node : s.get(i).node_list) {
+    for (int i = 0; i < s.len(); ++i)
+        for (int node : s.get(i).node_list)
             record[node] = 1;
-        }
-    }
 
     std::vector<int> unrouted;
-    for (int i = 1; i <= data.customer_num; ++i) {
-        if (i != data.DC && record[i] == 0) {
+    for (int i = 1; i <= data.customer_num; ++i)
+        if (i != data.DC && record[i] == 0)
             unrouted.push_back(i);
-        }
-    }
 
     if (unrouted.empty()) return;
 
-    // RCRS insertion loop
+    // ── RCRS insertion loop (pure greedy, used as the constructive base) ──────
     while (!unrouted.empty()) {
-        int c_idx = randint(0, unrouted.size() - 1, rng);
-        int c = unrouted[c_idx];
+        int c_idx = randint(0, (int)unrouted.size() - 1, rng);
+        int c     = unrouted[c_idx];
         unrouted.erase(unrouted.begin() + c_idx);
 
-        int best_r_idx = -1;
-        int best_pos_idx = -1;
-        double best_cost = std::numeric_limits<double>::infinity();
+        int    best_r_idx  = -1;
+        int    best_pos    = -1;
+        double best_score  = std::numeric_limits<double>::infinity();
 
-        _best_insertion_position(s, data, backend, c, best_r_idx, best_pos_idx, best_cost);
+        // Evaluate all feasible insertion positions via RCRS score
+        for (int r_idx = 0; r_idx < s.len(); ++r_idx) {
+            const Route& r  = s.get(r_idx);
+            const auto&  nl = r.node_list;
+            for (int pos = 1; pos < (int)nl.size(); ++pos) {
+                std::vector<int> cand = nl;
+                cand.insert(cand.begin() + pos, c);
+                if (!_chk_route_list(cand, data, backend)) continue;
+
+                double score = _rcrs_score(r, data, c, pos);
+                if (score < best_score) {
+                    best_score = score;
+                    best_r_idx = r_idx;
+                    best_pos   = pos;
+                }
+            }
+        }
 
         if (best_r_idx != -1) {
-            s.get(best_r_idx).node_list.insert(s.get(best_r_idx).node_list.begin() + best_pos_idx, c);
+            s.get(best_r_idx).node_list.insert(
+                s.get(best_r_idx).node_list.begin() + best_pos, c);
             s.get(best_r_idx).update(data);
         } else {
+            // No feasible position in any existing route → open a new one
             Route r_new(data);
             r_new.node_list.insert(r_new.node_list.begin() + 1, c);
             r_new.update(data);
@@ -761,6 +831,133 @@ void new_route_insertion(Solution& s, const Data& data, BaseComputeBackend* back
         }
     }
     s.cal_cost(data);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RCRS-GRASP hybrid initialisation  (Algorithm 2 replacement)
+// ─────────────────────────────────────────────────────────────────────────────
+// For each individual in the population:
+//   1. Build an empty solution.
+//   2. Iteratively pick the next customer to route using a GRASP RCL:
+//      a. Compute the best feasible RCRS-score over ALL routes for every
+//         remaining unrouted customer.
+//      b. Build a Restricted Candidate List (RCL) containing all customers
+//         whose best score ≤ score_min * (1 + alpha).
+//      c. Choose one customer uniformly at random from the RCL.
+//      d. Insert it at the best RCRS position for that customer.
+//   3. Customers with no feasible insertion position open a new route.
+//
+// This guarantees:
+//   • 100% feasibility (capacity + TW enforced at every step via _chk_route_list).
+//   • Structural diversity: different RCL draws produce distinct topologies.
+//   • No Repair Procedure (Algorithm 10) is ever needed.
+//   • Thread-safe: each call operates on its own rng / solution copy.
+//
+// `alpha`  ∈ [0, 1] controls greediness:
+//   alpha = 0  →  pure greedy (deterministic RCRS, same as new_route_insertion)
+//   alpha = 1  →  full random (all unrouted customers in RCL)
+// ─────────────────────────────────────────────────────────────────────────────
+Solution rcrs_grasp_initialization(const Data& data, BaseComputeBackend* backend, std::mt19937& rng, double alpha) {
+    Solution s;
+
+    // ── Customers to route ────────────────────────────────────────────────────
+    std::vector<int> unrouted;
+    for (int i = 1; i <= data.customer_num; ++i)
+        if (i != data.DC) unrouted.push_back(i);
+
+    // Shuffle to eliminate systematic ordering bias across individuals
+    std::shuffle(unrouted.begin(), unrouted.end(), rng);
+
+    while (!unrouted.empty()) {
+        // ── Step A: find the best RCRS score for every unrouted customer ────
+        struct CandInfo {
+            int    customer;
+            int    r_idx;
+            int    pos;
+            double score;
+        };
+        std::vector<CandInfo> best_per_customer;
+        best_per_customer.reserve(unrouted.size());
+
+        double global_best_score = std::numeric_limits<double>::infinity();
+
+        for (int c : unrouted) {
+            CandInfo best{ c, -1, -1, std::numeric_limits<double>::infinity() };
+
+            for (int r_idx = 0; r_idx < s.len(); ++r_idx) {
+                const Route& r  = s.get(r_idx);
+                const auto&  nl = r.node_list;
+                for (int pos = 1; pos < (int)nl.size(); ++pos) {
+                    std::vector<int> cand = nl;
+                    cand.insert(cand.begin() + pos, c);
+                    if (!_chk_route_list(cand, data, backend)) continue;
+
+                    double score = _rcrs_score(r, data, c, pos);
+                    if (score < best.score) {
+                        best.score = score;
+                        best.r_idx = r_idx;
+                        best.pos   = pos;
+                    }
+                }
+            }
+            // If no existing route can absorb c, its "score" is 0 (forced new route)
+            // We handle this case below; don't include in RCL to avoid bias.
+            if (best.r_idx != -1 && best.score < global_best_score)
+                global_best_score = best.score;
+
+            best_per_customer.push_back(best);
+        }
+
+        // ── Step B: build RCL ─────────────────────────────────────────────────
+        // Customers with no feasible insertion (r_idx == -1) must open a new
+        // route; they are separated out and handled after the RCL draw.
+        double threshold = global_best_score * (1.0 + alpha);
+        std::vector<int> rcl_indices;          // indices into best_per_customer
+        std::vector<int> forced_new_indices;   // must open a new route
+
+        for (int i = 0; i < (int)best_per_customer.size(); ++i) {
+            if (best_per_customer[i].r_idx == -1)
+                forced_new_indices.push_back(i);
+            else if (best_per_customer[i].score <= threshold + 1e-9)
+                rcl_indices.push_back(i);
+        }
+
+        // If no RCL candidate (all need new routes), force one at a time
+        if (rcl_indices.empty()) {
+            if (forced_new_indices.empty()) break; // safety
+            // Pick a random forced customer and open a route for it
+            int pick_forced = randint(0, (int)forced_new_indices.size() - 1, rng);
+            int ci = forced_new_indices[pick_forced];
+            int c  = best_per_customer[ci].customer;
+            Route r_new(data);
+            r_new.node_list.insert(r_new.node_list.begin() + 1, c);
+            r_new.update(data);
+            s.append(r_new);
+            // Remove from unrouted
+            unrouted.erase(std::find(unrouted.begin(), unrouted.end(), c));
+            continue;
+        }
+
+        // ── Step C: random draw from RCL ──────────────────────────────────────
+        int pick = randint(0, (int)rcl_indices.size() - 1, rng);
+        const CandInfo& chosen = best_per_customer[rcl_indices[pick]];
+
+        // ── Step D: insert at best RCRS position for chosen customer ─────────
+        s.get(chosen.r_idx).node_list.insert(
+            s.get(chosen.r_idx).node_list.begin() + chosen.pos,
+            chosen.customer);
+        s.get(chosen.r_idx).update(data);
+
+        // Remove from unrouted
+        unrouted.erase(std::find(unrouted.begin(), unrouted.end(), chosen.customer));
+
+        // ── Also flush customers that now MUST open a new route immediately ─
+        // (Avoids them blocking future RCL draws when population of routes is small)
+        // We defer this to the next iteration naturally.
+    }
+
+    s.cal_cost(data);
+    return s;
 }
 
 Solution _sa_initialization(const Solution& s_0, const Data& data, BaseComputeBackend* backend, std::mt19937& rng) {

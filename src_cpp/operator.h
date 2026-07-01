@@ -33,3 +33,7 @@ void perturb(std::vector<Solution>& s_vector, const Data& data, BaseComputeBacke
 // Paper Heuristics Helpers
 Solution _sa_initialization(const Solution& s_0, const Data& data, BaseComputeBackend* backend, std::mt19937& rng);
 Solution feasible_or_repair_algorithm_10(const Solution& s, const Data& data, BaseComputeBackend* backend, std::mt19937& rng);
+
+// RCRS-GRASP hybrid population initialisation (replaces SA in Algorithm 2).
+// `alpha` in [0,1]: 0 = pure greedy RCRS, 1 = full random GRASP.
+Solution rcrs_grasp_initialization(const Data& data, BaseComputeBackend* backend, std::mt19937& rng, double alpha);
