@@ -1,0 +1,543 @@
+PH-SHOWOA C++ VRPSDPTW Solver Initializing...
+TYPE : VRPSDPTW
+DIMENSION : 101
+VEHICLES : 25
+DISPATCHINGCOST : 2000
+UNITCOST : 1.0
+CAPACITY : 1000.0
+EDGE_WEIGHT_TYPE : EXPLICIT
+Avg pick-up/dilvery demand: 14.2100,14.5800
+Starting/end time of DC: 0.0000,1000.0000
+
+Initial random seed: 42
+Pruning: on
+Max PH-SHOWOA iterations: 1
+Population size: 30
+Compute backend: cpu
+OpenMP threads: 22
+---------------------------------Run 1---------------------------
+Initialization, using rcrs_grasp method
+[LOOP TRACE] alpha=0.1959 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1959
+[LOOP TRACE] alpha=0.1959 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1959 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=0, global_best_score=14.9314, alpha=0.1959
+[DEBUG GRASP] unrouted=8, rcl=1, forced=0, global_best_score=43.5245, alpha=0.1959
+[DEBUG GRASP] unrouted=7, rcl=1, forced=1, global_best_score=32.9543, alpha=0.1959
+[DEBUG GRASP] unrouted=6, rcl=1, forced=1, global_best_score=19.3182, alpha=0.1959
+[DEBUG GRASP] unrouted=5, rcl=2, forced=1, global_best_score=64.5529, alpha=0.1959
+[DEBUG GRASP] unrouted=4, rcl=1, forced=1, global_best_score=72.1823, alpha=0.1959
+[DEBUG GRASP] unrouted=3, rcl=1, forced=1, global_best_score=25.8053, alpha=0.1959
+[DEBUG GRASP] unrouted=2, rcl=1, forced=1, global_best_score=89.5616, alpha=0.1959
+[DEBUG GRASP] unrouted=1, rcl=0, forced=1, global_best_score=inf, alpha=0.1959
+[LOOP TRACE] alpha=0.2033 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2033
+[LOOP TRACE] alpha=0.2033 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.2033 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=5, global_best_score=27.2533, alpha=0.2033
+[DEBUG GRASP] unrouted=8, rcl=1, forced=6, global_best_score=20.3206, alpha=0.2033
+[DEBUG GRASP] unrouted=7, rcl=1, forced=6, global_best_score=62.0014, alpha=0.2033
+[DEBUG GRASP] unrouted=6, rcl=0, forced=6, global_best_score=inf, alpha=0.2033
+[DEBUG GRASP] unrouted=5, rcl=2, forced=0, global_best_score=50.7405, alpha=0.2033
+[DEBUG GRASP] unrouted=4, rcl=1, forced=0, global_best_score=19.8079, alpha=0.2033
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=48.0790, alpha=0.2033
+[DEBUG GRASP] unrouted=2, rcl=2, forced=0, global_best_score=73.6001, alpha=0.2033
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=18.1683, alpha=0.2033
+[LOOP TRACE] alpha=0.1638 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1638
+[LOOP TRACE] alpha=0.1638 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1638 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=4, global_best_score=19.3182, alpha=0.1638
+[DEBUG GRASP] unrouted=8, rcl=1, forced=4, global_best_score=26.9113, alpha=0.1638
+[DEBUG GRASP] unrouted=7, rcl=3, forced=4, global_best_score=95.9815, alpha=0.1638
+[DEBUG GRASP] unrouted=6, rcl=1, forced=4, global_best_score=20.5841, alpha=0.1638
+[DEBUG GRASP] unrouted=5, rcl=1, forced=4, global_best_score=106.8696, alpha=0.1638
+[DEBUG GRASP] unrouted=4, rcl=0, forced=4, global_best_score=inf, alpha=0.1638
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=0.2807, alpha=0.1638
+[DEBUG GRASP] unrouted=2, rcl=1, forced=0, global_best_score=17.5165, alpha=0.1638
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=74.4505, alpha=0.1638
+[LOOP TRACE] alpha=0.3157 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3157
+[LOOP TRACE] alpha=0.3157 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3157 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=2, forced=6, global_best_score=94.6701, alpha=0.3157
+[DEBUG GRASP] unrouted=8, rcl=1, forced=6, global_best_score=30.6795, alpha=0.3157
+[DEBUG GRASP] unrouted=7, rcl=1, forced=6, global_best_score=60.1157, alpha=0.3157
+[DEBUG GRASP] unrouted=6, rcl=0, forced=6, global_best_score=inf, alpha=0.3157
+[DEBUG GRASP] unrouted=5, rcl=2, forced=0, global_best_score=46.3492, alpha=0.3157
+[DEBUG GRASP] unrouted=4, rcl=1, forced=0, global_best_score=20.3384, alpha=0.3157
+[DEBUG GRASP] unrouted=3, rcl=3, forced=0, global_best_score=68.5987, alpha=0.3157
+[DEBUG GRASP] unrouted=2, rcl=1, forced=1, global_best_score=4.1921, alpha=0.3157
+[DEBUG GRASP] unrouted=1, rcl=0, forced=1, global_best_score=inf, alpha=0.3157
+[LOOP TRACE] alpha=0.3112 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3112
+[LOOP TRACE] alpha=0.3112 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3112 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=20.2057, alpha=0.3112
+[DEBUG GRASP] unrouted=8, rcl=2, forced=1, global_best_score=49.7554, alpha=0.3112
+[DEBUG GRASP] unrouted=7, rcl=1, forced=1, global_best_score=53.8394, alpha=0.3112
+[DEBUG GRASP] unrouted=6, rcl=1, forced=1, global_best_score=17.0867, alpha=0.3112
+[DEBUG GRASP] unrouted=5, rcl=1, forced=1, global_best_score=95.7938, alpha=0.3112
+[DEBUG GRASP] unrouted=4, rcl=1, forced=3, global_best_score=91.8745, alpha=0.3112
+[DEBUG GRASP] unrouted=3, rcl=0, forced=3, global_best_score=inf, alpha=0.3112
+[DEBUG GRASP] unrouted=2, rcl=2, forced=0, global_best_score=60.5630, alpha=0.3112
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=64.8886, alpha=0.3112
+[LOOP TRACE] alpha=0.1812 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1812
+[LOOP TRACE] alpha=0.1812 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1812 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=19.3663, alpha=0.1812
+[DEBUG GRASP] unrouted=8, rcl=1, forced=1, global_best_score=19.7315, alpha=0.1812
+[DEBUG GRASP] unrouted=7, rcl=2, forced=2, global_best_score=25.2448, alpha=0.1812
+[DEBUG GRASP] unrouted=6, rcl=1, forced=2, global_best_score=6.6748, alpha=0.1812
+[DEBUG GRASP] unrouted=5, rcl=2, forced=2, global_best_score=25.9778, alpha=0.1812
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=20.6042, alpha=0.1812
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=112.6755, alpha=0.1812
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.1812
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=64.8886, alpha=0.1812
+[LOOP TRACE] alpha=0.1042 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1042
+[LOOP TRACE] alpha=0.1042 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1042 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=2, forced=0, global_best_score=20.5353, alpha=0.1042
+[DEBUG GRASP] unrouted=8, rcl=2, forced=1, global_best_score=13.1699, alpha=0.1042
+[DEBUG GRASP] unrouted=7, rcl=2, forced=1, global_best_score=14.3116, alpha=0.1042
+[DEBUG GRASP] unrouted=6, rcl=1, forced=1, global_best_score=10.4156, alpha=0.1042
+[DEBUG GRASP] unrouted=5, rcl=1, forced=1, global_best_score=63.7291, alpha=0.1042
+[DEBUG GRASP] unrouted=4, rcl=1, forced=1, global_best_score=126.4251, alpha=0.1042
+[DEBUG GRASP] unrouted=3, rcl=1, forced=1, global_best_score=77.7000, alpha=0.1042
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.1042
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=35.6074, alpha=0.1042
+[LOOP TRACE] alpha=0.3147 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3147
+[LOOP TRACE] alpha=0.3147 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3147 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=2, forced=1, global_best_score=62.5431, alpha=0.3147
+[DEBUG GRASP] unrouted=8, rcl=1, forced=1, global_best_score=17.2495, alpha=0.3147
+[DEBUG GRASP] unrouted=7, rcl=1, forced=1, global_best_score=38.5706, alpha=0.3147
+[DEBUG GRASP] unrouted=6, rcl=3, forced=1, global_best_score=65.9271, alpha=0.3147
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=4.1187, alpha=0.3147
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=13.1398, alpha=0.3147
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=111.7206, alpha=0.3147
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.3147
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=106.3075, alpha=0.3147
+[LOOP TRACE] alpha=0.1497 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1497
+[LOOP TRACE] alpha=0.1497 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1497 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=2, forced=0, global_best_score=42.1630, alpha=0.1497
+[DEBUG GRASP] unrouted=8, rcl=2, forced=1, global_best_score=49.0761, alpha=0.1497
+[DEBUG GRASP] unrouted=7, rcl=2, forced=2, global_best_score=71.0555, alpha=0.1497
+[DEBUG GRASP] unrouted=6, rcl=1, forced=2, global_best_score=53.8722, alpha=0.1497
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=67.1020, alpha=0.1497
+[DEBUG GRASP] unrouted=4, rcl=2, forced=2, global_best_score=81.7256, alpha=0.1497
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=70.8913, alpha=0.1497
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.1497
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=91.4698, alpha=0.1497
+[LOOP TRACE] alpha=0.2218 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2218
+[LOOP TRACE] alpha=0.2218 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.2218 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=3, forced=3, global_best_score=65.4795, alpha=0.2218
+[DEBUG GRASP] unrouted=8, rcl=1, forced=4, global_best_score=6.3889, alpha=0.2218
+[DEBUG GRASP] unrouted=7, rcl=1, forced=4, global_best_score=15.1046, alpha=0.2218
+[DEBUG GRASP] unrouted=6, rcl=1, forced=4, global_best_score=14.9314, alpha=0.2218
+[DEBUG GRASP] unrouted=5, rcl=1, forced=4, global_best_score=86.2139, alpha=0.2218
+[DEBUG GRASP] unrouted=4, rcl=0, forced=4, global_best_score=inf, alpha=0.2218
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=5.6234, alpha=0.2218
+[DEBUG GRASP] unrouted=2, rcl=2, forced=0, global_best_score=55.8119, alpha=0.2218
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=55.8119, alpha=0.2218
+[LOOP TRACE] alpha=0.3770 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3770
+[LOOP TRACE] alpha=0.3770 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3770 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=2, global_best_score=6.0960, alpha=0.3770
+[DEBUG GRASP] unrouted=8, rcl=1, forced=2, global_best_score=21.4201, alpha=0.3770
+[DEBUG GRASP] unrouted=7, rcl=3, forced=4, global_best_score=78.3715, alpha=0.3770
+[DEBUG GRASP] unrouted=6, rcl=2, forced=4, global_best_score=32.0616, alpha=0.3770
+[DEBUG GRASP] unrouted=5, rcl=1, forced=4, global_best_score=14.3260, alpha=0.3770
+[DEBUG GRASP] unrouted=4, rcl=0, forced=4, global_best_score=inf, alpha=0.3770
+[DEBUG GRASP] unrouted=3, rcl=2, forced=0, global_best_score=36.8807, alpha=0.3770
+[DEBUG GRASP] unrouted=2, rcl=1, forced=0, global_best_score=46.3523, alpha=0.3770
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=91.8964, alpha=0.3770
+[LOOP TRACE] alpha=0.2806 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2806
+[LOOP TRACE] alpha=0.2806 Iter 2 start: unrouted=99, routes=1
+[CRITICAL DEBUG] Both empty! unrouted=99, global_best_score=-0.0000, threshold=-0.0000
+  cust=93 r_idx=0 score=43.0063
+  cust=38 r_idx=0 score=69.4596
+  cust=87 r_idx=0 score=26.5871
+  cust=24 r_idx=0 score=36.8708
+  cust=49 r_idx=0 score=109.2693
+  cust=22 r_idx=0 score=8.1437
+  cust=7 r_idx=0 score=42.1665
+  cust=83 r_idx=0 score=37.0491
+  cust=70 r_idx=0 score=59.8359
+  cust=90 r_idx=0 score=62.6766
+  cust=95 r_idx=0 score=14.3211
+  cust=50 r_idx=0 score=23.6702
+  cust=76 r_idx=0 score=34.4462
+  cust=65 r_idx=0 score=86.2139
+  cust=45 r_idx=0 score=52.1755
+  cust=26 r_idx=0 score=17.5910
+  cust=32 r_idx=0 score=85.7290
+  cust=42 r_idx=0 score=21.2201
+  cust=78 r_idx=0 score=58.1021
+  cust=1 r_idx=0 score=25.3496
+  cust=11 r_idx=0 score=66.9477
+  cust=33 r_idx=0 score=35.7459
+  cust=52 r_idx=0 score=22.4599
+  cust=75 r_idx=0 score=0.2147
+  cust=3 r_idx=0 score=42.4136
+  cust=12 r_idx=0 score=9.3583
+  cust=44 r_idx=0 score=40.7459
+  cust=79 r_idx=0 score=48.6093
+  cust=69 r_idx=0 score=21.8047
+  cust=47 r_idx=0 score=67.5039
+  cust=16 r_idx=0 score=40.5334
+  cust=6 r_idx=0 score=33.3540
+  cust=40 r_idx=0 score=15.0874
+  cust=63 r_idx=0 score=68.7300
+  cust=64 r_idx=0 score=92.8283
+  cust=57 r_idx=0 score=11.1809
+  cust=4 r_idx=0 score=11.7611
+  cust=56 r_idx=0 score=4.6696
+  cust=5 r_idx=0 score=31.7299
+  cust=85 r_idx=0 score=29.5103
+  cust=21 r_idx=0 score=-0.0000
+  cust=98 r_idx=0 score=24.6002
+  cust=71 r_idx=0 score=66.6373
+  cust=55 r_idx=0 score=21.6923
+  cust=84 r_idx=0 score=58.2329
+  cust=2 r_idx=0 score=5.2683
+  cust=100 r_idx=0 score=42.5728
+  cust=51 r_idx=0 score=44.2089
+  cust=30 r_idx=0 score=46.4484
+  cust=37 r_idx=0 score=39.1129
+  cust=89 r_idx=0 score=35.3040
+  cust=77 r_idx=0 score=38.0179
+  cust=72 r_idx=0 score=0.0182
+  cust=43 r_idx=0 score=40.3655
+  cust=20 r_idx=0 score=75.9730
+  cust=41 r_idx=0 score=12.0632
+  cust=19 r_idx=0 score=63.9675
+  cust=48 r_idx=0 score=54.7791
+  cust=14 r_idx=0 score=36.2714
+  cust=68 r_idx=0 score=33.9445
+  cust=13 r_idx=0 score=24.2077
+  cust=58 r_idx=0 score=17.9154
+  cust=17 r_idx=0 score=68.7230
+  cust=86 r_idx=0 score=51.9306
+  cust=81 r_idx=0 score=57.7715
+  cust=9 r_idx=0 score=68.6721
+  cust=18 r_idx=0 score=29.2534
+  cust=61 r_idx=0 score=36.4502
+  cust=91 r_idx=0 score=31.9362
+  cust=62 r_idx=0 score=50.8399
+  cust=60 r_idx=0 score=49.5227
+  cust=94 r_idx=0 score=12.3866
+  cust=29 r_idx=0 score=31.8562
+  cust=82 r_idx=0 score=45.2683
+  cust=96 r_idx=0 score=37.0056
+  cust=54 r_idx=0 score=22.0317
+  cust=59 r_idx=0 score=20.6977
+  cust=39 r_idx=0 score=6.5174
+  cust=28 r_idx=0 score=5.1975
+  cust=31 r_idx=0 score=34.1818
+  cust=34 r_idx=0 score=66.2873
+  cust=80 r_idx=0 score=31.1480
+  cust=25 r_idx=0 score=21.6759
+  cust=46 r_idx=0 score=88.3134
+  cust=53 r_idx=0 score=19.0012
+  cust=88 r_idx=0 score=38.4067
+  cust=67 r_idx=0 score=19.8079
+  cust=66 r_idx=0 score=91.8524
+  cust=35 r_idx=0 score=82.1770
+  cust=36 r_idx=0 score=81.7256
+  cust=99 r_idx=0 score=40.0678
+  cust=10 r_idx=0 score=71.1475
+  cust=92 r_idx=0 score=19.4507
+  cust=97 r_idx=0 score=31.0044
+  cust=74 r_idx=0 score=7.6329
+  cust=8 r_idx=0 score=69.7030
+  cust=27 r_idx=0 score=9.2558
+  cust=15 r_idx=0 score=19.3583
+  cust=73 r_idx=0 score=0.3479
+[WARNING GRASP] Exited early! unrouted size = 99, alpha = 0.2806
+[WARNING GRASP] returned solution has only 1 customers out of 100, alpha = 0.2806!
+[LOOP TRACE] alpha=0.1601 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1601
+[LOOP TRACE] alpha=0.1601 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1601 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=2, forced=1, global_best_score=31.7949, alpha=0.1601
+[DEBUG GRASP] unrouted=8, rcl=1, forced=2, global_best_score=34.6064, alpha=0.1601
+[DEBUG GRASP] unrouted=7, rcl=2, forced=2, global_best_score=62.0014, alpha=0.1601
+[DEBUG GRASP] unrouted=6, rcl=1, forced=2, global_best_score=62.0014, alpha=0.1601
+[DEBUG GRASP] unrouted=5, rcl=2, forced=2, global_best_score=83.4537, alpha=0.1601
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=10.2713, alpha=0.1601
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=18.2198, alpha=0.1601
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.1601
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=0.8734, alpha=0.1601
+[LOOP TRACE] alpha=0.3698 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3698
+[LOOP TRACE] alpha=0.3698 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3698 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=2, global_best_score=13.9201, alpha=0.3698
+[DEBUG GRASP] unrouted=8, rcl=2, forced=2, global_best_score=17.9464, alpha=0.3698
+[DEBUG GRASP] unrouted=7, rcl=2, forced=2, global_best_score=16.9935, alpha=0.3698
+[DEBUG GRASP] unrouted=6, rcl=2, forced=2, global_best_score=21.8896, alpha=0.3698
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=21.8896, alpha=0.3698
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=13.7126, alpha=0.3698
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=18.8110, alpha=0.3698
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.3698
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=53.4386, alpha=0.3698
+[LOOP TRACE] alpha=0.1223 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1223
+[LOOP TRACE] alpha=0.1223 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1223 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=4, global_best_score=36.1804, alpha=0.1223
+[DEBUG GRASP] unrouted=8, rcl=2, forced=4, global_best_score=30.6417, alpha=0.1223
+[DEBUG GRASP] unrouted=7, rcl=1, forced=4, global_best_score=6.5174, alpha=0.1223
+[DEBUG GRASP] unrouted=6, rcl=1, forced=4, global_best_score=58.2310, alpha=0.1223
+[DEBUG GRASP] unrouted=5, rcl=1, forced=4, global_best_score=80.9901, alpha=0.1223
+[DEBUG GRASP] unrouted=4, rcl=0, forced=4, global_best_score=inf, alpha=0.1223
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=13.9594, alpha=0.1223
+[DEBUG GRASP] unrouted=2, rcl=1, forced=0, global_best_score=48.7811, alpha=0.1223
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=39.4986, alpha=0.1223
+[LOOP TRACE] alpha=0.3983 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3983
+[LOOP TRACE] alpha=0.3983 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3983 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=4, forced=2, global_best_score=57.9809, alpha=0.3983
+[DEBUG GRASP] unrouted=8, rcl=2, forced=5, global_best_score=66.8605, alpha=0.3983
+[DEBUG GRASP] unrouted=7, rcl=1, forced=5, global_best_score=32.5106, alpha=0.3983
+[DEBUG GRASP] unrouted=6, rcl=0, forced=6, global_best_score=inf, alpha=0.3983
+[DEBUG GRASP] unrouted=5, rcl=4, forced=0, global_best_score=66.9477, alpha=0.3983
+[DEBUG GRASP] unrouted=4, rcl=4, forced=0, global_best_score=66.9477, alpha=0.3983
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=12.6860, alpha=0.3983
+[DEBUG GRASP] unrouted=2, rcl=1, forced=0, global_best_score=29.7894, alpha=0.3983
+[DEBUG GRASP] unrouted=1, rcl=0, forced=1, global_best_score=inf, alpha=0.3983
+[LOOP TRACE] alpha=0.3403 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3403
+[LOOP TRACE] alpha=0.3403 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3403 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=3, forced=3, global_best_score=58.4923, alpha=0.3403
+[DEBUG GRASP] unrouted=8, rcl=1, forced=3, global_best_score=40.9455, alpha=0.3403
+[DEBUG GRASP] unrouted=7, rcl=1, forced=3, global_best_score=58.4923, alpha=0.3403
+[DEBUG GRASP] unrouted=6, rcl=2, forced=3, global_best_score=81.7505, alpha=0.3403
+[DEBUG GRASP] unrouted=5, rcl=0, forced=5, global_best_score=inf, alpha=0.3403
+[DEBUG GRASP] unrouted=4, rcl=1, forced=0, global_best_score=0.2807, alpha=0.3403
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=49.0761, alpha=0.3403
+[DEBUG GRASP] unrouted=2, rcl=2, forced=0, global_best_score=81.6059, alpha=0.3403
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=62.1324, alpha=0.3403
+[LOOP TRACE] alpha=0.3219 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3219
+[LOOP TRACE] alpha=0.3219 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3219 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=5, forced=0, global_best_score=60.2392, alpha=0.3219
+[DEBUG GRASP] unrouted=8, rcl=3, forced=0, global_best_score=30.6391, alpha=0.3219
+[DEBUG GRASP] unrouted=7, rcl=1, forced=1, global_best_score=12.5139, alpha=0.3219
+[DEBUG GRASP] unrouted=6, rcl=1, forced=1, global_best_score=30.6391, alpha=0.3219
+[DEBUG GRASP] unrouted=5, rcl=2, forced=2, global_best_score=42.4567, alpha=0.3219
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=47.6051, alpha=0.3219
+[DEBUG GRASP] unrouted=3, rcl=0, forced=3, global_best_score=inf, alpha=0.3219
+[DEBUG GRASP] unrouted=2, rcl=1, forced=0, global_best_score=18.6273, alpha=0.3219
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=59.0399, alpha=0.3219
+[LOOP TRACE] alpha=0.2944 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2944
+[LOOP TRACE] alpha=0.2944 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.2944 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=4, global_best_score=20.2057, alpha=0.2944
+[DEBUG GRASP] unrouted=8, rcl=2, forced=4, global_best_score=34.3325, alpha=0.2944
+[DEBUG GRASP] unrouted=7, rcl=1, forced=4, global_best_score=34.3325, alpha=0.2944
+[DEBUG GRASP] unrouted=6, rcl=1, forced=4, global_best_score=26.2803, alpha=0.2944
+[DEBUG GRASP] unrouted=5, rcl=1, forced=4, global_best_score=105.3999, alpha=0.2944
+[DEBUG GRASP] unrouted=4, rcl=0, forced=4, global_best_score=inf, alpha=0.2944
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=4.1921, alpha=0.2944
+[DEBUG GRASP] unrouted=2, rcl=2, forced=0, global_best_score=76.7269, alpha=0.2944
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=50.8532, alpha=0.2944
+[LOOP TRACE] alpha=0.1080 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1080
+[LOOP TRACE] alpha=0.1080 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1080 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=24.7592, alpha=0.1080
+[DEBUG GRASP] unrouted=8, rcl=1, forced=1, global_best_score=47.8344, alpha=0.1080
+[DEBUG GRASP] unrouted=7, rcl=1, forced=2, global_best_score=23.3746, alpha=0.1080
+[DEBUG GRASP] unrouted=6, rcl=2, forced=2, global_best_score=60.0696, alpha=0.1080
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=60.0696, alpha=0.1080
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=49.0714, alpha=0.1080
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=79.3884, alpha=0.1080
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.1080
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=4.1921, alpha=0.1080
+[LOOP TRACE] alpha=0.1788 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1788
+[LOOP TRACE] alpha=0.1788 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1788 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=53.4386, alpha=0.1788
+[DEBUG GRASP] unrouted=8, rcl=1, forced=1, global_best_score=24.3455, alpha=0.1788
+[DEBUG GRASP] unrouted=7, rcl=1, forced=1, global_best_score=60.0696, alpha=0.1788
+[DEBUG GRASP] unrouted=6, rcl=3, forced=1, global_best_score=126.0998, alpha=0.1788
+[DEBUG GRASP] unrouted=5, rcl=4, forced=1, global_best_score=50.2651, alpha=0.1788
+[DEBUG GRASP] unrouted=4, rcl=1, forced=1, global_best_score=17.2897, alpha=0.1788
+[DEBUG GRASP] unrouted=3, rcl=2, forced=1, global_best_score=54.3031, alpha=0.1788
+[DEBUG GRASP] unrouted=2, rcl=1, forced=1, global_best_score=24.6505, alpha=0.1788
+[DEBUG GRASP] unrouted=1, rcl=0, forced=1, global_best_score=inf, alpha=0.1788
+[LOOP TRACE] alpha=0.3174 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3174
+[LOOP TRACE] alpha=0.3174 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3174 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=19.3666, alpha=0.3174
+[DEBUG GRASP] unrouted=8, rcl=1, forced=1, global_best_score=38.3694, alpha=0.3174
+[DEBUG GRASP] unrouted=7, rcl=3, forced=1, global_best_score=45.7934, alpha=0.3174
+[DEBUG GRASP] unrouted=6, rcl=1, forced=2, global_best_score=13.7126, alpha=0.3174
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=18.8110, alpha=0.3174
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=26.0308, alpha=0.3174
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=90.0918, alpha=0.3174
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.3174
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=19.8079, alpha=0.3174
+[LOOP TRACE] alpha=0.3539 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3539
+[LOOP TRACE] alpha=0.3539 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3539 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=6, forced=1, global_best_score=46.9414, alpha=0.3539
+[DEBUG GRASP] unrouted=8, rcl=2, forced=1, global_best_score=10.8897, alpha=0.3539
+[DEBUG GRASP] unrouted=7, rcl=3, forced=4, global_best_score=51.2561, alpha=0.3539
+[DEBUG GRASP] unrouted=6, rcl=1, forced=4, global_best_score=18.5181, alpha=0.3539
+[DEBUG GRASP] unrouted=5, rcl=1, forced=4, global_best_score=70.8913, alpha=0.3539
+[DEBUG GRASP] unrouted=4, rcl=0, forced=4, global_best_score=inf, alpha=0.3539
+[DEBUG GRASP] unrouted=3, rcl=1, forced=0, global_best_score=10.9512, alpha=0.3539
+[DEBUG GRASP] unrouted=2, rcl=2, forced=0, global_best_score=61.5649, alpha=0.3539
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=87.6243, alpha=0.3539
+[LOOP TRACE] alpha=0.2144 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2144
+[LOOP TRACE] alpha=0.2144 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.2144 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=39.5514, alpha=0.2144
+[DEBUG GRASP] unrouted=8, rcl=2, forced=1, global_best_score=57.8864, alpha=0.2144
+[DEBUG GRASP] unrouted=7, rcl=1, forced=1, global_best_score=16.9204, alpha=0.2144
+[DEBUG GRASP] unrouted=6, rcl=4, forced=1, global_best_score=86.2139, alpha=0.2144
+[DEBUG GRASP] unrouted=5, rcl=1, forced=1, global_best_score=50.0511, alpha=0.2144
+[DEBUG GRASP] unrouted=4, rcl=2, forced=2, global_best_score=94.4071, alpha=0.2144
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=112.6148, alpha=0.2144
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.2144
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=13.9594, alpha=0.2144
+[LOOP TRACE] alpha=0.3349 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.3349
+[LOOP TRACE] alpha=0.3349 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.3349 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=2, global_best_score=28.6235, alpha=0.3349
+[DEBUG GRASP] unrouted=8, rcl=1, forced=2, global_best_score=25.9778, alpha=0.3349
+[DEBUG GRASP] unrouted=7, rcl=3, forced=2, global_best_score=60.7368, alpha=0.3349
+[DEBUG GRASP] unrouted=6, rcl=3, forced=2, global_best_score=49.3037, alpha=0.3349
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=42.6321, alpha=0.3349
+[DEBUG GRASP] unrouted=4, rcl=2, forced=2, global_best_score=52.7353, alpha=0.3349
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=52.7353, alpha=0.3349
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.3349
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=0.2807, alpha=0.3349
+[LOOP TRACE] alpha=0.2939 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2939
+[LOOP TRACE] alpha=0.2939 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.2939 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=2, global_best_score=19.3583, alpha=0.2939
+[DEBUG GRASP] unrouted=8, rcl=2, forced=2, global_best_score=39.1656, alpha=0.2939
+[DEBUG GRASP] unrouted=7, rcl=1, forced=2, global_best_score=39.1656, alpha=0.2939
+[DEBUG GRASP] unrouted=6, rcl=1, forced=2, global_best_score=32.4393, alpha=0.2939
+[DEBUG GRASP] unrouted=5, rcl=2, forced=2, global_best_score=72.1759, alpha=0.2939
+[DEBUG GRASP] unrouted=4, rcl=1, forced=2, global_best_score=53.3109, alpha=0.2939
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=98.3070, alpha=0.2939
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.2939
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=60.5630, alpha=0.2939
+[LOOP TRACE] alpha=0.1634 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1634
+[LOOP TRACE] alpha=0.1634 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1634 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=14.6564, alpha=0.1634
+[DEBUG GRASP] unrouted=8, rcl=1, forced=1, global_best_score=23.5145, alpha=0.1634
+[DEBUG GRASP] unrouted=7, rcl=3, forced=1, global_best_score=54.3211, alpha=0.1634
+[DEBUG GRASP] unrouted=6, rcl=2, forced=2, global_best_score=54.3211, alpha=0.1634
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=57.9809, alpha=0.1634
+[DEBUG GRASP] unrouted=4, rcl=1, forced=3, global_best_score=72.7038, alpha=0.1634
+[DEBUG GRASP] unrouted=3, rcl=0, forced=3, global_best_score=inf, alpha=0.1634
+[DEBUG GRASP] unrouted=2, rcl=1, forced=0, global_best_score=0.2807, alpha=0.1634
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=22.0216, alpha=0.1634
+[LOOP TRACE] alpha=0.2736 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2736
+[LOOP TRACE] alpha=0.2736 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.2736 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=0, global_best_score=13.2103, alpha=0.2736
+[DEBUG GRASP] unrouted=8, rcl=1, forced=0, global_best_score=7.7911, alpha=0.2736
+[DEBUG GRASP] unrouted=7, rcl=2, forced=0, global_best_score=19.6772, alpha=0.2736
+[DEBUG GRASP] unrouted=6, rcl=1, forced=0, global_best_score=18.4354, alpha=0.2736
+[DEBUG GRASP] unrouted=5, rcl=2, forced=1, global_best_score=55.3112, alpha=0.2736
+[DEBUG GRASP] unrouted=4, rcl=1, forced=1, global_best_score=19.2473, alpha=0.2736
+[DEBUG GRASP] unrouted=3, rcl=1, forced=1, global_best_score=62.0014, alpha=0.2736
+[DEBUG GRASP] unrouted=2, rcl=1, forced=1, global_best_score=146.0062, alpha=0.2736
+[DEBUG GRASP] unrouted=1, rcl=0, forced=1, global_best_score=inf, alpha=0.2736
+[LOOP TRACE] alpha=0.2821 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.2821
+[LOOP TRACE] alpha=0.2821 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.2821 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=1, global_best_score=14.5548, alpha=0.2821
+[DEBUG GRASP] unrouted=8, rcl=1, forced=2, global_best_score=40.8649, alpha=0.2821
+[DEBUG GRASP] unrouted=7, rcl=1, forced=2, global_best_score=21.3068, alpha=0.2821
+[DEBUG GRASP] unrouted=6, rcl=1, forced=2, global_best_score=43.3800, alpha=0.2821
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=42.4467, alpha=0.2821
+[DEBUG GRASP] unrouted=4, rcl=2, forced=2, global_best_score=99.0951, alpha=0.2821
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=99.0951, alpha=0.2821
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.2821
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=86.6203, alpha=0.2821
+[LOOP TRACE] alpha=0.1069 Iter 1 start: unrouted=100, routes=0
+[DEBUG GRASP] unrouted=100, rcl=0, forced=100, global_best_score=inf, alpha=0.1069
+[LOOP TRACE] alpha=0.1069 Iter 2 start: unrouted=99, routes=1
+[LOOP TRACE] alpha=0.1069 Iter 2 end: unrouted=98, routes=1
+[DEBUG GRASP] unrouted=9, rcl=1, forced=0, global_best_score=22.5004, alpha=0.1069
+[DEBUG GRASP] unrouted=8, rcl=2, forced=0, global_best_score=30.8346, alpha=0.1069
+[DEBUG GRASP] unrouted=7, rcl=1, forced=1, global_best_score=42.1630, alpha=0.1069
+[DEBUG GRASP] unrouted=6, rcl=1, forced=2, global_best_score=49.0761, alpha=0.1069
+[DEBUG GRASP] unrouted=5, rcl=1, forced=2, global_best_score=69.2528, alpha=0.1069
+[DEBUG GRASP] unrouted=4, rcl=2, forced=2, global_best_score=80.2336, alpha=0.1069
+[DEBUG GRASP] unrouted=3, rcl=1, forced=2, global_best_score=86.2139, alpha=0.1069
+[DEBUG GRASP] unrouted=2, rcl=0, forced=2, global_best_score=inf, alpha=0.1069
+[DEBUG GRASP] unrouted=1, rcl=1, forced=0, global_best_score=76.7269, alpha=0.1069
+[DEBUG POP] pop[0] cost=9523.1785, routes=4, customers=100
+[DEBUG POP] pop[1] cost=9557.0781, routes=4, customers=100
+[DEBUG POP] pop[2] cost=9622.8137, routes=4, customers=100
+[DEBUG POP] pop[3] cost=11774.3758, routes=5, customers=100
+[DEBUG POP] pop[4] cost=9799.8967, routes=4, customers=100
+[DEBUG POP] pop[5] cost=9579.1352, routes=4, customers=100
+[DEBUG POP] pop[6] cost=9503.9360, routes=4, customers=100
+[DEBUG POP] pop[7] cost=9712.6024, routes=4, customers=100
+[DEBUG POP] pop[8] cost=9761.7174, routes=4, customers=100
+[DEBUG POP] pop[9] cost=9623.4335, routes=4, customers=100
+[DEBUG POP] pop[10] cost=9800.2859, routes=4, customers=100
+[DEBUG POP] pop[11] cost=2072.1110, routes=1, customers=1
+[DEBUG POP] pop[12] cost=9582.3263, routes=4, customers=100
+[DEBUG POP] pop[13] cost=9563.8012, routes=4, customers=100
+[DEBUG POP] pop[14] cost=9543.0831, routes=4, customers=100
+[DEBUG POP] pop[15] cost=11703.3354, routes=5, customers=100
+[DEBUG POP] pop[16] cost=9739.3460, routes=4, customers=100
+[DEBUG POP] pop[17] cost=9659.2035, routes=4, customers=100
+[DEBUG POP] pop[18] cost=9604.5215, routes=4, customers=100
+[DEBUG POP] pop[19] cost=9535.5363, routes=4, customers=100
+[DEBUG POP] pop[20] cost=9602.4619, routes=4, customers=100
+[DEBUG POP] pop[21] cost=9516.0244, routes=4, customers=100
+[DEBUG POP] pop[22] cost=9738.1005, routes=4, customers=100
+[DEBUG POP] pop[23] cost=9734.2855, routes=4, customers=100
+[DEBUG POP] pop[24] cost=9555.3635, routes=4, customers=100
+[DEBUG POP] pop[25] cost=9656.9847, routes=4, customers=100
+[DEBUG POP] pop[26] cost=9588.7661, routes=4, customers=100
+[DEBUG POP] pop[27] cost=9569.0409, routes=4, customers=100
+[DEBUG POP] pop[28] cost=9686.0761, routes=4, customers=100
+[DEBUG POP] pop[29] cost=9649.7306, routes=4, customers=100
+Initialization done.
+already consumed 0 sec
+Best solution update: 2072.1110
+Run 1 finishes
+------------Summary-----------
+Total 1 runs, total consumed 0 sec
+Details of the solution:
+route 0, node_num 3, cost 72.111, nodes: 0 23 0
+vehicle (route) number: 1
+Total cost: 2072.111026
+Missing customer: 1
+PH-SHOWOA C++ solver run completed.

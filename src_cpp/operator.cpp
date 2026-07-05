@@ -752,7 +752,7 @@ static double _rcrs_score(
     int         next  = nl[pos];
 
     // ── ΔTD ──────────────────────────────────────────────────────────────────
-    double delta_td = data.dist[prev][c] + data.dist[c][next] - data.dist[prev][next];
+    double delta_td = std::max(0.0, data.dist[prev][c] + data.dist[c][next] - data.dist[prev][next]);
 
     // ── RC penalty ───────────────────────────────────────────────────────────
     // Route self attribute already reflects the current route WITHOUT c.
