@@ -2816,7 +2816,15 @@ Solution rcrs_grasp_initialization(const Data& data, BaseComputeBackend* backend
         // ── Step B: build RCL ─────────────────────────────────────────────────
         // Customers with no feasible insertion (r_idx == -1) must open a new
         // route; they are separated out and handled after the RCL draw.
-        double threshold = global_best_score * (1.0 + alpha);
+        double max_score = -std::numeric_limits<double>::infinity();
+        for (const auto& cand : best_per_customer) {
+            if (cand.r_idx != -1 && cand.score > max_score) {
+                max_score = cand.score;
+            }
+        }
+        double threshold = (global_best_score == std::numeric_limits<double>::infinity() || max_score == -std::numeric_limits<double>::infinity())
+            ? std::numeric_limits<double>::infinity()
+            : global_best_score + alpha * (max_score - global_best_score);
         std::vector<int> rcl_indices;          // indices into best_per_customer
         std::vector<int> forced_new_indices;   // must open a new route
 

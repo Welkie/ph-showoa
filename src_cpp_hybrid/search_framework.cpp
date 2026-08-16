@@ -864,7 +864,24 @@ void search_framework(Data& data, Solution& best_s) {
                 }
 
                 std::vector<std::exception_ptr> initialization_errors(K * P);
-                if (use_batched_population_construction(data, backend, K * P)) {
+                if (data.init == "rcrs_grasp" || data.init == "rcg") {
+                    #pragma omp parallel for
+                    for (int ip = 0; ip < K * P; ++ip) {
+                        const int k = ip / P;
+                        const int i = ip % P;
+                        try {
+                            islands[k].pop[i].clear(data);
+                            LegacyMt19937 seed_rng(
+                                data.seed + k * 1000 + run * 100000 + 1000000 + i
+                            );
+                            double ind_alpha = randdouble(data.grasp_alpha_lo, data.grasp_alpha_hi, seed_rng);
+                            islands[k].pop[i] = rcrs_grasp_initialization(data, backend, seed_rng, ind_alpha);
+                            islands[k].pop_fit[i] = islands[k].pop[i].cost;
+                        } catch (...) {
+                            initialization_errors[ip] = std::current_exception();
+                        }
+                    }
+                } else if (use_batched_population_construction(data, backend, K * P)) {
                     std::printf("Generation-level CUDA construction batching enabled for %d solutions.\n", K * P);
                     std::vector<Solution> flat_population(K * P);
                     std::vector<ConstructionConfig> configs(K * P);
@@ -909,17 +926,12 @@ void search_framework(Data& data, Solution& best_s) {
                             LegacyMt19937 seed_rng(
                                 data.seed + k * 1000 + run * 100000 + 1000000 + i
                             );
-                            if (data.init == "rcrs_grasp" || data.init == "rcg") {
-                                double ind_alpha = randdouble(data.grasp_alpha_lo, data.grasp_alpha_hi, seed_rng);
-                                islands[k].pop[i] = rcrs_grasp_initialization(data, backend, seed_rng, ind_alpha);
-                            } else {
-                                const ConstructionConfig config = construction_config_for_index(data, i, seed_rng);
-                                new_route_insertion(islands[k].pop[i], data, config, backend, seed_rng);
-                                if (data.init == "sa") {
-                                    islands[k].pop[i] = _sa_initialization(
-                                        islands[k].pop[i], data, backend, seed_rng
-                                    );
-                                }
+                            const ConstructionConfig config = construction_config_for_index(data, i, seed_rng);
+                            new_route_insertion(islands[k].pop[i], data, config, backend, seed_rng);
+                            if (data.init == "sa") {
+                                islands[k].pop[i] = _sa_initialization(
+                                    islands[k].pop[i], data, backend, seed_rng
+                                );
                             }
                             islands[k].pop_fit[i] = islands[k].pop[i].cost;
                         } catch (...) {
@@ -1200,13 +1212,26 @@ void search_framework(Data& data, Solution& best_s) {
             try {
                 ScopedProfileTimer init_timer(data.profile, profile_registry().initialization, p_size);
                 std::vector<std::exception_ptr> initialization_errors(p_size);
-                if (use_batched_population_construction(data, backend, p_size)) {
+                if (data.init == "rcrs_grasp" || data.init == "rcg") {
+                    #pragma omp parallel for
+                    for (int i = 0; i < p_size; ++i) {
+                        try {
+                            pop[i].clear(data);
+                            LegacyMt19937 seed_rng(data.seed + run * 100000 + 100000 + i);
+                            double ind_alpha = randdouble(data.grasp_alpha_lo, data.grasp_alpha_hi, seed_rng);
+                            pop[i] = rcrs_grasp_initialization(data, backend, seed_rng, ind_alpha);
+                            pop_fit[i] = pop[i].cost;
+                        } catch (...) {
+                            initialization_errors[i] = std::current_exception();
+                        }
+                    }
+                } else if (use_batched_population_construction(data, backend, p_size)) {
                     std::printf("Generation-level CUDA construction batching enabled for %d solutions.\n", p_size);
                     std::vector<ConstructionConfig> configs(p_size);
                     std::vector<LegacyMt19937> initialization_rngs;
                     initialization_rngs.reserve(p_size);
                     for (int i = 0; i < p_size; ++i) {
-                        initialization_rngs.emplace_back(data.seed + 100000 + i);
+                        initialization_rngs.emplace_back(data.seed + run * 100000 + 100000 + i);
                         configs[i] = construction_config_for_index(
                             data, i, initialization_rngs.back()
                         );
@@ -1232,16 +1257,11 @@ void search_framework(Data& data, Solution& best_s) {
                     for (int i = 0; i < p_size; ++i) {
                         try {
                             pop[i].clear(data);
-                            LegacyMt19937 seed_rng(data.seed + 100000 + i);
-                            if (data.init == "rcrs_grasp" || data.init == "rcg") {
-                                double ind_alpha = randdouble(data.grasp_alpha_lo, data.grasp_alpha_hi, seed_rng);
-                                pop[i] = rcrs_grasp_initialization(data, backend, seed_rng, ind_alpha);
-                            } else {
-                                const ConstructionConfig config = construction_config_for_index(data, i, seed_rng);
-                                new_route_insertion(pop[i], data, config, backend, seed_rng);
-                                if (data.init == "sa") {
-                                    pop[i] = _sa_initialization(pop[i], data, backend, seed_rng);
-                                }
+                            LegacyMt19937 seed_rng(data.seed + run * 100000 + 100000 + i);
+                            const ConstructionConfig config = construction_config_for_index(data, i, seed_rng);
+                            new_route_insertion(pop[i], data, config, backend, seed_rng);
+                            if (data.init == "sa") {
+                                pop[i] = _sa_initialization(pop[i], data, backend, seed_rng);
                             }
                             pop_fit[i] = pop[i].cost;
                         } catch (...) {
