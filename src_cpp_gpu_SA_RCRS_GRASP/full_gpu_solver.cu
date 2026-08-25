@@ -108,7 +108,7 @@ struct DeviceConstructionScratch {
     double* rp;
 };
 
-DevicePopulation slice_population(DevicePopulation population, int first, int count) {
+__host__ __device__ inline DevicePopulation slice_population(DevicePopulation population, int first, int count) {
     DevicePopulation slice = population;
     slice.solution_count = count;
     slice.nodes += first * population.node_capacity;
@@ -121,7 +121,7 @@ DevicePopulation slice_population(DevicePopulation population, int first, int co
     return slice;
 }
 
-DeviceConstructionScratch slice_scratch(DeviceConstructionScratch scratch, int first) {
+__host__ __device__ inline DeviceConstructionScratch slice_scratch(DeviceConstructionScratch scratch, int first) {
     DeviceConstructionScratch slice = scratch;
     slice.sample_pool += first * scratch.customer_capacity;
     slice.unrouted += first * scratch.customer_capacity;
