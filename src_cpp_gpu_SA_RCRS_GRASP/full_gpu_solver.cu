@@ -1828,27 +1828,6 @@ __device__ DeviceConstructionScratch ls_thread_scratch(
     return s;
 }
 
-// Encode (delta, thread_lane) into a single uint64 for warp shuffle.
-// We compare delta as a double bit-cast to a sortable uint64.
-__device__ __forceinline__ unsigned long long encode_move_key(double delta, int lane) {
-    // For non-negative deltas the bit representation of double is already
-    // ordered. For negative deltas (improvements) we need sign-magnitude
-    // ordering: flip all bits for negative, flip sign bit for positive.
-    unsigned long long d;
-    memcpy(&d, &delta, sizeof(d));
-    if (d >> 63) d = ~d;           // negative: flip all
-    else         d ^= (1ULL << 63);// positive: flip sign bit
-    return (d << 6) | (unsigned long long)(lane & 0x3f);
-}
-
-__device__ __forceinline__ double decode_delta(unsigned long long key) {
-    unsigned long long d = key >> 6;
-    if (d & (1ULL << 63)) d ^= (1ULL << 63); // positive path reverse
-    else                  d = ~d;             // negative path reverse
-    double v; memcpy(&v, &d, sizeof(v));
-    return v;
-}
-
 __device__ bool find_local_optimum_parallel(
     DevicePopulation solution,
     DevicePopulation temporary,
@@ -1995,38 +1974,42 @@ __device__ bool find_local_optimum_parallel(
 
         // -------------------------------------------------------------------
         // Phase 2: Warp-level reduction using shuffle
-        // Step 2a: reduce keys to find the winning lane within each warp.
-        // Step 2b: broadcast the winning thread's full DeviceLocalMove to smem.
+        // Reduces best double delta and best lane across 32 threads in warp
         // -------------------------------------------------------------------
-        unsigned long long my_key = encode_move_key(thread_best.delta, lane);
-        for (int offset = 16; offset > 0; offset >>= 1) {
-            unsigned long long other_key = __shfl_down_sync(0xffffffff, my_key, offset);
-            if (other_key < my_key) my_key = other_key;
-        }
-        // Lane 0 now holds the winning key for this warp. Extract the winning lane.
-        unsigned long long warp_winning_key = __shfl_sync(0xffffffff, my_key, 0);
-        int winning_lane = (int)(warp_winning_key & 0x3f);
+        double best_delta = thread_best.delta;
+        int best_lane = lane;
 
-        // Broadcast the winning thread's move struct fields from winning_lane to lane 0,
-        // then lane 0 stores into shared memory. Using __shfl_sync per int-sized field.
-        // DeviceLocalMove fields: op, route_1, route_2, first_1, last_1, first_2, last_2, position (8 ints) + delta (double = 2 ints)
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            double other_delta = __shfl_down_sync(0xffffffff, best_delta, offset);
+            int other_lane     = __shfl_down_sync(0xffffffff, best_lane, offset);
+            if (other_delta < best_delta - 1e-9) {
+                best_delta = other_delta;
+                best_lane  = other_lane;
+            }
+        }
+
+        // Broadcast winning lane from lane 0 to all threads in warp
+        int winning_lane = __shfl_sync(0xffffffff, best_lane, 0);
+
+        // Broadcast winning thread's move struct fields across warp (unconditional)
+        DeviceLocalMove warp_best;
+        warp_best.op       = __shfl_sync(0xffffffff, thread_best.op,       winning_lane);
+        warp_best.route_1  = __shfl_sync(0xffffffff, thread_best.route_1,  winning_lane);
+        warp_best.route_2  = __shfl_sync(0xffffffff, thread_best.route_2,  winning_lane);
+        warp_best.first_1  = __shfl_sync(0xffffffff, thread_best.first_1,  winning_lane);
+        warp_best.last_1   = __shfl_sync(0xffffffff, thread_best.last_1,   winning_lane);
+        warp_best.first_2  = __shfl_sync(0xffffffff, thread_best.first_2,  winning_lane);
+        warp_best.last_2   = __shfl_sync(0xffffffff, thread_best.last_2,   winning_lane);
+        warp_best.position = __shfl_sync(0xffffffff, thread_best.position, winning_lane);
+        
+        unsigned long long delta_bits;
+        memcpy(&delta_bits, &thread_best.delta, sizeof(delta_bits));
+        unsigned int delta_lo = __shfl_sync(0xffffffff, (unsigned int)(delta_bits & 0xffffffff), winning_lane);
+        unsigned int delta_hi = __shfl_sync(0xffffffff, (unsigned int)(delta_bits >> 32),        winning_lane);
+        unsigned long long recv_bits = ((unsigned long long)delta_hi << 32) | delta_lo;
+        memcpy(&warp_best.delta, &recv_bits, sizeof(warp_best.delta));
+
         if (lane == 0) {
-            DeviceLocalMove warp_best;
-            warp_best.op       = __shfl_sync(0xffffffff, thread_best.op,       winning_lane);
-            warp_best.route_1  = __shfl_sync(0xffffffff, thread_best.route_1,  winning_lane);
-            warp_best.route_2  = __shfl_sync(0xffffffff, thread_best.route_2,  winning_lane);
-            warp_best.first_1  = __shfl_sync(0xffffffff, thread_best.first_1,  winning_lane);
-            warp_best.last_1   = __shfl_sync(0xffffffff, thread_best.last_1,   winning_lane);
-            warp_best.first_2  = __shfl_sync(0xffffffff, thread_best.first_2,  winning_lane);
-            warp_best.last_2   = __shfl_sync(0xffffffff, thread_best.last_2,   winning_lane);
-            warp_best.position = __shfl_sync(0xffffffff, thread_best.position, winning_lane);
-            // Broadcast delta as two 32-bit ints
-            unsigned long long delta_bits;
-            memcpy(&delta_bits, &thread_best.delta, sizeof(delta_bits));
-            unsigned int delta_lo = __shfl_sync(0xffffffff, (unsigned int)(delta_bits & 0xffffffff), winning_lane);
-            unsigned int delta_hi = __shfl_sync(0xffffffff, (unsigned int)(delta_bits >> 32),        winning_lane);
-            unsigned long long recv_bits = ((unsigned long long)delta_hi << 32) | delta_lo;
-            memcpy(&warp_best.delta, &recv_bits, sizeof(warp_best.delta));
             smem_bests[warp] = warp_best;
         }
         __syncthreads();
