@@ -15,6 +15,10 @@
 
 namespace {
 
+// Number of threads per block used for parallel local search in deep_local_search_kernel.
+// Must match the <<<1, LS_THREADS>>> launch config below.
+static constexpr int LS_THREADS = 64;
+
 void cuda_check(cudaError_t status, const char* operation) {
     if (status != cudaSuccess) {
         std::ostringstream message;
@@ -1801,6 +1805,266 @@ __device__ bool apply_local_move_device(
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// Warp-parallel local search: all LS_THREADS threads in the block cooperate
+// to scan candidate moves in stride. Each thread tracks its best move in a
+// register, then a two-level warp-shuffle + shared-memory reduction finds the
+// globally best move. Only thread 0 applies the move (sequential but short).
+// This replaces the single-threaded find_local_optimum_device that wasted
+// 63 of 64 GPU threads.
+// ---------------------------------------------------------------------------
+
+// Per-thread scratch: offset = (island * LS_THREADS + threadIdx.x) * route_capacity
+__device__ DeviceConstructionScratch ls_thread_scratch(
+    DeviceConstructionScratch scratch, int base_slot, int thread_id
+) {
+    // candidate_nodes and candidate_nodes_2 are the only buffers used by
+    // evaluate_local_move_device; other scratch fields are shared safely
+    // because they are only written by thread 0 in construction code.
+    DeviceConstructionScratch s = scratch;
+    const int slot = base_slot + thread_id;
+    s.candidate_nodes   += slot * scratch.route_capacity;
+    s.candidate_nodes_2 += slot * scratch.route_capacity;
+    return s;
+}
+
+// Encode (delta, thread_lane) into a single uint64 for warp shuffle.
+// We compare delta as a double bit-cast to a sortable uint64.
+__device__ __forceinline__ unsigned long long encode_move_key(double delta, int lane) {
+    // For non-negative deltas the bit representation of double is already
+    // ordered. For negative deltas (improvements) we need sign-magnitude
+    // ordering: flip all bits for negative, flip sign bit for positive.
+    unsigned long long d;
+    memcpy(&d, &delta, sizeof(d));
+    if (d >> 63) d = ~d;           // negative: flip all
+    else         d ^= (1ULL << 63);// positive: flip sign bit
+    return (d << 6) | (unsigned long long)(lane & 0x3f);
+}
+
+__device__ __forceinline__ double decode_delta(unsigned long long key) {
+    unsigned long long d = key >> 6;
+    if (d & (1ULL << 63)) d ^= (1ULL << 63); // positive path reverse
+    else                  d = ~d;             // negative path reverse
+    double v; memcpy(&v, &d, sizeof(v));
+    return v;
+}
+
+__device__ bool find_local_optimum_parallel(
+    DevicePopulation solution,
+    DevicePopulation temporary,
+    int solution_id,
+    int or_opt_length,
+    int exchange_length,
+    DeviceConstructionScratch scratch,   // base scratch (pre-offset to island)
+    int ls_base_slot,                    // = island * LS_THREADS  (in candidate buffer)
+    const DeviceProblem& problem
+) {
+    const int tid   = threadIdx.x;
+    const int bdim  = blockDim.x;  // == LS_THREADS
+    const int warp  = tid >> 5;
+    const int lane  = tid & 31;
+    const int nwarps = (bdim + 31) >> 5;
+
+    // Per-thread scratch (candidate_nodes / candidate_nodes_2 only)
+    DeviceConstructionScratch thr_scratch = ls_thread_scratch(scratch, ls_base_slot, tid);
+
+    // Shared memory: warp winners (one DeviceLocalMove per warp + float index)
+    // Layout: nwarps DeviceLocalMove structs
+    extern __shared__ char _smem[];
+    DeviceLocalMove* smem_bests = reinterpret_cast<DeviceLocalMove*>(_smem);
+
+    while (true) {
+        // -------------------------------------------------------------------
+        // Phase 1: Each thread scans its share of moves with stride=blockDim.x
+        // -------------------------------------------------------------------
+        DeviceLocalMove thread_best; thread_best.delta = INFINITY;
+
+        const int* nodes   = solution_nodes(solution, solution_id);
+        const int* offsets = solution_offsets(solution, solution_id);
+        const int* lengths = solution_lengths(solution, solution_id);
+        const int route_count = solution.route_counts[solution_id];
+
+        // ── Op 0: 2-Opt intra (swap adjacent nodes in same route) ──────────
+        {
+            int global_idx = 0;
+            for (int r = 0; r < route_count; ++r) {
+                const int len = lengths[r];
+                const int* route = nodes + offsets[r];
+                for (int s = 1; s < len - 2; ++s, ++global_idx) {
+                    if (global_idx % bdim != tid) continue;
+                    if (problem.pruning_enabled &&
+                        !problem.pruning[route[s-1]*problem.stride + route[s+1]]) continue;
+                    DeviceLocalMove mv{0, r, -2, s, s+1, 0, 0, 0, INFINITY};
+                    if (evaluate_local_move_device(solution, solution_id, &mv, thr_scratch, problem)
+                        && mv.delta < thread_best.delta - 1e-9) thread_best = mv;
+                }
+            }
+        }
+
+        // ── Op 1: 2-Opt* inter (swap tails between two routes) ─────────────
+        {
+            int global_idx = 0;
+            for (int r1 = 0; r1 < route_count; ++r1) {
+                const int len1 = lengths[r1];
+                const int* route1 = nodes + offsets[r1];
+                for (int r2 = r1+1; r2 < route_count; ++r2) {
+                    const int len2 = lengths[r2];
+                    const int* route2 = nodes + offsets[r2];
+                    for (int f = 1; f < len1; ++f) {
+                        for (int s = 1; s < len2; ++s, ++global_idx) {
+                            if ((f==1&&s==1)||(f==len1-1&&s==len2-1)) continue;
+                            if (global_idx % bdim != tid) continue;
+                            if (problem.pruning_enabled &&
+                                !problem.pruning[route1[f-1]*problem.stride + route2[s]]) continue;
+                            DeviceLocalMove mv{1, r1, r2, f, 0, s, 0, 0, INFINITY};
+                            if (evaluate_local_move_device(solution, solution_id, &mv, thr_scratch, problem)
+                                && mv.delta < thread_best.delta - 1e-9) thread_best = mv;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Op 2/4: Or-Opt (relocate a sequence inside or between routes) ──
+        {
+            int global_idx = 0;
+            for (int r = 0; r < route_count; ++r) {
+                const int len = lengths[r];
+                const int* route = nodes + offsets[r];
+                for (int s = 1; s < len-1; ++s) {
+                    for (int seq = 1; seq <= or_opt_length; ++seq) {
+                        const int e = s + seq - 1;
+                        if (e >= len-1) continue;
+                        for (int pos = 1; pos < s; ++pos, ++global_idx) {
+                            if (global_idx % bdim != tid) continue;
+                            if (problem.pruning_enabled &&
+                                !problem.pruning[route[pos-1]*problem.stride + route[s]]) continue;
+                            DeviceLocalMove mv{2, r, -2, s, e, 0, 0, pos, INFINITY};
+                            if (evaluate_local_move_device(solution, solution_id, &mv, thr_scratch, problem)
+                                && mv.delta < thread_best.delta - 1e-9) thread_best = mv;
+                        }
+                        for (int pos = e+2; pos < len; ++pos, ++global_idx) {
+                            if (global_idx % bdim != tid) continue;
+                            if (problem.pruning_enabled &&
+                                !problem.pruning[route[pos-1]*problem.stride + route[s]]) continue;
+                            DeviceLocalMove mv{2, r, -2, s, e, 0, 0, pos, INFINITY};
+                            if (evaluate_local_move_device(solution, solution_id, &mv, thr_scratch, problem)
+                                && mv.delta < thread_best.delta - 1e-9) thread_best = mv;
+                        }
+                        // Op 4: remove segment (assign to new route)
+                        if ((global_idx++) % bdim == tid) {
+                            DeviceLocalMove mv{4, r, -1, s, e, 0, 0, 0, INFINITY};
+                            if (evaluate_local_move_device(solution, solution_id, &mv, thr_scratch, problem)
+                                && mv.delta < thread_best.delta - 1e-9) thread_best = mv;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Op 3: Exchange (swap segments between two routes) ───────────────
+        {
+            int global_idx = 0;
+            for (int r1 = 0; r1 < route_count; ++r1) {
+                const int len1 = lengths[r1];
+                const int* route1 = nodes + offsets[r1];
+                for (int r2 = r1+1; r2 < route_count; ++r2) {
+                    const int len2 = lengths[r2];
+                    const int* route2 = nodes + offsets[r2];
+                    for (int f = 1; f < len1-1; ++f) {
+                        for (int fsz = 1; fsz <= exchange_length; ++fsz) {
+                            const int fe = f + fsz - 1;
+                            if (fe >= len1-1) continue;
+                            for (int s = 1; s < len2-1; ++s) {
+                                for (int ssz = 1; ssz <= exchange_length; ++ssz, ++global_idx) {
+                                    const int se = s + ssz - 1;
+                                    if (se >= len2-1) continue;
+                                    if (global_idx % bdim != tid) continue;
+                                    if (problem.pruning_enabled &&
+                                        !problem.pruning[route1[f-1]*problem.stride + route2[s]]) continue;
+                                    DeviceLocalMove mv{3, r1, r2, f, fe, s, se, 0, INFINITY};
+                                    if (evaluate_local_move_device(solution, solution_id, &mv, thr_scratch, problem)
+                                        && mv.delta < thread_best.delta - 1e-9) thread_best = mv;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // -------------------------------------------------------------------
+        // Phase 2: Warp-level reduction using shuffle
+        // Step 2a: reduce keys to find the winning lane within each warp.
+        // Step 2b: broadcast the winning thread's full DeviceLocalMove to smem.
+        // -------------------------------------------------------------------
+        unsigned long long my_key = encode_move_key(thread_best.delta, lane);
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            unsigned long long other_key = __shfl_down_sync(0xffffffff, my_key, offset);
+            if (other_key < my_key) my_key = other_key;
+        }
+        // Lane 0 now holds the winning key for this warp. Extract the winning lane.
+        unsigned long long warp_winning_key = __shfl_sync(0xffffffff, my_key, 0);
+        int winning_lane = (int)(warp_winning_key & 0x3f);
+
+        // Broadcast the winning thread's move struct fields from winning_lane to lane 0,
+        // then lane 0 stores into shared memory. Using __shfl_sync per int-sized field.
+        // DeviceLocalMove fields: op, route_1, route_2, first_1, last_1, first_2, last_2, position (8 ints) + delta (double = 2 ints)
+        if (lane == 0) {
+            DeviceLocalMove warp_best;
+            warp_best.op       = __shfl_sync(0xffffffff, thread_best.op,       winning_lane);
+            warp_best.route_1  = __shfl_sync(0xffffffff, thread_best.route_1,  winning_lane);
+            warp_best.route_2  = __shfl_sync(0xffffffff, thread_best.route_2,  winning_lane);
+            warp_best.first_1  = __shfl_sync(0xffffffff, thread_best.first_1,  winning_lane);
+            warp_best.last_1   = __shfl_sync(0xffffffff, thread_best.last_1,   winning_lane);
+            warp_best.first_2  = __shfl_sync(0xffffffff, thread_best.first_2,  winning_lane);
+            warp_best.last_2   = __shfl_sync(0xffffffff, thread_best.last_2,   winning_lane);
+            warp_best.position = __shfl_sync(0xffffffff, thread_best.position, winning_lane);
+            // Broadcast delta as two 32-bit ints
+            unsigned long long delta_bits;
+            memcpy(&delta_bits, &thread_best.delta, sizeof(delta_bits));
+            unsigned int delta_lo = __shfl_sync(0xffffffff, (unsigned int)(delta_bits & 0xffffffff), winning_lane);
+            unsigned int delta_hi = __shfl_sync(0xffffffff, (unsigned int)(delta_bits >> 32),        winning_lane);
+            unsigned long long recv_bits = ((unsigned long long)delta_hi << 32) | delta_lo;
+            memcpy(&warp_best.delta, &recv_bits, sizeof(warp_best.delta));
+            smem_bests[warp] = warp_best;
+        }
+        __syncthreads();
+
+        // -------------------------------------------------------------------
+        // Phase 3: Thread 0 picks global best across all warps
+        // -------------------------------------------------------------------
+        DeviceLocalMove global_best; global_best.delta = INFINITY;
+        if (tid == 0) {
+            for (int w = 0; w < nwarps; ++w) {
+                if (smem_bests[w].delta < global_best.delta - 1e-9)
+                    global_best = smem_bests[w];
+            }
+            smem_bests[0] = global_best; // broadcast via smem
+        }
+        __syncthreads();
+        global_best = smem_bests[0];
+        __syncthreads();
+
+        if (global_best.delta >= -0.001) return true;
+
+        // -------------------------------------------------------------------
+        // Phase 4: Thread 0 applies the best move (sequential but short)
+        // Uses thread_scratch for slot 0 (same as old single-thread path)
+        // -------------------------------------------------------------------
+        if (tid == 0) {
+            DeviceConstructionScratch apply_scratch = ls_thread_scratch(scratch, ls_base_slot, 0);
+            if (!apply_local_move_device(
+                solution, temporary, solution_id, global_best, apply_scratch, problem
+            )) {
+                smem_bests[0].delta = INFINITY; // signal error via a sentinel
+            }
+        }
+        __syncthreads();
+    }
+}
+
+// Keep the old single-threaded version for non-kernel device code paths.
 __device__ bool find_local_optimum_device(
     DevicePopulation solution,
     DevicePopulation temporary,
@@ -1923,6 +2187,8 @@ __device__ bool related_removal_device(
     const DeviceProblem& problem
 );
 
+// ls_base_slot: starting slot in the expanded candidate_nodes buffer reserved
+// for this island's parallel local search. Each island uses LS_THREADS slots.
 __global__ void deep_local_search_kernel(
     DevicePopulation best,
     DevicePopulation perturbation,
@@ -1935,39 +2201,67 @@ __global__ void deep_local_search_kernel(
     unsigned int seed,
     double removal_lower,
     double removal_upper,
-    int* status
+    int* status,
+    int ls_base_slot              // = island * LS_THREADS (offset into expanded candidate buffer)
 ) {
     const int island = blockIdx.x;
     if (island >= best.solution_count) return;
-    if (threadIdx.x != 0) return;
+    // All threads participate — no single-thread guard here.
     DeviceConstructionScratch island_scratch = slice_scratch(scratch, island * best.max_routes);
-    if (!find_local_optimum_device(
-        best, temporary, island, or_opt_length, exchange_length, island_scratch, problem
+
+    // Warp-parallel local search (all LS_THREADS threads cooperate)
+    if (!find_local_optimum_parallel(
+        best, temporary, island, or_opt_length, exchange_length,
+        island_scratch, ls_base_slot, problem
     )) {
-        status[island] = 4;
+        if (threadIdx.x == 0) status[island] = 4;
         return;
     }
     if (elo <= 0) return;
+
+    // ELO perturbation loop — only thread 0 drives RNG & copy; others sync.
     LegacyMt19937 rng(seed + island * 1000);
     int no_improve = 0;
     while (no_improve < elo) {
-        copy_solution(perturbation, island, best, island);
-        if (!related_removal_device(
-            perturbation, temporary, island, rng, removal_lower, removal_upper, island_scratch, problem
-        ) || !regret_insertion_device(
-            perturbation, temporary, island, island_scratch, problem
-        ) || !find_local_optimum_device(
-            perturbation, temporary, island, or_opt_length, exchange_length, island_scratch, problem
+        if (threadIdx.x == 0) copy_solution(perturbation, island, best, island);
+        __syncthreads();
+        if (threadIdx.x == 0) {
+            if (!related_removal_device(
+                perturbation, temporary, island, rng, removal_lower, removal_upper, island_scratch, problem
+            ) || !regret_insertion_device(
+                perturbation, temporary, island, island_scratch, problem
+            )) {
+                status[island] = 4;
+                return;
+            }
+        }
+        __syncthreads();
+        // Parallel local search on perturbation
+        if (!find_local_optimum_parallel(
+            perturbation, temporary, island, or_opt_length, exchange_length,
+            island_scratch, ls_base_slot, problem
         )) {
-            status[island] = 4;
+            if (threadIdx.x == 0) status[island] = 4;
             return;
         }
-        if (perturbation.costs[island] - best.costs[island] < -0.001) {
-            copy_solution(best, island, perturbation, island);
-            no_improve = 0;
-        } else {
-            ++no_improve;
+        if (threadIdx.x == 0) {
+            if (perturbation.costs[island] - best.costs[island] < -0.001) {
+                copy_solution(best, island, perturbation, island);
+                no_improve = 0;
+            } else {
+                ++no_improve;
+            }
         }
+        __syncthreads();
+        // Sync no_improve across threads via shared memory not needed because
+        // only thread 0 writes it and the while condition is re-evaluated by all
+        // threads — but because threadIdx != 0 threads exit only via the outer
+        // while(true) loop in find_local_optimum_parallel, we need a broadcast.
+        // Simplest: use smem slot 0 already established in the function above.
+        // Re-check: find_local_optimum_parallel already __syncthreads() at end,
+        // so all threads are aligned here. We communicate no_improve via a
+        // simple __shfl broadcast from lane 0.
+        no_improve = __shfl_sync(0xffffffff, no_improve, 0);
     }
 }
 
@@ -2576,8 +2870,11 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
         DeviceBuffer<int> d_sample_pool(static_cast<std::size_t>(solution_count) * customer_capacity);
         DeviceBuffer<int> d_unrouted(static_cast<std::size_t>(solution_count) * customer_capacity);
         DeviceBuffer<int> d_route_nodes(static_cast<std::size_t>(solution_count) * route_capacity);
-        DeviceBuffer<int> d_candidate_nodes(static_cast<std::size_t>(solution_count) * route_capacity);
-        DeviceBuffer<int> d_candidate_nodes_2(static_cast<std::size_t>(solution_count) * route_capacity);
+        // Expanded candidate buffers: LS_THREADS slots per island for parallel local search.
+        // Each thread in deep_local_search_kernel needs its own scratch row.
+        const int ls_candidate_slots = data.num_islands * LS_THREADS;
+        DeviceBuffer<int> d_candidate_nodes(static_cast<std::size_t>(ls_candidate_slots) * route_capacity);
+        DeviceBuffer<int> d_candidate_nodes_2(static_cast<std::size_t>(ls_candidate_slots) * route_capacity);
         DeviceBuffer<int> d_flags(static_cast<std::size_t>(solution_count) * (customer_capacity + 1));
         DeviceBuffer<double> d_load(static_cast<std::size_t>(solution_count) * route_capacity);
         DeviceBuffer<double> d_cd(static_cast<std::size_t>(solution_count) * route_capacity);
@@ -2740,11 +3037,16 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                             DevicePopulation perturbation = slice_population(local_perturbation.view, island, 1);
                             prepare_local_search_kernel<<<1, 32>>>(island_best, candidate);
                             cuda_check(cudaGetLastError(), "prepare_local_search_kernel launch");
-                            deep_local_search_kernel<<<1, 64>>>(
+                            const int ls_base_slot = island * LS_THREADS;
+                            const int smem_bytes = static_cast<int>(
+                                ((LS_THREADS + 31) / 32) * sizeof(DeviceLocalMove)
+                            );
+                            deep_local_search_kernel<<<1, LS_THREADS, smem_bytes>>>(
                                 candidate, perturbation, temporary_island,
                                 island_scratch, problem, data.or_opt_len, data.ex_len,
                                 data.elo, static_cast<unsigned int>(data.seed + run * 100000 + island * 1000),
-                                data.removal_lower, data.removal_upper, d_status.get() + island
+                                data.removal_lower, data.removal_upper, d_status.get() + island,
+                                ls_base_slot
                             );
                             cuda_check(cudaGetLastError(), "deep_local_search_kernel launch");
                             commit_local_search_and_inject_kernel<<<1, 32>>>(
