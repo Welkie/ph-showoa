@@ -2048,19 +2048,17 @@ __device__ bool find_local_optimum_parallel(
 
         if (global_best.delta >= -0.001) return true;
 
-        // -------------------------------------------------------------------
-        // Phase 4: Thread 0 applies the best move (sequential but short)
-        // Uses thread_scratch for slot 0 (same as old single-thread path)
-        // -------------------------------------------------------------------
+        // Phase 4: Thread 0 applies the best move; all threads check for error.
+        // smem_ctrl is the int word immediately after the smem_bests[] array.
+        int* smem_ctrl = reinterpret_cast<int*>(smem_bests + nwarps);
         if (tid == 0) {
             DeviceConstructionScratch apply_scratch = ls_thread_scratch(scratch, ls_base_slot, 0);
-            if (!apply_local_move_device(
+            smem_ctrl[0] = apply_local_move_device(
                 solution, temporary, solution_id, global_best, apply_scratch, problem
-            )) {
-                smem_bests[0].delta = INFINITY; // signal error via a sentinel
-            }
+            ) ? 0 : 1;  // 0 = ok, 1 = error
         }
         __syncthreads();
+        if (smem_ctrl[0] != 0) return false;  // ALL threads exit together
     }
 }
 
@@ -2219,31 +2217,59 @@ __global__ void deep_local_search_kernel(
     }
     if (elo <= 0) return;
 
-    // ELO perturbation loop — only thread 0 drives RNG & copy; others sync.
+    // ELO perturbation loop.
+    // Control flags are broadcast via smem_ctrl (the int word after smem_bests[]).
+    // This avoids cross-warp __shfl divergence and early-return inside guarded blocks.
+    const int nwarps_ls = (blockDim.x + 31) / 32;
+    extern __shared__ char _elo_smem[];
+    // smem layout (same as find_local_optimum_parallel):
+    //   [0..nwarps_ls-1] : DeviceLocalMove  (warp reduction bests)
+    //   [nwarps_ls]      : int smem_ctrl    (0=ok, 1=break, 2=error)
+    int* smem_ctrl = reinterpret_cast<int*>(
+        _elo_smem + nwarps_ls * sizeof(DeviceLocalMove)
+    );
+
     LegacyMt19937 rng(seed + island * 1000);
-    int no_improve = 0;
-    while (no_improve < elo) {
-        if (threadIdx.x == 0) copy_solution(perturbation, island, best, island);
+    int no_improve = 0;  // Only thread 0 maintains this value.
+
+    for (;;) {
+        // ── Step 1: Thread 0 signals break/continue ────────────────────────
+        if (threadIdx.x == 0)
+            smem_ctrl[0] = (no_improve >= elo) ? 1 : 0;  // 1 = break loop
         __syncthreads();
+        if (smem_ctrl[0] == 1) break;  // ALL threads exit together
+
+        // ── Step 2: Thread 0 does sequential copy + remove + insert ────────
         if (threadIdx.x == 0) {
-            if (!related_removal_device(
-                perturbation, temporary, island, rng, removal_lower, removal_upper, island_scratch, problem
-            ) || !regret_insertion_device(
+            copy_solution(perturbation, island, best, island);
+            bool ok = related_removal_device(
+                perturbation, temporary, island, rng,
+                removal_lower, removal_upper, island_scratch, problem
+            ) && regret_insertion_device(
                 perturbation, temporary, island, island_scratch, problem
-            )) {
-                status[island] = 4;
-                return;
-            }
+            );
+            smem_ctrl[0] = ok ? 0 : 2;  // 2 = error
         }
         __syncthreads();
-        // Parallel local search on perturbation
+        if (smem_ctrl[0] == 2) {  // ALL threads see the error
+            if (threadIdx.x == 0) status[island] = 4;
+            return;  // safe: all 64 threads hit this
+        }
+
+        // ── Step 3: All threads run warp-parallel local search ──────────────
         if (!find_local_optimum_parallel(
             perturbation, temporary, island, or_opt_length, exchange_length,
             island_scratch, ls_base_slot, problem
         )) {
+            // find_local_optimum_parallel __syncthreads before returning false,
+            // so ALL threads return false simultaneously — safe to return here.
             if (threadIdx.x == 0) status[island] = 4;
             return;
         }
+
+        // ── Step 4: Thread 0 updates no_improve ────────────────────────────
+        // no_improve is only read by thread 0 (via smem_ctrl at top of loop),
+        // so no broadcast needed — the __syncthreads at Step 1 ensures ordering.
         if (threadIdx.x == 0) {
             if (perturbation.costs[island] - best.costs[island] < -0.001) {
                 copy_solution(best, island, perturbation, island);
@@ -2252,16 +2278,7 @@ __global__ void deep_local_search_kernel(
                 ++no_improve;
             }
         }
-        __syncthreads();
-        // Sync no_improve across threads via shared memory not needed because
-        // only thread 0 writes it and the while condition is re-evaluated by all
-        // threads — but because threadIdx != 0 threads exit only via the outer
-        // while(true) loop in find_local_optimum_parallel, we need a broadcast.
-        // Simplest: use smem slot 0 already established in the function above.
-        // Re-check: find_local_optimum_parallel already __syncthreads() at end,
-        // so all threads are aligned here. We communicate no_improve via a
-        // simple __shfl broadcast from lane 0.
-        no_improve = __shfl_sync(0xffffffff, no_improve, 0);
+        __syncthreads();  // Ensure thread 0 writes are visible before next iteration
     }
 }
 
@@ -3038,8 +3055,9 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                             prepare_local_search_kernel<<<1, 32>>>(island_best, candidate);
                             cuda_check(cudaGetLastError(), "prepare_local_search_kernel launch");
                             const int ls_base_slot = island * LS_THREADS;
+                            // smem layout: [nwarps DeviceLocalMove] + [1 int smem_ctrl]
                             const int smem_bytes = static_cast<int>(
-                                ((LS_THREADS + 31) / 32) * sizeof(DeviceLocalMove)
+                                ((LS_THREADS + 31) / 32) * sizeof(DeviceLocalMove) + sizeof(int)
                             );
                             deep_local_search_kernel<<<1, LS_THREADS, smem_bytes>>>(
                                 candidate, perturbation, temporary_island,
