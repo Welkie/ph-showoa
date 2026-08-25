@@ -1651,115 +1651,66 @@ __device__ bool woa_intensification_device(
     return repair_solution_device(child, temporary, current_id, scratch, problem);
 }
 
-__global__ void initialize_global_best_kernel(
-    DevicePopulation population,
-    DevicePopulation best
-) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) return;
-    int best_id = 0;
-    for (int i = 1; i < population.solution_count; ++i) {
-        if (objective_better_device(population, i, population, best_id)) best_id = i;
-    }
-    copy_solution(best, 0, population, best_id);
-}
-
-__global__ void initialize_island_bests_kernel(
-    DevicePopulation population,
-    DevicePopulation island_bests,
-    int island_size
-) {
-    const int island = blockIdx.x * blockDim.x + threadIdx.x;
-    if (island >= island_bests.solution_count) return;
-    const int begin = island * island_size;
-    int best_id = begin;
-    for (int i = 1; i < island_size; ++i) {
-        const int candidate = begin + i;
-        if (objective_better_device(population, candidate, population, best_id)) best_id = candidate;
-    }
-    copy_solution(island_bests, island, population, best_id);
-}
-
-__global__ void update_global_from_islands_kernel(
-    DevicePopulation island_bests,
-    DevicePopulation global_best
-) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) return;
-    int best_island = 0;
-    for (int i = 1; i < island_bests.solution_count; ++i) {
-        if (objective_better_device(island_bests, i, island_bests, best_island)) best_island = i;
-    }
-    if (objective_better_device(island_bests, best_island, global_best, 0)) {
-        copy_solution(global_best, 0, island_bests, best_island);
-    }
-}
-
-__global__ void prepare_generation_kernel(
-    DevicePopulation population,
-    LegacyMt19937* global_rng_state,
-    int* peer_workspace,
-    int* peer_indices,
-    int* update_seeds
-) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) return;
-    LegacyMt19937 rng = global_rng_state[0];
-    for (int current = 0; current < population.solution_count; ++current) {
-        int count = 0;
-        for (int i = 0; i < population.solution_count; ++i) {
-            if (i != current) peer_workspace[count++] = i;
-        }
-        if (count == 0) {
-            peer_indices[current] = current;
-        } else {
-            legacy_shuffle_int(peer_workspace, count, rng);
-            int best_peer = peer_workspace[0];
-            for (int i = 1; i < 3 && i < count; ++i) {
-                if (objective_better_device(population, peer_workspace[i], population, best_peer)) {
-                    best_peer = peer_workspace[i];
-                }
-            }
-            peer_indices[current] = best_peer;
-        }
-        update_seeds[current] = static_cast<int>(rng());
-    }
-    global_rng_state[0] = rng;
-}
-
 __global__ void update_population_kernel(
     DevicePopulation current,
     DevicePopulation next,
     DevicePopulation temporary,
-    DevicePopulation best,
+    DevicePopulation island_bests,
     DeviceConstructionScratch scratch,
     DeviceProblem problem,
-    const int* peer_indices,
-    const int* update_seeds,
+    LegacyMt19937* rng_states,
     double p_mode,
     double a,
     int iteration,
     int max_iterations,
     double mutation_probability,
     int* accepted_count,
-    int* status
+    int* status,
+    int island_size
 ) {
     const int solution_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (solution_id >= current.solution_count) return;
-    LegacyMt19937 rng(static_cast<unsigned int>(update_seeds[solution_id]));
+    const int island = solution_id / island_size;
+    const int island_offset = island * island_size;
+
+    LegacyMt19937 rng = rng_states[solution_id];
+
+    int best_peer = solution_id;
+    if (island_size > 1) {
+        int p1 = island_offset + legacy_randint(0, island_size - 1, rng);
+        if (p1 == solution_id) p1 = island_offset + ((solution_id - island_offset + 1) % island_size);
+        int p2 = island_offset + legacy_randint(0, island_size - 1, rng);
+        if (p2 == solution_id) p2 = island_offset + ((solution_id - island_offset + 2) % island_size);
+        int p3 = island_offset + legacy_randint(0, island_size - 1, rng);
+        if (p3 == solution_id) p3 = island_offset + ((solution_id - island_offset + 3) % island_size);
+
+        best_peer = p1;
+        if (objective_better_device(current, p2, current, best_peer)) best_peer = p2;
+        if (objective_better_device(current, p3, current, best_peer)) best_peer = p3;
+    }
+
+    DevicePopulation island_best = slice_population(island_bests, island, 1);
+    DeviceConstructionScratch sol_scratch = slice_scratch(scratch, solution_id);
+
     bool ok = false;
     if (legacy_randdouble(0.0, 1.0, rng) < p_mode) {
         ok = guided_route_crossover_device(
-            current, solution_id, peer_indices[solution_id], best,
-            next, temporary, rng, mutation_probability, scratch, problem
+            current, solution_id, best_peer, island_best,
+            next, temporary, rng, mutation_probability, sol_scratch, problem
         );
     } else {
         ok = woa_intensification_device(
-            current, solution_id, best, next, temporary, rng, a, scratch, problem
+            current, solution_id, island_best, next, temporary, rng, a, sol_scratch, problem
         );
     }
+
     if (!ok) {
         copy_solution(next, solution_id, current, solution_id);
+        rng_states[solution_id] = rng;
         status[solution_id] = 0;
         return;
     }
+
     bool accepted = false;
     const int new_routes = next.route_counts[solution_id];
     const int old_routes = current.route_counts[solution_id];
@@ -1784,23 +1735,45 @@ __global__ void update_population_kernel(
     } else {
         atomicAdd(accepted_count, 1);
     }
+    rng_states[solution_id] = rng;
     status[solution_id] = 0;
 }
 
-__global__ void update_global_best_kernel(
+__global__ void update_island_and_global_bests_kernel(
     DevicePopulation population,
-    DevicePopulation best,
+    DevicePopulation island_bests,
+    DevicePopulation global_best,
+    int island_size,
     int generation,
     int* last_improvement_generation
 ) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) return;
-    int generation_best = 0;
-    for (int i = 1; i < population.solution_count; ++i) {
-        if (objective_better_device(population, i, population, generation_best)) generation_best = i;
+    const int island = blockIdx.x * blockDim.x + threadIdx.x;
+    if (island >= island_bests.solution_count) return;
+
+    const int begin = island * island_size;
+    int best_id = begin;
+    for (int i = 1; i < island_size; ++i) {
+        const int candidate = begin + i;
+        if (objective_better_device(population, candidate, population, best_id)) {
+            best_id = candidate;
+        }
     }
-    if (objective_better_device(population, generation_best, best, 0)) {
-        copy_solution(best, 0, population, generation_best);
-        last_improvement_generation[0] = generation;
+
+    if (objective_better_device(population, best_id, island_bests, island)) {
+        copy_solution(island_bests, island, population, best_id);
+        last_improvement_generation[island] = generation;
+    }
+
+    if (island == 0) {
+        int best_island = 0;
+        for (int i = 1; i < island_bests.solution_count; ++i) {
+            if (objective_better_device(island_bests, i, island_bests, best_island)) {
+                best_island = i;
+            }
+        }
+        if (objective_better_device(island_bests, best_island, global_best, 0)) {
+            copy_solution(global_best, 0, island_bests, best_island);
+        }
     }
 }
 
@@ -3176,6 +3149,20 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                 cuda_check(cudaEventCreate(&start_event), "cudaEventCreate(full_gpu generation start)");
                 cuda_check(cudaEventCreate(&end_event), "cudaEventCreate(full_gpu generation end)");
                 cuda_check(cudaEventRecord(start_event), "cudaEventRecord(full_gpu generation start)");
+            cudaStream_t stream = nullptr;
+            cuda_check(cudaStreamCreate(&stream), "cudaStreamCreate");
+
+            float generation_ms = 0.0f;
+            DevicePopulation current_population = population.view;
+            DevicePopulation next_population = branch.view;
+            if (data.max_iter > 0) {
+                cuda_check(cudaEventCreate(&start_event), "cudaEventCreate(full_gpu generation start)");
+                cuda_check(cudaEventCreate(&end_event), "cudaEventCreate(full_gpu generation end)");
+                cuda_check(cudaEventRecord(start_event, stream), "cudaEventRecord(full_gpu generation start)");
+
+                const int blocks = (solution_count + threads - 1) / threads;
+                const int island_blocks = (data.num_islands + threads - 1) / threads;
+
                 for (int generation = 1; generation <= data.max_iter; ++generation) {
                     const double ratio = static_cast<double>(generation - 1) / data.max_iter;
                     const double a = 2.0 - 2.0 * ratio;
@@ -3183,73 +3170,62 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                     const double p_mode = data.hybrid_mode == "sho"
                         ? 1.0
                         : (data.hybrid_mode == "woa" ? 0.0 : p_hybrid);
-                    cuda_check(cudaMemset(
-                        d_status.get(), 0, status.size() * sizeof(int)
-                    ), "cudaMemset(generation status)");
-                    cuda_check(cudaMemset(d_accepted_count.get(), 0, sizeof(int)), "cudaMemset(accepted_count)");
-                    for (int island = 0; island < data.num_islands; ++island) {
-                        const int first = island * data.p_size;
-                        DevicePopulation current_island = slice_population(
-                            current_population, first, data.p_size
-                        );
-                        DevicePopulation next_island = slice_population(
-                            next_population, first, data.p_size
-                        );
-                        DevicePopulation temporary_island = slice_population(
-                            best_initialization.view, first, data.p_size
-                        );
-                        DevicePopulation diversification_backup_island = slice_population(
-                            diversification_backup.view, first, data.p_size
-                        );
-                        DevicePopulation island_best = slice_population(island_bests.view, island, 1);
-                        DeviceConstructionScratch island_scratch = slice_scratch(scratch, first);
-                        prepare_generation_kernel<<<1, 1>>>(
-                            current_island, d_search_rng.get() + island,
-                            d_peer_workspace.get() + first, d_peer_indices.get() + first,
-                            d_update_seeds.get() + first
-                        );
-                        cuda_check(cudaGetLastError(), "prepare_generation_kernel launch");
-                        const int island_blocks = (data.p_size + threads - 1) / threads;
-                        update_population_kernel<<<island_blocks, threads>>>(
-                            current_island, next_island, temporary_island,
-                            island_best, island_scratch, problem, d_peer_indices.get() + first,
-                            d_update_seeds.get() + first, p_mode, a, generation - 1,
-                            data.max_iter, data.sho_mutation_prob, d_accepted_count.get(),
-                            d_status.get() + first
-                        );
-                        cuda_check(cudaGetLastError(), "update_population_kernel launch");
-                        update_global_best_kernel<<<1, 1>>>(
-                            next_island, island_best, generation,
-                            d_last_improvement_generation.get() + island
-                        );
-                        cuda_check(cudaGetLastError(), "update island best kernel launch");
-                        if (generation % data.local_search_interval == 0) {
+
+                    cuda_check(cudaMemsetAsync(d_status.get(), 0, status.size() * sizeof(int), stream), "cudaMemsetAsync(generation status)");
+                    cuda_check(cudaMemsetAsync(d_accepted_count.get(), 0, sizeof(int), stream), "cudaMemsetAsync(accepted_count)");
+
+                    update_population_kernel<<<blocks, threads, 0, stream>>>(
+                        current_population, next_population, best_initialization.view,
+                        island_bests.view, scratch, problem, d_rng_states.get(),
+                        p_mode, a, generation - 1, data.max_iter, data.sho_mutation_prob,
+                        d_accepted_count.get(), d_status.get(), data.p_size
+                    );
+
+                    update_island_and_global_bests_kernel<<<island_blocks, threads, 0, stream>>>(
+                        next_population, island_bests.view, global_best.view,
+                        data.p_size, generation, d_last_improvement_generation.get()
+                    );
+
+                    if (data.local_search_interval > 0 && generation % data.local_search_interval == 0) {
+                        for (int island = 0; island < data.num_islands; ++island) {
+                            const int first = island * data.p_size;
+                            DevicePopulation current_island = slice_population(next_population, first, data.p_size);
+                            DevicePopulation island_best = slice_population(island_bests.view, island, 1);
                             DevicePopulation candidate = slice_population(local_candidate.view, island, 1);
                             DevicePopulation perturbation = slice_population(local_perturbation.view, island, 1);
-                            prepare_local_search_kernel<<<1, 32>>>(island_best, candidate);
-                            cuda_check(cudaGetLastError(), "prepare_local_search_kernel launch");
+                            DevicePopulation temporary_island = slice_population(best_initialization.view, first, data.p_size);
+                            DeviceConstructionScratch island_scratch = slice_scratch(scratch, first);
+
+                            prepare_local_search_kernel<<<1, 32, 0, stream>>>(island_best, candidate);
                             const int ls_base_slot = island * LS_THREADS;
-                            // smem layout: [nwarps DeviceLocalMove] + [1 int smem_ctrl]
                             const int smem_bytes = static_cast<int>(
                                 ((LS_THREADS + 31) / 32) * sizeof(DeviceLocalMove) + sizeof(int)
                             );
-                            deep_local_search_kernel<<<1, LS_THREADS, smem_bytes>>>(
+                            deep_local_search_kernel<<<1, LS_THREADS, smem_bytes, stream>>>(
                                 candidate, perturbation, temporary_island,
                                 island_scratch, problem, data.or_opt_len, data.ex_len,
                                 data.elo, static_cast<unsigned int>(data.seed + run * 100000 + island * 1000),
                                 data.removal_lower, data.removal_upper, d_status.get() + island,
                                 ls_base_slot
                             );
-                            cuda_check(cudaGetLastError(), "deep_local_search_kernel launch");
-                            commit_local_search_and_inject_kernel<<<1, 32>>>(
-                                next_island, island_best, candidate, generation,
+                            commit_local_search_and_inject_kernel<<<1, 32, 0, stream>>>(
+                                current_island, island_best, candidate, generation,
                                 d_last_improvement_generation.get() + island,
                                 d_status.get() + island
                             );
-                            cuda_check(cudaGetLastError(), "commit_local_search_and_inject_kernel launch");
                         }
-                        if (generation % data.stagnation_interval == 0) {
-                            diversify_population_kernel<<<1, 64>>>(
+                    }
+
+                    if (data.stagnation_interval > 0 && generation % data.stagnation_interval == 0) {
+                        for (int island = 0; island < data.num_islands; ++island) {
+                            const int first = island * data.p_size;
+                            DevicePopulation next_island = slice_population(next_population, first, data.p_size);
+                            DevicePopulation temporary_island = slice_population(best_initialization.view, first, data.p_size);
+                            DevicePopulation diversification_backup_island = slice_population(diversification_backup.view, first, data.p_size);
+                            DevicePopulation island_best = slice_population(island_bests.view, island, 1);
+                            DeviceConstructionScratch island_scratch = slice_scratch(scratch, first);
+
+                            diversify_population_kernel<<<1, 64, 0, stream>>>(
                                 next_island, temporary_island, diversification_backup_island,
                                 island_best, island_scratch,
                                 problem, d_search_rng.get() + island,
@@ -3258,30 +3234,30 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                                 data.diversify_ratio, data.removal_lower, data.removal_upper,
                                 data.stagnation_interval, d_status.get() + island
                             );
-                            cuda_check(cudaGetLastError(), "diversify_population_kernel launch");
                         }
                     }
-                    update_global_from_islands_kernel<<<1, 1>>>(island_bests.view, global_best.view);
-                    cuda_check(cudaGetLastError(), "update_global_from_islands_kernel launch");
-                    if (data.num_islands > 1 && generation % data.migration_interval == 0) {
+
+                    if (data.num_islands > 1 && data.migration_interval > 0 && generation % data.migration_interval == 0) {
                         const int migration_mode = data.migration_mode == "ring"
                             ? 0 : (data.migration_mode == "broadcast" ? 1 : 2);
-                        migrate_islands_kernel<<<1, 1>>>(
+                        migrate_islands_kernel<<<1, 1, 0, stream>>>(
                             next_population, island_bests.view, migrants.view,
                             data.p_size, migrant_count, migration_mode,
                             d_population_rank.get(), d_island_indices.get(), d_global_rng.get()
                         );
-                        cuda_check(cudaGetLastError(), "migrate_islands_kernel launch");
                     }
+
                     const DevicePopulation temporary_population = current_population;
                     current_population = next_population;
                     next_population = temporary_population;
                 }
-                cuda_check(cudaEventRecord(end_event), "cudaEventRecord(full_gpu generation end)");
-                cuda_check(cudaEventSynchronize(end_event), "cudaEventSynchronize(full_gpu generation)");
+                cuda_check(cudaEventRecord(end_event, stream), "cudaEventRecord(full_gpu generation end)");
+                cuda_check(cudaStreamSynchronize(stream), "cudaStreamSynchronize(full_gpu generation stream)");
                 cuda_check(cudaEventElapsedTime(&generation_ms, start_event, end_event), "cudaEventElapsedTime(full_gpu generation)");
                 cudaEventDestroy(start_event);
                 cudaEventDestroy(end_event);
+            }
+            cudaStreamDestroy(stream);
                 cuda_check(cudaMemcpy(status.data(), d_status.get(), status.size() * sizeof(int), cudaMemcpyDeviceToHost), "cudaMemcpy(generation status)");
                 const auto failure = std::find_if(status.begin(), status.end(), [](int value) { return value != 0; });
                 if (failure != status.end()) {
