@@ -186,6 +186,31 @@ __device__ void copy_solution(
     destination.distances[destination_id] = source.distances[source_id];
 }
 
+__device__ inline double fetch_distance(const DeviceProblem& problem, int i, int j) {
+    return __ldg(problem.distance + i * problem.stride + j);
+}
+__device__ inline double fetch_travel_time(const DeviceProblem& problem, int i, int j) {
+    return __ldg(problem.travel_time + i * problem.stride + j);
+}
+__device__ inline double fetch_delivery(const DeviceProblem& problem, int node) {
+    return __ldg(problem.delivery + node);
+}
+__device__ inline double fetch_pickup(const DeviceProblem& problem, int node) {
+    return __ldg(problem.pickup + node);
+}
+__device__ inline double fetch_earliest(const DeviceProblem& problem, int node) {
+    return __ldg(problem.earliest + node);
+}
+__device__ inline double fetch_latest(const DeviceProblem& problem, int node) {
+    return __ldg(problem.latest + node);
+}
+__device__ inline double fetch_service(const DeviceProblem& problem, int node) {
+    return __ldg(problem.service + node);
+}
+__device__ inline unsigned char fetch_pruning(const DeviceProblem& problem, int i, int j) {
+    return __ldg(problem.pruning + i * problem.stride + j);
+}
+
 __device__ inline void warp_reduce_min(double& val, int& idx) {
     #pragma unroll
     for (int offset = 16; offset > 0; offset /= 2) {
@@ -198,17 +223,43 @@ __device__ inline void warp_reduce_min(double& val, int& idx) {
     }
 }
 
+__device__ inline void block_reduce_min(double& val, int& idx, double* s_val, int* s_idx) {
+    const int lane = threadIdx.x & 31;
+    const int warp_id = threadIdx.x >> 5;
+
+    warp_reduce_min(val, idx);
+
+    if (lane == 0) {
+        s_val[warp_id] = val;
+        s_idx[warp_id] = idx;
+    }
+    __syncthreads();
+
+    const int num_warps = blockDim.x >> 5;
+    if (threadIdx.x < num_warps) {
+        val = s_val[threadIdx.x];
+        idx = s_idx[threadIdx.x];
+    } else {
+        val = INFINITY;
+        idx = -1;
+    }
+
+    if (warp_id == 0) {
+        warp_reduce_min(val, idx);
+    }
+}
+
 __device__ bool evaluate_route(
     const int* route,
     int length,
     const DeviceProblem& problem,
     double* out_distance
 ) {
-    // Branchless Mask-based Tensorization for GPU Warp Execution
+    // Branchless Mask-based Tensorization for GPU Warp Execution with __ldg Texture Caching
     double valid_mask = (length >= 2 && route[0] == problem.depot && route[length - 1] == problem.depot) ? 1.0 : 0.0;
     double load = 0.0;
     for (int i = 1; i < length - 1; ++i) {
-        load += problem.delivery[route[i]];
+        load += fetch_delivery(problem, route[i]);
     }
     valid_mask *= (load <= problem.capacity ? 1.0 : 0.0);
 
@@ -217,12 +268,12 @@ __device__ bool evaluate_route(
     int previous = route[0];
     for (int i = 1; i < length; ++i) {
         const int node = route[i];
-        load = load - problem.delivery[node] + problem.pickup[node];
+        load = load - fetch_delivery(problem, node) + fetch_pickup(problem, node);
         valid_mask *= (load >= 0.0 && load <= problem.capacity ? 1.0 : 0.0);
-        time_value += problem.travel_time[previous * problem.stride + node];
-        valid_mask *= (time_value <= problem.latest[node] ? 1.0 : 0.0);
-        time_value = fmax(time_value, problem.earliest[node]) + problem.service[node];
-        distance_value += problem.distance[previous * problem.stride + node];
+        time_value += fetch_travel_time(problem, previous, node);
+        valid_mask *= (time_value <= fetch_latest(problem, node) ? 1.0 : 0.0);
+        time_value = fmax(time_value, fetch_earliest(problem, node)) + fetch_service(problem, node);
+        distance_value += fetch_distance(problem, previous, node);
         previous = node;
     }
     if (out_distance) *out_distance = (valid_mask > 0.5) ? distance_value : INFINITY;
@@ -3235,8 +3286,8 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
             cuda_check(cudaEventCreate(&start_event), "cudaEventCreate(full_gpu start)");
             cuda_check(cudaEventCreate(&end_event), "cudaEventCreate(full_gpu end)");
             cuda_check(cudaEventRecord(start_event), "cudaEventRecord(full_gpu start)");
-            const int threads = 64;
-            const int blocks = (solution_count + threads - 1) / threads;
+            const int threads = 128;
+            const int blocks = solution_count; // 1 block per solution
             const bool is_rcrs_grasp = (data.init == "rcrs_grasp" || data.init == "rcg");
             cuda_check(cudaMemset(
                 d_status.get(), 0, static_cast<std::size_t>(solution_count) * sizeof(int)
@@ -3290,7 +3341,7 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                 cuda_check(cudaEventCreate(&end_event), "cudaEventCreate(full_gpu generation end)");
                 cuda_check(cudaEventRecord(start_event, stream), "cudaEventRecord(full_gpu generation start)");
 
-                const int generation_blocks = (solution_count + threads - 1) / threads;
+                const int generation_blocks = solution_count; // 1 CUDA block per solution (128 threads/block)
                 const int island_blocks = data.num_islands;
 
                 for (int generation = 1; generation <= data.max_iter; ++generation) {
