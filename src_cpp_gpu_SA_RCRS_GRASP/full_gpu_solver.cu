@@ -3031,9 +3031,7 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
         DeviceBuffer<int> d_sample_pool(static_cast<std::size_t>(solution_count) * customer_capacity);
         DeviceBuffer<int> d_unrouted(static_cast<std::size_t>(solution_count) * customer_capacity);
         DeviceBuffer<int> d_route_nodes(static_cast<std::size_t>(solution_count) * route_capacity);
-        // Expanded candidate buffers: LS_THREADS slots per island for parallel local search.
-        // Each thread in deep_local_search_kernel needs its own scratch row.
-        const int ls_candidate_slots = data.num_islands * LS_THREADS;
+        const int ls_candidate_slots = std::max(solution_count, data.num_islands * LS_THREADS);
         DeviceBuffer<int> d_candidate_nodes(static_cast<std::size_t>(ls_candidate_slots) * route_capacity);
         DeviceBuffer<int> d_candidate_nodes_2(static_cast<std::size_t>(ls_candidate_slots) * route_capacity);
         DeviceBuffer<int> d_flags(static_cast<std::size_t>(solution_count) * (customer_capacity + 1));
