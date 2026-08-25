@@ -1924,30 +1924,33 @@ __global__ void deep_local_search_kernel(
     double removal_upper,
     int* status
 ) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) return;
+    const int island = blockIdx.x;
+    if (island >= best.solution_count) return;
+    if (threadIdx.x != 0) return;
+    DeviceConstructionScratch island_scratch = slice_scratch(scratch, island * best.max_routes);
     if (!find_local_optimum_device(
-        best, temporary, 0, or_opt_length, exchange_length, scratch, problem
+        best, temporary, island, or_opt_length, exchange_length, island_scratch, problem
     )) {
-        status[0] = 4;
+        status[island] = 4;
         return;
     }
     if (elo <= 0) return;
-    LegacyMt19937 rng(seed);
+    LegacyMt19937 rng(seed + island * 1000);
     int no_improve = 0;
     while (no_improve < elo) {
-        copy_solution(perturbation, 0, best, 0);
+        copy_solution(perturbation, island, best, island);
         if (!related_removal_device(
-            perturbation, temporary, 0, rng, removal_lower, removal_upper, scratch, problem
+            perturbation, temporary, island, rng, removal_lower, removal_upper, island_scratch, problem
         ) || !regret_insertion_device(
-            perturbation, temporary, 0, scratch, problem
+            perturbation, temporary, island, island_scratch, problem
         ) || !find_local_optimum_device(
-            perturbation, temporary, 0, or_opt_length, exchange_length, scratch, problem
+            perturbation, temporary, island, or_opt_length, exchange_length, island_scratch, problem
         )) {
-            status[0] = 4;
+            status[island] = 4;
             return;
         }
-        if (perturbation.costs[0] - best.costs[0] < -0.001) {
-            copy_solution(best, 0, perturbation, 0);
+        if (perturbation.costs[island] - best.costs[island] < -0.001) {
+            copy_solution(best, island, perturbation, island);
             no_improve = 0;
         } else {
             ++no_improve;
@@ -1959,7 +1962,10 @@ __global__ void prepare_local_search_kernel(
     DevicePopulation best,
     DevicePopulation candidate
 ) {
-    if (blockIdx.x == 0 && threadIdx.x == 0) copy_solution(candidate, 0, best, 0);
+    const int island = blockIdx.x * blockDim.x + threadIdx.x;
+    if (island < best.solution_count) {
+        copy_solution(candidate, island, best, island);
+    }
 }
 
 __global__ void commit_local_search_and_inject_kernel(
@@ -1970,20 +1976,22 @@ __global__ void commit_local_search_and_inject_kernel(
     int* last_improvement_generation,
     int* status
 ) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) return;
-    if (status[0] != 0) {
-        status[0] = 0;
+    const int island = blockIdx.x;
+    if (island >= best.solution_count || threadIdx.x != 0) return;
+    if (status[island] != 0) {
+        status[island] = 0;
         return;
     }
-    if (objective_better_device(candidate, 0, best, 0)) {
-        copy_solution(best, 0, candidate, 0);
-        last_improvement_generation[0] = generation;
+    if (objective_better_device(candidate, island, best, island)) {
+        copy_solution(best, island, candidate, island);
+        last_improvement_generation[island] = generation;
     }
-    int worst = 0;
-    for (int i = 1; i < population.solution_count; ++i) {
+    int worst = island * (population.solution_count / best.solution_count);
+    const int end_idx = worst + (population.solution_count / best.solution_count);
+    for (int i = worst + 1; i < end_idx; ++i) {
         if (objective_better_device(population, worst, population, i)) worst = i;
     }
-    copy_solution(population, worst, best, 0);
+    copy_solution(population, worst, best, island);
 }
 
 struct DeviceInsertionOption {
@@ -2333,7 +2341,7 @@ __global__ void diversify_population_kernel(
     int stagnation_interval,
     int* status
 ) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) return;
+    if (threadIdx.x != 0) return;
     if (generation - last_improvement_generation[0] < stagnation_interval) return;
     LegacyMt19937 rng = global_rng_state[0];
     stable_rank_population_device(population, rank);
@@ -2528,6 +2536,48 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
         auto start_wall_time = std::chrono::high_resolution_clock::now();
         float total_gpu_ms = 0.0f;
 
+        DevicePopulationOwner population(solution_count, data.customer_num);
+        DevicePopulationOwner branch(solution_count, data.customer_num);
+        DevicePopulationOwner best_initialization(solution_count, data.customer_num);
+        DevicePopulationOwner global_best(1, data.customer_num);
+        DevicePopulationOwner island_bests(data.num_islands, data.customer_num);
+        DevicePopulationOwner local_candidate(data.num_islands, data.customer_num);
+        DevicePopulationOwner local_perturbation(data.num_islands, data.customer_num);
+        DevicePopulationOwner diversification_backup(solution_count, data.customer_num);
+        const int migrant_count = std::min(data.migration_size, data.p_size);
+        DevicePopulationOwner migrants(data.num_islands * migrant_count, data.customer_num);
+        DeviceBuffer<DeviceConstructionConfig> d_configs(solution_count);
+        DeviceBuffer<LegacyMt19937> d_rng_states(solution_count);
+        DeviceBuffer<int> d_status(solution_count);
+        DeviceBuffer<int> d_peer_workspace(solution_count);
+        DeviceBuffer<int> d_peer_indices(solution_count);
+        DeviceBuffer<int> d_update_seeds(solution_count);
+        DeviceBuffer<int> d_accepted_count(1);
+        DeviceBuffer<int> d_last_improvement_generation(data.num_islands);
+        DeviceBuffer<int> d_population_rank(solution_count);
+        DeviceBuffer<int> d_island_indices(data.num_islands);
+        DeviceBuffer<LegacyMt19937> d_global_rng(1);
+        DeviceBuffer<LegacyMt19937> d_search_rng(data.num_islands);
+        const int route_capacity = data.customer_num + 2;
+        const int customer_capacity = data.customer_num;
+        DeviceBuffer<int> d_sample_pool(static_cast<std::size_t>(solution_count) * customer_capacity);
+        DeviceBuffer<int> d_unrouted(static_cast<std::size_t>(solution_count) * customer_capacity);
+        DeviceBuffer<int> d_route_nodes(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceBuffer<int> d_candidate_nodes(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceBuffer<int> d_candidate_nodes_2(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceBuffer<int> d_flags(static_cast<std::size_t>(solution_count) * (customer_capacity + 1));
+        DeviceBuffer<double> d_load(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceBuffer<double> d_cd(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceBuffer<double> d_cp(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceBuffer<double> d_rd(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceBuffer<double> d_rp(static_cast<std::size_t>(solution_count) * route_capacity);
+        DeviceConstructionScratch scratch{
+            route_capacity, customer_capacity, d_sample_pool.get(), d_unrouted.get(),
+            d_route_nodes.get(), d_candidate_nodes.get(), d_candidate_nodes_2.get(),
+            d_flags.get(), d_load.get(), d_cd.get(),
+            d_cp.get(), d_rd.get(), d_rp.get()
+        };
+
         for (int run = 1; run <= data.runs; ++run) {
             std::printf("---------------------------------Run %d---------------------------\n", run);
             std::vector<DeviceConstructionConfig> configs(solution_count);
@@ -2559,47 +2609,6 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                 configs[solution_id] = config;
             }
 
-            DevicePopulationOwner population(solution_count, data.customer_num);
-            DevicePopulationOwner branch(solution_count, data.customer_num);
-            DevicePopulationOwner best_initialization(solution_count, data.customer_num);
-            DevicePopulationOwner global_best(1, data.customer_num);
-            DevicePopulationOwner island_bests(data.num_islands, data.customer_num);
-            DevicePopulationOwner local_candidate(data.num_islands, data.customer_num);
-            DevicePopulationOwner local_perturbation(data.num_islands, data.customer_num);
-            DevicePopulationOwner diversification_backup(solution_count, data.customer_num);
-            const int migrant_count = std::min(data.migration_size, data.p_size);
-            DevicePopulationOwner migrants(data.num_islands * migrant_count, data.customer_num);
-            DeviceBuffer<DeviceConstructionConfig> d_configs(solution_count);
-            DeviceBuffer<LegacyMt19937> d_rng_states(solution_count);
-            DeviceBuffer<int> d_status(solution_count);
-            DeviceBuffer<int> d_peer_workspace(solution_count);
-            DeviceBuffer<int> d_peer_indices(solution_count);
-            DeviceBuffer<int> d_update_seeds(solution_count);
-            DeviceBuffer<int> d_accepted_count(1);
-            DeviceBuffer<int> d_last_improvement_generation(data.num_islands);
-            DeviceBuffer<int> d_population_rank(solution_count);
-            DeviceBuffer<int> d_island_indices(data.num_islands);
-            DeviceBuffer<LegacyMt19937> d_global_rng(1);
-            DeviceBuffer<LegacyMt19937> d_search_rng(data.num_islands);
-            const int route_capacity = data.customer_num + 2;
-            const int customer_capacity = data.customer_num;
-            DeviceBuffer<int> d_sample_pool(static_cast<std::size_t>(solution_count) * customer_capacity);
-            DeviceBuffer<int> d_unrouted(static_cast<std::size_t>(solution_count) * customer_capacity);
-            DeviceBuffer<int> d_route_nodes(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceBuffer<int> d_candidate_nodes(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceBuffer<int> d_candidate_nodes_2(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceBuffer<int> d_flags(static_cast<std::size_t>(solution_count) * (customer_capacity + 1));
-            DeviceBuffer<double> d_load(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceBuffer<double> d_cd(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceBuffer<double> d_cp(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceBuffer<double> d_rd(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceBuffer<double> d_rp(static_cast<std::size_t>(solution_count) * route_capacity);
-            DeviceConstructionScratch scratch{
-                route_capacity, customer_capacity, d_sample_pool.get(), d_unrouted.get(),
-                d_route_nodes.get(), d_candidate_nodes.get(), d_candidate_nodes_2.get(),
-                d_flags.get(), d_load.get(), d_cd.get(),
-                d_cp.get(), d_rd.get(), d_rp.get()
-            };
             cuda_check(cudaMemcpy(d_configs.get(), configs.data(), configs.size() * sizeof(DeviceConstructionConfig), cudaMemcpyHostToDevice), "cudaMemcpy(configs)");
             cuda_check(cudaMemcpy(d_rng_states.get(), rng_states.data(), rng_states.size() * sizeof(LegacyMt19937), cudaMemcpyHostToDevice), "cudaMemcpy(rng_states)");
             LegacyMt19937 global_rng(static_cast<unsigned int>(data.seed + run * 100000));
@@ -2716,31 +2725,31 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                         if (generation % data.local_search_interval == 0) {
                             DevicePopulation candidate = slice_population(local_candidate.view, island, 1);
                             DevicePopulation perturbation = slice_population(local_perturbation.view, island, 1);
-                            prepare_local_search_kernel<<<1, 1>>>(island_best, candidate);
+                            prepare_local_search_kernel<<<1, 32>>>(island_best, candidate);
                             cuda_check(cudaGetLastError(), "prepare_local_search_kernel launch");
-                            deep_local_search_kernel<<<1, 1>>>(
+                            deep_local_search_kernel<<<1, 64>>>(
                                 candidate, perturbation, temporary_island,
                                 island_scratch, problem, data.or_opt_len, data.ex_len,
-                                data.elo, static_cast<unsigned int>(data.seed + run * 100000),
-                                data.removal_lower, data.removal_upper, d_status.get() + first
+                                data.elo, static_cast<unsigned int>(data.seed + run * 100000 + island * 1000),
+                                data.removal_lower, data.removal_upper, d_status.get() + island
                             );
                             cuda_check(cudaGetLastError(), "deep_local_search_kernel launch");
-                            commit_local_search_and_inject_kernel<<<1, 1>>>(
+                            commit_local_search_and_inject_kernel<<<1, 32>>>(
                                 next_island, island_best, candidate, generation,
                                 d_last_improvement_generation.get() + island,
-                                d_status.get() + first
+                                d_status.get() + island
                             );
                             cuda_check(cudaGetLastError(), "commit_local_search_and_inject_kernel launch");
                         }
                         if (generation % data.stagnation_interval == 0) {
-                            diversify_population_kernel<<<1, 1>>>(
+                            diversify_population_kernel<<<1, 64>>>(
                                 next_island, temporary_island, diversification_backup_island,
                                 island_best, island_scratch,
                                 problem, d_search_rng.get() + island,
                                 d_population_rank.get() + first, generation,
                                 d_last_improvement_generation.get() + island,
                                 data.diversify_ratio, data.removal_lower, data.removal_upper,
-                                data.stagnation_interval, d_status.get() + first
+                                data.stagnation_interval, d_status.get() + island
                             );
                             cuda_check(cudaGetLastError(), "diversify_population_kernel launch");
                         }
