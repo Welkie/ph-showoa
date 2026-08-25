@@ -3123,12 +3123,10 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                 );
                 cuda_check(cudaGetLastError(), "simulated_annealing_initialization_kernel launch");
             }
-            initialize_island_bests_kernel<<<(data.num_islands + 63) / 64, 64>>>(
-                population.view, island_bests.view, data.p_size
+            update_island_and_global_bests_kernel<<<(data.num_islands + 63) / 64, 64>>>(
+                population.view, island_bests.view, global_best.view, data.p_size, 0, d_last_improvement_generation.get()
             );
-            cuda_check(cudaGetLastError(), "initialize_island_bests_kernel launch");
-            initialize_global_best_kernel<<<1, 1>>>(island_bests.view, global_best.view);
-            cuda_check(cudaGetLastError(), "initialize_global_best_kernel launch");
+            cuda_check(cudaGetLastError(), "update_island_and_global_bests_kernel launch");
             cuda_check(cudaEventRecord(end_event), "cudaEventRecord(full_gpu end)");
             cuda_check(cudaEventSynchronize(end_event), "cudaEventSynchronize(full_gpu initialization)");
             float initialization_ms = 0.0f;
