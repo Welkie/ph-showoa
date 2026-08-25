@@ -1810,6 +1810,8 @@ __device__ bool find_local_optimum_device(
     DeviceConstructionScratch scratch,
     const DeviceProblem& problem
 ) {
+    const int* nodes = solution_nodes(solution, solution_id);
+    const int* offsets = solution_offsets(solution, solution_id);
     while (true) {
         DeviceLocalMove operator_best[4];
         for (int i = 0; i < 4; ++i) operator_best[i].delta = INFINITY;
@@ -1817,19 +1819,24 @@ __device__ bool find_local_optimum_device(
         const int* lengths = solution_lengths(solution, solution_id);
         for (int route_id = 0; route_id < route_count; ++route_id) {
             const int length = lengths[route_id];
+            const int* route = nodes + offsets[route_id];
             for (int start = 1; start < length - 2; ++start) {
+                if (problem.pruning_enabled && !problem.pruning[route[start - 1] * problem.stride + route[start + 1]]) continue;
                 DeviceLocalMove move{0, route_id, -2, start, start + 1, 0, 0, 0, INFINITY};
                 consider_local_move(solution, solution_id, move, &operator_best[0], scratch, problem);
             }
         }
         for (int first_route = 0; first_route < route_count; ++first_route) {
             const int first_length = lengths[first_route];
+            const int* route1 = nodes + offsets[first_route];
             for (int second_route = first_route + 1; second_route < route_count; ++second_route) {
                 const int second_length = lengths[second_route];
+                const int* route2 = nodes + offsets[second_route];
                 for (int first = 1; first < first_length; ++first) {
                     for (int second = 1; second < second_length; ++second) {
                         if ((first == 1 && second == 1) ||
                             (first == first_length - 1 && second == second_length - 1)) continue;
+                        if (problem.pruning_enabled && !problem.pruning[route1[first - 1] * problem.stride + route2[second]]) continue;
                         DeviceLocalMove move{1, first_route, second_route, first, 0, second, 0, 0, INFINITY};
                         consider_local_move(solution, solution_id, move, &operator_best[1], scratch, problem);
                     }
@@ -1838,15 +1845,18 @@ __device__ bool find_local_optimum_device(
         }
         for (int route_id = 0; route_id < route_count; ++route_id) {
             const int length = lengths[route_id];
+            const int* route = nodes + offsets[route_id];
             for (int start = 1; start < length - 1; ++start) {
                 for (int sequence_length = 1; sequence_length <= or_opt_length; ++sequence_length) {
                     const int end = start + sequence_length - 1;
                     if (end >= length - 1) continue;
                     for (int position = 1; position < start; ++position) {
+                        if (problem.pruning_enabled && !problem.pruning[route[position - 1] * problem.stride + route[start]]) continue;
                         DeviceLocalMove move{2, route_id, -2, start, end, 0, 0, position, INFINITY};
                         consider_local_move(solution, solution_id, move, &operator_best[2], scratch, problem);
                     }
                     for (int position = end + 2; position < length; ++position) {
+                        if (problem.pruning_enabled && !problem.pruning[route[position - 1] * problem.stride + route[start]]) continue;
                         DeviceLocalMove move{2, route_id, -2, start, end, 0, 0, position, INFINITY};
                         consider_local_move(solution, solution_id, move, &operator_best[2], scratch, problem);
                     }
@@ -1857,8 +1867,10 @@ __device__ bool find_local_optimum_device(
         }
         for (int first_route = 0; first_route < route_count; ++first_route) {
             const int first_length = lengths[first_route];
+            const int* route1 = nodes + offsets[first_route];
             for (int second_route = first_route + 1; second_route < route_count; ++second_route) {
                 const int second_length = lengths[second_route];
+                const int* route2 = nodes + offsets[second_route];
                 for (int first = 1; first < first_length - 1; ++first) {
                     for (int first_size = 1; first_size <= exchange_length; ++first_size) {
                         const int first_end = first + first_size - 1;
@@ -1867,6 +1879,7 @@ __device__ bool find_local_optimum_device(
                             for (int second_size = 1; second_size <= exchange_length; ++second_size) {
                                 const int second_end = second + second_size - 1;
                                 if (second_end >= second_length - 1) continue;
+                                if (problem.pruning_enabled && !problem.pruning[route1[first - 1] * problem.stride + route2[second]]) continue;
                                 DeviceLocalMove move{3, first_route, second_route,
                                     first, first_end, second, second_end, 0, INFINITY};
                                 consider_local_move(solution, solution_id, move, &operator_best[3], scratch, problem);
