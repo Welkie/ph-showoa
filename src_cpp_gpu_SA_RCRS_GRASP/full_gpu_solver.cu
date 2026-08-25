@@ -507,6 +507,15 @@ __device__ bool choose_construction_insertion(
     *selected_position = best_position;
     return best_unrouted >= 0;
 }
+__device__ void legacy_shuffle_int(int* values, int count, LegacyMt19937& rng);
+__device__ void copy_route_to_scratch(
+    DevicePopulation population,
+    int solution_id,
+    int route_id,
+    int* destination,
+    int* out_length
+);
+__device__ void insert_route_node(int* route, int* length, int index, int node);
 
 __device__ double rcrs_score_device(
     const int* route,
@@ -1187,7 +1196,7 @@ __device__ bool repair_solution_device(
         }
     }
 
-    for (route_id = 0; route_id < solution.route_counts[solution_id]; ++route_id) {
+    for (int route_id = 0; route_id < solution.route_counts[solution_id]; ++route_id) {
         bool improved = true;
         while (improved) {
             improved = false;
@@ -3124,6 +3133,8 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
             cuda_check(cudaEventCreate(&start_event), "cudaEventCreate(full_gpu start)");
             cuda_check(cudaEventCreate(&end_event), "cudaEventCreate(full_gpu end)");
             cuda_check(cudaEventRecord(start_event), "cudaEventRecord(full_gpu start)");
+            const int threads = 64;
+            const int blocks = (solution_count + threads - 1) / threads;
             const bool is_rcrs_grasp = (data.init == "rcrs_grasp" || data.init == "rcg");
             initialize_population_kernel<<<blocks, threads>>>(
                 population.view, branch.view, scratch, problem,
