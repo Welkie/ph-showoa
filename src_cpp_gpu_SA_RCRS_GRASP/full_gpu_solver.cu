@@ -508,6 +508,165 @@ __device__ bool choose_construction_insertion(
     return best_unrouted >= 0;
 }
 
+__device__ double rcrs_score_device(
+    const int* route,
+    int route_length,
+    int customer,
+    int position,
+    const DeviceProblem& problem
+) {
+    const int prev = route[position - 1];
+    const int next = route[position];
+
+    // 1. Travel distance delta
+    const double delta_td = fmax(0.0,
+        problem.distance[prev * problem.stride + customer] +
+        problem.distance[customer * problem.stride + next] -
+        problem.distance[prev * problem.stride + next]
+    );
+
+    // 2. Residual Capacity penalty (RC)
+    double load = 0.0;
+    double max_load = 0.0;
+    for (int i = 1; i < route_length - 1; ++i) {
+        load += problem.delivery[route[i]];
+    }
+    max_load = load;
+    for (int i = 1; i < route_length; ++i) {
+        const int node = route[i];
+        load = load - problem.delivery[node] + problem.pickup[node];
+        if (load > max_load) max_load = load;
+    }
+    const double C_H_new = max_load + fmax(problem.delivery[customer], problem.pickup[customer]);
+    const double rc_penalty = fmax(0.0, C_H_new - problem.capacity * 0.70);
+
+    // 3. Radial Surcharge (RS)
+    const double dx_prev = problem.distance[problem.depot * problem.stride + prev];
+    const double dx_c = problem.distance[problem.depot * problem.stride + customer];
+    const double rs_penalty = fabs(dx_prev + problem.distance[prev * problem.stride + customer] - dx_c);
+
+    return 1.0 * delta_td + 0.5 * rc_penalty + 0.3 * rs_penalty;
+}
+
+__device__ bool construct_rcrs_grasp_solution(
+    int solution_id,
+    DevicePopulation branch,
+    DevicePopulation temporary,
+    DeviceConstructionScratch scratch,
+    const DeviceProblem& problem,
+    double alpha,
+    LegacyMt19937& rng
+) {
+    clear_solution(branch, solution_id);
+    int* unrouted = scratch.unrouted + solution_id * scratch.customer_capacity;
+    int unrouted_count = 0;
+    for (int customer = 1; customer <= problem.customer_count; ++customer) {
+        if (customer != problem.depot) unrouted[unrouted_count++] = customer;
+    }
+
+    legacy_shuffle_int(unrouted, unrouted_count, rng);
+
+    int* candidate_route = scratch.candidate_nodes + solution_id * scratch.route_capacity;
+    int* rcl_indices = scratch.sample_pool + solution_id * scratch.customer_capacity;
+
+    double* customer_r_idx = scratch.load + solution_id * scratch.route_capacity;
+    double* customer_pos   = scratch.cd + solution_id * scratch.route_capacity;
+    double* customer_score = scratch.cp + solution_id * scratch.route_capacity;
+
+    while (unrouted_count > 0) {
+        double global_best_score = INFINITY;
+        double max_score = -INFINITY;
+
+        const int route_count = branch.route_counts[solution_id];
+        const int* nodes = solution_nodes(branch, solution_id);
+        const int* offsets = solution_offsets(branch, solution_id);
+        const int* lengths = solution_lengths(branch, solution_id);
+
+        for (int i = 0; i < unrouted_count; ++i) {
+            const int customer = unrouted[i];
+            int best_r = -1;
+            int best_p = -1;
+            double best_s = INFINITY;
+
+            for (int r_idx = 0; r_idx < route_count; ++r_idx) {
+                const int* route = nodes + offsets[r_idx];
+                const int length = lengths[r_idx];
+                for (int pos = 1; pos < length; ++pos) {
+                    if (problem.pruning_enabled) {
+                        const int prev = route[pos - 1];
+                        const int next = route[pos];
+                        if (!problem.pruning[prev * problem.stride + customer] ||
+                            !problem.pruning[customer * problem.stride + next]) {
+                            continue;
+                        }
+                    }
+                    for (int k = 0; k < length + 1; ++k) {
+                        if (k == pos) candidate_route[k] = customer;
+                        else if (k < pos) candidate_route[k] = route[k];
+                        else candidate_route[k] = route[k - 1];
+                    }
+                    if (!evaluate_route(candidate_route, length + 1, problem, nullptr)) continue;
+
+                    const double score = rcrs_score_device(route, length, customer, pos, problem);
+                    if (score < best_s) {
+                        best_s = score;
+                        best_r = r_idx;
+                        best_p = pos;
+                    }
+                }
+            }
+
+            customer_r_idx[i] = static_cast<double>(best_r);
+            customer_pos[i]   = static_cast<double>(best_p);
+            customer_score[i] = best_s;
+
+            if (best_r != -1) {
+                if (best_s < global_best_score) global_best_score = best_s;
+                if (best_s > max_score) max_score = best_s;
+            }
+        }
+
+        const double threshold = (global_best_score == INFINITY || max_score == -INFINITY)
+            ? INFINITY
+            : global_best_score + alpha * (max_score - global_best_score);
+
+        int rcl_count = 0;
+        for (int i = 0; i < unrouted_count; ++i) {
+            if (customer_r_idx[i] >= 0.0 && customer_score[i] <= threshold + 1e-9) {
+                rcl_indices[rcl_count++] = i;
+            }
+        }
+
+        if (rcl_count == 0) {
+            const int pick = legacy_randint(0, unrouted_count - 1, rng);
+            const int customer = unrouted[pick];
+            int singleton[3] = {problem.depot, customer, problem.depot};
+            if (!append_route(branch, solution_id, singleton, 3, problem)) return false;
+            for (int k = pick; k + 1 < unrouted_count; ++k) unrouted[k] = unrouted[k + 1];
+            --unrouted_count;
+            continue;
+        }
+
+        const int rcl_pick = rcl_indices[legacy_randint(0, rcl_count - 1, rng)];
+        const int chosen_customer = unrouted[rcl_pick];
+        const int chosen_r = static_cast<int>(customer_r_idx[rcl_pick]);
+        const int chosen_p = static_cast<int>(customer_pos[rcl_pick]);
+
+        int route_len = 0;
+        copy_route_to_scratch(branch, solution_id, chosen_r, candidate_route, &route_len);
+        insert_route_node(candidate_route, &route_len, chosen_p, chosen_customer);
+        if (!rebuild_solution_with_routes_unchecked(
+            temporary, solution_id, branch, chosen_r, candidate_route, route_len,
+            -1, nullptr, 0, problem, false
+        )) return false;
+        copy_solution(branch, solution_id, temporary, solution_id);
+
+        for (int k = rcl_pick; k + 1 < unrouted_count; ++k) unrouted[k] = unrouted[k + 1];
+        --unrouted_count;
+    }
+    return true;
+}
+
 __device__ bool construct_solution(
     int solution_id,
     int initial_customer,
@@ -581,11 +740,29 @@ __global__ void initialize_population_kernel(
     DeviceProblem problem,
     const DeviceConstructionConfig* configs,
     LegacyMt19937* rng_states,
-    int* status
+    int* status,
+    int is_rcrs_grasp = 0,
+    double grasp_alpha_lo = 0.10,
+    double grasp_alpha_hi = 0.40
 ) {
     const int solution_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (solution_id >= population.solution_count) return;
     LegacyMt19937 rng = rng_states[solution_id];
+
+    if (is_rcrs_grasp) {
+        const double ind_alpha = legacy_randdouble(grasp_alpha_lo, grasp_alpha_hi, rng);
+        if (!construct_rcrs_grasp_solution(
+            solution_id, population, branch, scratch, problem, ind_alpha, rng
+        )) {
+            status[solution_id] = 1;
+            rng_states[solution_id] = rng;
+            return;
+        }
+        rng_states[solution_id] = rng;
+        status[solution_id] = 0;
+        return;
+    }
+
     const DeviceConstructionConfig config = configs[solution_id];
     int* sample_pool = scratch.sample_pool + solution_id * scratch.customer_capacity;
     for (int i = 0; i < problem.customer_count; ++i) sample_pool[i] = i + 1;
@@ -651,7 +828,8 @@ __global__ void simulated_annealing_initialization_kernel(
     DeviceConstructionScratch scratch,
     DeviceProblem problem,
     LegacyMt19937* rng_states,
-    int* status
+    int* status,
+    int max_sa_iterations = 100
 ) {
     const int solution_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (solution_id >= population.solution_count) return;
@@ -663,7 +841,7 @@ __global__ void simulated_annealing_initialization_kernel(
 
     double temperature = 100.0;
     while (temperature > 0.1) {
-        for (int iteration = 0; iteration < 100; ++iteration) {
+        for (int iteration = 0; iteration < max_sa_iterations; ++iteration) {
             const int move_type = legacy_randint(1, 5, rng);
             const int route_count = population.route_counts[solution_id];
             if (move_type <= 3) {
@@ -952,60 +1130,61 @@ __device__ bool repair_solution_device(
     for (int customer = 1; customer <= problem.customer_count; ++customer) {
         if (visited[customer] != 1) already_feasible = false;
     }
-    if (already_feasible) return true;
-    for (int customer = 1; customer <= problem.customer_count; ++customer) {
-        if (!visited[customer] && !insert_customer_best_position_device(
-            solution, temporary, solution_id, customer, -1, false, scratch, problem
-        )) return false;
-    }
-
-    int route_id = 0;
-    while (route_id < solution.route_counts[solution_id]) {
-        int length = 0;
-        int* route = scratch.candidate_nodes + solution_id * scratch.route_capacity;
-        copy_route_to_scratch(solution, solution_id, route_id, route, &length);
-        if (route_capacity_only(route, length, problem)) {
-            ++route_id;
-            continue;
+    if (!already_feasible) {
+        for (int customer = 1; customer <= problem.customer_count; ++customer) {
+            if (!visited[customer] && !insert_customer_best_position_device(
+                solution, temporary, solution_id, customer, -1, false, scratch, problem
+            )) return false;
         }
-        int customer = -1;
-        double worst_balance = -1.0;
-        for (int i = 1; i < length - 1; ++i) {
-            const int node = route[i];
-            const double balance = fabs(problem.delivery[node] - problem.pickup[node]);
-            if (balance > worst_balance) {
-                worst_balance = balance;
-                customer = node;
+
+        int route_id = 0;
+        while (route_id < solution.route_counts[solution_id]) {
+            int length = 0;
+            int* route = scratch.candidate_nodes + solution_id * scratch.route_capacity;
+            copy_route_to_scratch(solution, solution_id, route_id, route, &length);
+            if (route_capacity_only(route, length, problem)) {
+                ++route_id;
+                continue;
             }
+            int customer = -1;
+            double worst_balance = -1.0;
+            for (int i = 1; i < length - 1; ++i) {
+                const int node = route[i];
+                const double balance = fabs(problem.delivery[node] - problem.pickup[node]);
+                if (balance > worst_balance) {
+                    worst_balance = balance;
+                    customer = node;
+                }
+            }
+            if (customer < 0 || !remove_customer_from_route_device(
+                solution, temporary, solution_id, route_id, customer, false, scratch, problem
+            )) return false;
+            if (!insert_customer_best_position_device(
+                solution, temporary, solution_id, customer, route_id, false, scratch, problem
+            )) return false;
+            if (!remove_empty_routes_device(solution, temporary, solution_id, problem)) return false;
+            copy_solution(solution, solution_id, temporary, solution_id);
         }
-        if (customer < 0 || !remove_customer_from_route_device(
-            solution, temporary, solution_id, route_id, customer, false, scratch, problem
-        )) return false;
-        if (!insert_customer_best_position_device(
-            solution, temporary, solution_id, customer, route_id, false, scratch, problem
-        )) return false;
-        if (!remove_empty_routes_device(solution, temporary, solution_id, problem)) return false;
-        copy_solution(solution, solution_id, temporary, solution_id);
-    }
 
-    route_id = 0;
-    while (route_id < solution.route_counts[solution_id]) {
-        int length = 0;
-        int* route = scratch.candidate_nodes + solution_id * scratch.route_capacity;
-        copy_route_to_scratch(solution, solution_id, route_id, route, &length);
-        const int customer = first_time_window_violation(route, length, problem);
-        if (customer < 0) {
-            ++route_id;
-            continue;
+        route_id = 0;
+        while (route_id < solution.route_counts[solution_id]) {
+            int length = 0;
+            int* route = scratch.candidate_nodes + solution_id * scratch.route_capacity;
+            copy_route_to_scratch(solution, solution_id, route_id, route, &length);
+            const int customer = first_time_window_violation(route, length, problem);
+            if (customer < 0) {
+                ++route_id;
+                continue;
+            }
+            if (!remove_customer_from_route_device(
+                solution, temporary, solution_id, route_id, customer, false, scratch, problem
+            )) return false;
+            if (!insert_customer_best_position_device(
+                solution, temporary, solution_id, customer, -1, true, scratch, problem
+            )) return false;
+            if (!remove_empty_routes_device(solution, temporary, solution_id, problem)) return false;
+            copy_solution(solution, solution_id, temporary, solution_id);
         }
-        if (!remove_customer_from_route_device(
-            solution, temporary, solution_id, route_id, customer, false, scratch, problem
-        )) return false;
-        if (!insert_customer_best_position_device(
-            solution, temporary, solution_id, customer, -1, true, scratch, problem
-        )) return false;
-        if (!remove_empty_routes_device(solution, temporary, solution_id, problem)) return false;
-        copy_solution(solution, solution_id, temporary, solution_id);
     }
 
     for (route_id = 0; route_id < solution.route_counts[solution_id]; ++route_id) {
@@ -2945,17 +3124,18 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
             cuda_check(cudaEventCreate(&start_event), "cudaEventCreate(full_gpu start)");
             cuda_check(cudaEventCreate(&end_event), "cudaEventCreate(full_gpu end)");
             cuda_check(cudaEventRecord(start_event), "cudaEventRecord(full_gpu start)");
-            const int threads = 64;
-            const int blocks = (solution_count + threads - 1) / threads;
+            const bool is_rcrs_grasp = (data.init == "rcrs_grasp" || data.init == "rcg");
             initialize_population_kernel<<<blocks, threads>>>(
                 population.view, branch.view, scratch, problem,
-                d_configs.get(), d_rng_states.get(), d_status.get()
+                d_configs.get(), d_rng_states.get(), d_status.get(),
+                is_rcrs_grasp ? 1 : 0, data.grasp_alpha_lo, data.grasp_alpha_hi
             );
             cuda_check(cudaGetLastError(), "initialize_population_kernel launch");
-            if (data.init == "sa" || data.init == "sa_random") {
+            if (data.init == "sa" || data.init == "sa_random" || is_rcrs_grasp) {
+                const int sa_iterations = is_rcrs_grasp ? 25 : 100;
                 simulated_annealing_initialization_kernel<<<blocks, threads>>>(
                     population.view, branch.view, best_initialization.view, scratch, problem,
-                    d_rng_states.get(), d_status.get()
+                    d_rng_states.get(), d_status.get(), sa_iterations
                 );
                 cuda_check(cudaGetLastError(), "simulated_annealing_initialization_kernel launch");
             }
