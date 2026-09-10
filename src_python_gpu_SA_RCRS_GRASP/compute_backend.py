@@ -747,6 +747,72 @@ class TorchComputeBackend(BaseComputeBackend):
         costs_np = costs.cpu().numpy()
         return [(bool(f), float(c)) for f, c in zip(feas_np, costs_np)]
 
+    def evaluate_population_tensor(
+        self,
+        pop_routes_t: torch.Tensor,
+        pop_lengths_t: torch.Tensor,
+        pop_route_counts_t: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        P, R, L = pop_routes_t.shape
+        if L < 2:
+            return (
+                torch.zeros(P, dtype=torch.bool, device=self.device),
+                torch.full((P,), float("inf"), dtype=torch.float32, device=self.device),
+                torch.zeros(P, dtype=torch.long, device=self.device),
+                torch.zeros(P, dtype=torch.float32, device=self.device),
+            )
+
+        prev = pop_routes_t[:, :, :-1]
+        curr = pop_routes_t[:, :, 1:]
+
+        dists = self.dist_t[prev, curr]
+        col_indices = torch.arange(L - 1, device=self.device).view(1, 1, L - 1)
+        valid_mask = col_indices < (pop_lengths_t.unsqueeze(-1) - 1)
+        dists = torch.where(valid_mask, dists, 0.0)
+        route_dists = dists.sum(dim=-1)
+
+        route_indices = torch.arange(R, device=self.device).unsqueeze(0)
+        route_mask = route_indices < pop_route_counts_t.unsqueeze(-1)
+        total_distances = torch.where(route_mask, route_dists, 0.0).sum(dim=-1)
+
+        delivs = torch.where(valid_mask, self.delivery_t[curr], 0.0)
+        pickups = torch.where(valid_mask, self.pickup_t[curr], 0.0)
+
+        init_deliv = delivs.sum(dim=-1)
+        running_load = init_deliv.unsqueeze(-1) - torch.cumsum(delivs, dim=-1) + torch.cumsum(pickups, dim=-1)
+        load_valid = (init_deliv <= self.capacity + 1e-5) & ((running_load >= -1e-5) & (running_load <= self.capacity + 1e-5) | ~valid_mask).all(dim=-1)
+        route_load_valid = torch.where(route_mask, load_valid, True).all(dim=-1)
+
+        travel_times = self.time_t[prev, curr]
+        window_start = self.start_t[curr]
+        window_end = self.end_t[curr]
+        s_times = self.service_t[curr]
+
+        time_val = torch.full((P, R), self.start_time, dtype=torch.float32, device=self.device)
+        tw_valid = torch.ones((P, R), dtype=torch.bool, device=self.device)
+
+        for j in range(L - 1):
+            is_active = j < (pop_lengths_t - 1)
+            t_travel = travel_times[:, :, j]
+            t_start = window_start[:, :, j]
+            t_end = window_end[:, :, j]
+            t_serv = s_times[:, :, j]
+
+            arrival = time_val + t_travel
+            tw_valid = tw_valid & (~is_active | (arrival <= t_end + 1e-5))
+            time_val = torch.where(is_active, torch.max(arrival, t_start) + t_serv, time_val)
+
+        route_tw_valid = torch.where(route_mask, tw_valid, True).all(dim=-1)
+
+        active_routes = route_mask & (pop_lengths_t > 2)
+        vehicle_counts = active_routes.sum(dim=-1).long()
+        total_costs = vehicle_counts.float() * self.dispatch_cost + total_distances * self.unit_cost
+
+        pop_feasible = route_load_valid & route_tw_valid
+        total_costs = torch.where(pop_feasible, total_costs, torch.tensor(float("inf"), device=self.device))
+
+        return pop_feasible, total_costs, vehicle_counts, total_distances
+
     def evaluate_insertions(self, route_nodes: Sequence[int], candidate_nodes: Sequence[int]) -> Tuple[np.ndarray, np.ndarray]:
         if len(candidate_nodes) == 0:
             return np.zeros(0, dtype=np.int32), np.zeros(0, dtype=np.float64)

@@ -21,7 +21,14 @@ from .config import (
 )
 from .eval import _chk_route_list, evaluate_route_batch
 from .move import Move
-from .operator import do_local_search, new_route_insertion
+from .operator import (
+    do_local_search,
+    new_route_insertion,
+    tensor_rcrs_grasp_init,
+    tensor_sa_warmup,
+    tensor_guided_crossover,
+    tensor_woa_intensification,
+)
 from .solution import Route, Solution
 from .util import argsort, mean, rand, randint
 from .compute_backend import init_pool_worker
@@ -1268,7 +1275,133 @@ def _inject_global_best(pop, pop_fit, pop_argrank, best_s) -> None:
     argsort(pop_fit, pop_argrank, len(pop))
 
 
+def gpu_pure_tensor_search_framework(data, best_s):
+    import torch
+    backend = data.backend
+    P = data.p_size
+    device = backend.device
+
+    stime = time.perf_counter()
+    used = 0
+    time_exhausted = False
+    completed_runs = 0
+
+    sa_iters = getattr(data, "sa_iterations", 25)
+    alpha_lo = getattr(data, "grasp_alpha_lo", 0.10)
+    alpha_hi = getattr(data, "grasp_alpha_hi", 0.40)
+
+    for run in range(1, data.runs + 1):
+        print("---------------------------------Run %d (Pure GPU 3D Tensor)---------------------------" % run)
+
+        pop_routes, pop_lengths, pop_route_counts = tensor_rcrs_grasp_init(
+            P, data, backend, alpha_lo=alpha_lo, alpha_hi=alpha_hi, sa_iters=sa_iters
+        )
+
+        feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
+            pop_routes, pop_lengths, pop_route_counts
+        )
+
+        best_idx = torch.argmin(costs).item()
+        best_cost = costs[best_idx].item()
+
+        def tensor_to_solution(p_idx):
+            sol = Solution(data)
+            r_cnt = int(pop_route_counts[p_idx].item())
+            for r_i in range(r_cnt):
+                r_len = int(pop_lengths[p_idx, r_i].item())
+                r_nodes = pop_routes[p_idx, r_i, :r_len].cpu().tolist()
+                if len(r_nodes) >= 2:
+                    sol.append(_make_route(r_nodes[1:-1], data))
+            sol.update(data)
+            sol.cal_cost(data)
+            return sol
+
+        init_sol = tensor_to_solution(best_idx)
+        used = int(time.perf_counter() - stime)
+        update_best_solution(init_sol, best_s, used, run, 0, data)
+        print("Initialization done on CUDA VRAM. Best cost: %.4f" % best_cost)
+
+        last_improvement_gen = 0
+
+        for gen in range(1, data.max_iter + 1):
+            best_before_gen = best_s.cost
+            iteration_index = gen - 1
+            a, p_hybrid = _dynamic_parameters(iteration_index, data.max_iter)
+            p_mode = _mode_probability(p_hybrid, data)
+
+            best_idx = torch.argmin(costs).item()
+            peer_indices = torch.randint(0, P, (P,), device=device)
+
+            p_hybrid_mask = torch.rand(P, device=device) < p_mode
+            p_woa_mask = ~p_hybrid_mask
+
+            cand_routes, cand_lengths, cand_counts = tensor_guided_crossover(
+                pop_routes, pop_lengths, pop_route_counts, best_idx, peer_indices, p_hybrid_mask, backend, data
+            )
+
+            cand_routes, cand_lengths, cand_counts = tensor_woa_intensification(
+                cand_routes, cand_lengths, cand_counts, best_idx, a, p_woa_mask, backend, data
+            )
+
+            cand_feas, cand_costs, _, _ = backend.evaluate_population_tensor(
+                cand_routes, cand_lengths, cand_counts
+            )
+
+            delta = cand_costs - costs
+            temp = 1.0 - (float(iteration_index) / float(data.max_iter)) if data.max_iter > 0 else 0.0
+            probs = torch.exp(-delta / (1e-6 + temp * torch.abs(costs)))
+            rand_vals = torch.rand(P, device=device)
+
+            accept_mask = cand_feas & ((delta <= 0.0) | (rand_vals < probs))
+            accepted_count = int(accept_mask.sum().item())
+
+            accept_idx = accept_mask.nonzero(as_tuple=True)[0]
+            if len(accept_idx) > 0:
+                pop_routes[accept_idx] = cand_routes[accept_idx]
+                pop_lengths[accept_idx] = cand_lengths[accept_idx]
+                pop_route_counts[accept_idx] = cand_counts[accept_idx]
+                costs[accept_idx] = cand_costs[accept_idx]
+
+            current_best_idx = torch.argmin(costs).item()
+            current_best_cost = costs[current_best_idx].item()
+
+            used = int(time.perf_counter() - stime)
+            if current_best_cost < best_s.cost - PRECISION:
+                sol_best = tensor_to_solution(current_best_idx)
+                update_best_solution(sol_best, best_s, used, run, gen, data)
+                last_improvement_gen = gen
+
+            if gen % OUTPUT_PER_GENS == 0:
+                valid_costs = costs[costs < float('inf')]
+                avg_cost = float(valid_costs.mean().item()) if len(valid_costs) > 0 else float('inf')
+                print(
+                    "Gen: %d. a %.4f, p_hybrid %.4f, accepted %d. Avg %.4f, Best %.4f"
+                    % (gen, a, p_mode, accepted_count, avg_cost, best_s.cost)
+                )
+
+            if data.tmax != -1 and used > int(data.tmax):
+                time_exhausted = True
+                break
+
+        completed_runs += 1
+        if time_exhausted:
+            break
+
+    print("------------Summary-----------")
+    print("Total %d runs, total consumed %d sec" % (completed_runs, int(used)))
+    best_s.output(data)
+    print(
+        "In run %d, gen %d, find this solution, at time %d."
+        % (state.find_best_run, state.find_best_gen, int(state.find_best_time))
+    )
+    print("Time to surpass BKS: %d." % int(state.find_bks_time))
+    best_s.check(data)
+
+
 def search_framework(data, best_s):
+    if getattr(data.backend, "name", "") == "torch_cuda":
+        return gpu_pure_tensor_search_framework(data, best_s)
+
     pop = [Solution(data) for _ in range(data.p_size)]
     pop_fit = [0.0 for _ in range(data.p_size)]
     pop_argrank = [0 for _ in range(data.p_size)]
@@ -1276,6 +1409,7 @@ def search_framework(data, best_s):
     stime = time.perf_counter()
     used = 0
     time_exhausted = False
+
     run = 1
     completed_runs = 0
 
