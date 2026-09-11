@@ -16,3 +16,13 @@ cuda = ["numba>=0.60"]
 [project.scripts]
 ph-showoa = "src.__main__:main"
 vrpenstein = "src.__main__:main"
+
+[tool.pyrefly]
+preset = "basic"
+python-interpreter-path = "C:/Program Files/Python313/python.exe"
+
+[tool.pyrefly.errors]
+division-by-zero = false
+
+
+

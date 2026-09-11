@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple
+from typing import List, Sequence, Tuple, Any
 
+import os
+import multiprocessing
 import numpy as np
 
-try:
-    import torch
-except Exception:
-    torch = None
+import torch
 
 try:
     from numba import cuda, njit  # type: ignore
@@ -16,7 +15,7 @@ try:
     from numba.core.errors import NumbaPerformanceWarning
     warnings.simplefilter("ignore", category=NumbaPerformanceWarning)
 except Exception:  # pragma: no cover - optional dependency
-    cuda = None
+    cuda: Any = None
     def njit(*args, **kwargs):
         return lambda f: f
 
@@ -239,7 +238,7 @@ if cuda is not None:  # pragma: no cover - optional GPU path
         feasible,
         costs,
     ):
-        idx = cuda.grid(1)
+        idx = cuda.grid(1)  # type: ignore[call-arg]
         if idx >= routes.shape[0]:
             return
 
@@ -300,7 +299,7 @@ if cuda is not None:  # pragma: no cover - optional GPU path
         delivery, pickup, start, end, service, dist, time_matrix,
         feasible, costs
     ):
-        idx = cuda.grid(1)
+        idx = cuda.grid(1)  # type: ignore[call-arg]
         route_len = len(route)
         
         if idx >= len(candidates) * route_len:

@@ -1,12 +1,9 @@
-import math
-import random
-from typing import List, Tuple, Optional, Set
-import numpy as np
+from __future__ import annotations
 
-try:
-    import torch
-except ImportError:
-    torch = None
+import random
+from typing import List, Tuple, Set
+
+import torch
 
 from .eval import _chk_route_list, evaluate_route_batch
 from .solution import Route, Solution

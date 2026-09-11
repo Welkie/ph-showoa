@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import concurrent.futures
 import math
 import random
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Any
 
 from . import state
 from .config import (
@@ -23,6 +25,7 @@ from .eval import _chk_route_list, evaluate_route_batch
 from .move import Move
 from .operator import (
     do_local_search,
+    new_route_insertion,
     optimize_route_nodes_2opt,
     _insert_customer_best_position_routes,
     feasible_or_repair_algorithm_10_routes,
@@ -32,7 +35,7 @@ from .operator import (
     tensor_woa_intensification,
 )
 from .solution import Route, Solution
-from .util import argsort, mean, rand, randint
+from .util import argsort, mean, rand
 from .compute_backend import init_pool_worker
 
 
@@ -48,7 +51,7 @@ class AgentUpdateTask:
     iteration: int
     max_iter: int
     seed: int
-    data: object
+    data: Any
 
 
 def update_best_solution(s, best_s, used, run, gen, data):
@@ -1607,8 +1610,8 @@ def search_framework(data, best_s):
 
     executor = None
     if data.parallel_workers != 1 and data.p_size > 1 and getattr(data.backend, "multi_process_safe", True):
-        initargs = ()
-        initializer = None
+        initargs: Any = ()
+        initializer: Any = None
         if hasattr(data.backend, "id_queue"):
             initializer = init_pool_worker
             initargs = (data.backend.id_queue, data.backend._request_queue, data.backend._response_queues)
