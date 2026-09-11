@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import List, Sequence, Tuple
 
 import numpy as np
-import multiprocessing
-import os
 
 try:
     import torch
@@ -665,12 +663,17 @@ class TorchComputeBackend(BaseComputeBackend):
     is_cuda = True
     multi_process_safe = False
 
-    def __init__(self, snapshot: BackendSnapshot, device_str: str = "cuda") -> None:
-        if torch is None or not torch.cuda.is_available():
-            raise RuntimeError("PyTorch CUDA is not available")
+    def __init__(self, snapshot: BackendSnapshot, device_str: str = "auto") -> None:
+        if torch is None:
+            raise RuntimeError("PyTorch is not available")
+        if device_str == "auto":
+            device_str = "cuda" if torch.cuda.is_available() else "cpu"
+        elif device_str == "cuda" and not torch.cuda.is_available():
+            device_str = "cpu"
         super().__init__(snapshot)
         self.device = torch.device(device_str)
         self.depot = int(snapshot.depot)
+        self.customer_num = int(snapshot.customer_num)
         self.capacity = float(snapshot.capacity)
         self.start_time = float(snapshot.start_time)
         self.dispatch_cost = float(snapshot.dispatch_cost)
@@ -877,9 +880,10 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
         print("Warning: JIT pre-compilation failed: %s" % e)
 
     if requested in {"auto", "cuda"}:
-        if torch is not None and torch.cuda.is_available():
+        if torch is not None:
             try:
-                return TorchComputeBackend(snapshot)
+                device_str = "cuda" if torch.cuda.is_available() else "cpu"
+                return TorchComputeBackend(snapshot, device_str=device_str)
             except Exception as e:
                 print("Failed to initialize TorchComputeBackend: %s" % e)
 

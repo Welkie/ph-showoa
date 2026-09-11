@@ -23,7 +23,9 @@ from .eval import _chk_route_list, evaluate_route_batch
 from .move import Move
 from .operator import (
     do_local_search,
-    new_route_insertion,
+    optimize_route_nodes_2opt,
+    _insert_customer_best_position_routes,
+    feasible_or_repair_algorithm_10_routes,
     tensor_rcrs_grasp_init,
     tensor_sa_warmup,
     tensor_guided_crossover,
@@ -1289,9 +1291,58 @@ def gpu_pure_tensor_search_framework(data, best_s):
     sa_iters = getattr(data, "sa_iterations", 25)
     alpha_lo = getattr(data, "grasp_alpha_lo", 0.10)
     alpha_hi = getattr(data, "grasp_alpha_hi", 0.40)
+    num_islands = getattr(data, "num_islands", 6)
+    if P % num_islands != 0:
+        num_islands = 1
+    island_size = P // num_islands
+
+    # Lexicographic Best Index Selector: (NV first, Distance second)
+    def get_lexicographic_best_index(feas, v_counts, dists, start_idx=0, end_idx=P):
+        best_i = start_idx
+        best_nv = 999999
+        best_d = float('inf')
+        for i in range(start_idx, end_idx):
+            if not feas[i].item():
+                continue
+            nv = int(v_counts[i].item())
+            d = float(dists[i].item())
+            if nv < best_nv or (nv == best_nv and d < best_d - 1e-6):
+                best_nv = nv
+                best_d = d
+                best_i = i
+        return best_i
+
+    # Solution Converter with 2-opt distance trimming
+    def tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, p_idx):
+        sol = Solution(data)
+        r_cnt = int(pop_route_counts[p_idx].item())
+        for r_i in range(r_cnt):
+            r_len = int(pop_lengths[p_idx, r_i].item())
+            r_nodes = pop_routes[p_idx, r_i, :r_len].cpu().tolist()
+            if len(r_nodes) >= 3:
+                r_nodes = optimize_route_nodes_2opt(r_nodes, data)
+                sol.append(_make_route(r_nodes[1:-1], data))
+        sol.update(data)
+        sol.cal_cost(data)
+        return sol
+
+    # Convert Solution object back to GPU tensor
+    def solution_to_tensor(sol, pop_routes, pop_lengths, pop_route_counts, p_idx):
+        routes = [list(r.node_list) for r in sol.route_list if len(r.node_list) > 2]
+        _, R, L = pop_routes.shape
+        depot = data.DC
+        num_r = min(len(routes), R)
+        pop_route_counts[p_idx] = num_r
+        pop_routes[p_idx].fill_(depot)
+        pop_lengths[p_idx].fill_(2)
+        for r_i in range(num_r):
+            r_nodes = routes[r_i]
+            r_len = min(len(r_nodes), L)
+            pop_lengths[p_idx, r_i] = r_len
+            pop_routes[p_idx, r_i, :r_len] = torch.tensor(r_nodes[:r_len], dtype=torch.long, device=device)
 
     for run in range(1, data.runs + 1):
-        print("---------------------------------Run %d (Pure GPU 3D Tensor)---------------------------" % run)
+        print("---------------------------------Run %d (Pure GPU Multi-Island)---------------------------" % run)
 
         pop_routes, pop_lengths, pop_route_counts = tensor_rcrs_grasp_init(
             P, data, backend, alpha_lo=alpha_lo, alpha_hi=alpha_hi, sa_iters=sa_iters
@@ -1301,82 +1352,221 @@ def gpu_pure_tensor_search_framework(data, best_s):
             pop_routes, pop_lengths, pop_route_counts
         )
 
-        best_idx = torch.argmin(costs).item()
-        best_cost = costs[best_idx].item()
+        # Island local best tracking
+        island_bests = []
+        island_last_improvement = [0 for _ in range(num_islands)]
+        for k in range(num_islands):
+            s_idx = k * island_size
+            e_idx = s_idx + island_size
+            b_idx = get_lexicographic_best_index(feas, v_counts, total_dists, s_idx, e_idx)
+            island_bests.append(b_idx)
 
-        def tensor_to_solution(p_idx):
-            sol = Solution(data)
-            r_cnt = int(pop_route_counts[p_idx].item())
-            for r_i in range(r_cnt):
-                r_len = int(pop_lengths[p_idx, r_i].item())
-                r_nodes = pop_routes[p_idx, r_i, :r_len].cpu().tolist()
-                if len(r_nodes) >= 2:
-                    sol.append(_make_route(r_nodes[1:-1], data))
-            sol.update(data)
-            sol.cal_cost(data)
-            return sol
-
-        init_sol = tensor_to_solution(best_idx)
+        global_best_idx = get_lexicographic_best_index(feas, v_counts, total_dists, 0, P)
+        init_sol = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, global_best_idx)
         used = int(time.perf_counter() - stime)
         update_best_solution(init_sol, best_s, used, run, 0, data)
-        print("Initialization done on CUDA VRAM. Best cost: %.4f" % best_cost)
+        curr_init_td = best_s.cost - 2000.0 * best_s.len()
+        print("Initialization done on CUDA VRAM. Best NV: %d, Best TD: %.4f" % (best_s.len(), curr_init_td))
 
         last_improvement_gen = 0
 
         for gen in range(1, data.max_iter + 1):
-            best_before_gen = best_s.cost
             iteration_index = gen - 1
             a, p_hybrid = _dynamic_parameters(iteration_index, data.max_iter)
             p_mode = _mode_probability(p_hybrid, data)
 
-            best_idx = torch.argmin(costs).item()
-            peer_indices = torch.randint(0, P, (P,), device=device)
+            # Update best_idx per individual from its island local best
+            best_indices = torch.zeros(P, dtype=torch.long, device=device)
+            peer_indices = torch.zeros(P, dtype=torch.long, device=device)
+
+            for k in range(num_islands):
+                s_idx = k * island_size
+                e_idx = s_idx + island_size
+                island_best = get_lexicographic_best_index(feas, v_counts, total_dists, s_idx, e_idx)
+                island_bests[k] = island_best
+                best_indices[s_idx:e_idx] = island_best
+
+                # Tournament Selection (k=3) for peer within island k
+                for i in range(s_idx, e_idx):
+                    cands = [idx for idx in range(s_idx, e_idx) if idx != i]
+                    if len(cands) >= 3:
+                        picked = random.sample(cands, 3)
+                    elif cands:
+                        picked = cands
+                    else:
+                        picked = [i]
+
+                    best_cand = picked[0]
+                    best_c_nv = int(v_counts[best_cand].item())
+                    best_c_td = float(total_dists[best_cand].item())
+                    for c_idx in picked[1:]:
+                        c_nv = int(v_counts[c_idx].item())
+                        c_td = float(total_dists[c_idx].item())
+                        if c_nv < best_c_nv or (c_nv == best_c_nv and c_td < best_c_td - 1e-6):
+                            best_c_nv = c_nv
+                            best_c_td = c_td
+                            best_cand = c_idx
+                    peer_indices[i] = best_cand
 
             p_hybrid_mask = torch.rand(P, device=device) < p_mode
             p_woa_mask = ~p_hybrid_mask
 
             cand_routes, cand_lengths, cand_counts = tensor_guided_crossover(
-                pop_routes, pop_lengths, pop_route_counts, best_idx, peer_indices, p_hybrid_mask, backend, data
+                pop_routes, pop_lengths, pop_route_counts, best_indices, peer_indices, p_hybrid_mask, backend, data
             )
 
             cand_routes, cand_lengths, cand_counts = tensor_woa_intensification(
-                cand_routes, cand_lengths, cand_counts, best_idx, a, p_woa_mask, backend, data
+                cand_routes, cand_lengths, cand_counts, best_indices, a, p_woa_mask, backend, data
             )
 
-            cand_feas, cand_costs, _, _ = backend.evaluate_population_tensor(
+            cand_feas, cand_costs, cand_v_cnts, cand_dists = backend.evaluate_population_tensor(
                 cand_routes, cand_lengths, cand_counts
             )
 
-            delta = cand_costs - costs
+            # Pure Vectorized Lexicographic Metropolis Acceptance on GPU
             temp = 1.0 - (float(iteration_index) / float(data.max_iter)) if data.max_iter > 0 else 0.0
-            probs = torch.exp(-delta / (1e-6 + temp * torch.abs(costs)))
-            rand_vals = torch.rand(P, device=device)
+            c_nv, r_nv = cand_v_cnts, v_counts
+            c_d, r_d = cand_dists, total_dists
 
-            accept_mask = cand_feas & ((delta <= 0.0) | (rand_vals < probs))
+            better_nv = c_nv < r_nv
+            worse_nv = c_nv > r_nv
+            same_nv = c_nv == r_nv
+            delta_d = c_d - r_d
+            better_d = same_nv & (delta_d <= 0.001)
+
+            denom = 1e-6 + temp * r_d.abs()
+            sa_prob = torch.exp(-delta_d.clamp(min=0.0) / denom)
+            sa_accept = same_nv & (torch.rand(P, device=device) < sa_prob)
+
+            accept_mask = cand_feas & (better_nv | better_d | sa_accept) & ~worse_nv
             accepted_count = int(accept_mask.sum().item())
 
-            accept_idx = accept_mask.nonzero(as_tuple=True)[0]
-            if len(accept_idx) > 0:
-                pop_routes[accept_idx] = cand_routes[accept_idx]
-                pop_lengths[accept_idx] = cand_lengths[accept_idx]
-                pop_route_counts[accept_idx] = cand_counts[accept_idx]
-                costs[accept_idx] = cand_costs[accept_idx]
+            pop_routes[accept_mask] = cand_routes[accept_mask]
+            pop_lengths[accept_mask] = cand_lengths[accept_mask]
+            pop_route_counts[accept_mask] = cand_counts[accept_mask]
+            feas[accept_mask] = cand_feas[accept_mask]
+            costs[accept_mask] = cand_costs[accept_mask]
+            v_counts[accept_mask] = cand_v_cnts[accept_mask]
+            total_dists[accept_mask] = cand_dists[accept_mask]
 
-            current_best_idx = torch.argmin(costs).item()
-            current_best_cost = costs[current_best_idx].item()
+            # Periodic Deep Local Search on Island Bests
+            ls_interval = getattr(data, "local_search_interval", 25)
+            if gen % ls_interval == 0:
+                for k in range(num_islands):
+                    b_idx = island_bests[k]
+                    sol = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, b_idx)
+                    do_local_search(sol, data, backend)
+
+                    new_nv = sol.len()
+                    new_td = sol.cost - 2000.0 * new_nv
+                    curr_nv = int(v_counts[b_idx].item())
+                    curr_td = float(total_dists[b_idx].item())
+
+                    if new_nv < curr_nv or (new_nv == curr_nv and new_td < curr_td - 1e-4):
+                        solution_to_tensor(sol, pop_routes, pop_lengths, pop_route_counts, b_idx)
+                        feas[b_idx] = True
+                        costs[b_idx] = sol.cost
+                        v_counts[b_idx] = new_nv
+                        total_dists[b_idx] = new_td
+                        island_last_improvement[k] = gen
+
+            # Stagnation-Triggered Population Diversification (Ruin & Recreate)
+            stag_interval = getattr(data, "stagnation_interval", 50)
+            if gen % stag_interval == 0:
+                for k in range(num_islands):
+                    if gen - island_last_improvement[k] >= stag_interval:
+                        s_idx = k * island_size
+                        e_idx = s_idx + island_size
+                        island_indices = list(range(s_idx, e_idx))
+                        island_indices.sort(key=lambda idx: (int(v_counts[idx].item()), float(total_dists[idx].item())))
+
+                        div_ratio = getattr(data, "diversify_ratio", 0.40)
+                        div_cnt = max(1, int(round(island_size * div_ratio)))
+                        for d_i in range(1, min(div_cnt + 1, island_size)):
+                            t_idx = island_indices[d_i]
+                            t_sol = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, t_idx)
+                            routes = [list(r.node_list) for r in t_sol.route_list if len(r.node_list) > 2]
+                            all_c = [c for r in routes for c in r if c != data.DC]
+                            if len(all_c) >= 4:
+                                rem_cnt = max(2, int(0.30 * len(all_c)))
+                                to_rem = set(random.sample(all_c, rem_cnt))
+                                for r_i in range(len(routes)):
+                                    routes[r_i] = [c for c in routes[r_i] if c not in to_rem]
+                                routes = [r for r in routes if len(r) > 2]
+                                for c in to_rem:
+                                    _insert_customer_best_position_routes(routes, c, data)
+                                routes = feasible_or_repair_algorithm_10_routes(routes, data)
+
+                                t_sol.route_list = []
+                                for r in routes:
+                                    if len(r) > 2:
+                                        rt = Route(data)
+                                        rt.node_list = r
+                                        rt.update(data)
+                                        t_sol.append(rt)
+                                t_sol.update(data)
+                                t_sol.cal_cost(data)
+
+                                solution_to_tensor(t_sol, pop_routes, pop_lengths, pop_route_counts, t_idx)
+                                feas[t_idx] = True
+                                costs[t_idx] = t_sol.cost
+                                v_counts[t_idx] = t_sol.len()
+                                total_dists[t_idx] = t_sol.cost - 2000.0 * t_sol.len()
+
+                        island_last_improvement[k] = gen
+
+            # Migration period between islands
+            mig_interval = getattr(data, "migration_interval", 25)
+            if gen % mig_interval == 0 and num_islands > 1:
+                for k in range(num_islands):
+                    src_best = island_bests[k]
+                    dst_k = (k + 1) % num_islands
+                    dst_s = dst_k * island_size
+                    dst_e = dst_s + island_size
+
+                    worst_p = dst_s
+                    worst_nv = -1
+                    worst_d = -1.0
+                    for p_i in range(dst_s, dst_e):
+                        nv_i = int(v_counts[p_i].item())
+                        d_i = float(total_dists[p_i].item())
+                        if nv_i > worst_nv or (nv_i == worst_nv and d_i > worst_d):
+                            worst_nv = nv_i
+                            worst_d = d_i
+                            worst_p = p_i
+
+                    if worst_p != src_best:
+                        pop_routes[worst_p] = pop_routes[src_best].clone()
+                        pop_lengths[worst_p] = pop_lengths[src_best].clone()
+                        pop_route_counts[worst_p] = pop_route_counts[src_best].clone()
+                        feas[worst_p] = feas[src_best]
+                        costs[worst_p] = costs[src_best]
+                        v_counts[worst_p] = v_counts[src_best]
+                        total_dists[worst_p] = total_dists[src_best]
+
+            # Track Global Best
+            current_best_idx = get_lexicographic_best_index(feas, v_counts, total_dists, 0, P)
+            curr_best_nv = int(v_counts[current_best_idx].item())
+            curr_best_td = float(total_dists[current_best_idx].item())
+
+            best_nv = best_s.len()
+            best_td = best_s.cost - 2000.0 * best_nv
 
             used = int(time.perf_counter() - stime)
-            if current_best_cost < best_s.cost - PRECISION:
-                sol_best = tensor_to_solution(current_best_idx)
+            if curr_best_nv < best_nv or (curr_best_nv == best_nv and curr_best_td < best_td - 1e-4):
+                sol_best = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, current_best_idx)
                 update_best_solution(sol_best, best_s, used, run, gen, data)
                 last_improvement_gen = gen
+                for k in range(num_islands):
+                    island_last_improvement[k] = gen
 
             if gen % OUTPUT_PER_GENS == 0:
-                valid_costs = costs[costs < float('inf')]
-                avg_cost = float(valid_costs.mean().item()) if len(valid_costs) > 0 else float('inf')
+                valid_dists = total_dists[feas]
+                avg_dist = float(valid_dists.mean().item()) if len(valid_dists) > 0 else float('inf')
+                curr_td = best_s.cost - 2000.0 * best_s.len()
                 print(
-                    "Gen: %d. a %.4f, p_hybrid %.4f, accepted %d. Avg %.4f, Best %.4f"
-                    % (gen, a, p_mode, accepted_count, avg_cost, best_s.cost)
+                    "Gen: %d. a %.4f, p_hybrid %.4f, accepted %d. Avg TD %.4f, Best NV %d, Best TD %.4f"
+                    % (gen, a, p_mode, accepted_count, avg_dist, best_s.len(), curr_td)
                 )
 
             if data.tmax != -1 and used > int(data.tmax):
@@ -1396,6 +1586,8 @@ def gpu_pure_tensor_search_framework(data, best_s):
     )
     print("Time to surpass BKS: %d." % int(state.find_bks_time))
     best_s.check(data)
+
+
 
 
 def search_framework(data, best_s):
