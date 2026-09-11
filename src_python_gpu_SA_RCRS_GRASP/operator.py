@@ -73,12 +73,12 @@ def _insert_customer_best_position_routes(routes: List[List[int]], customer: int
         if len(r_nodes) < 2:
             continue
         for pos in range(1, len(r_nodes)):
-            cand_nl = r_nodes[:pos] + [customer] + r_nodes[pos:]
-            flag, _ = _chk_route_list(cand_nl, data)
-            if flag:
-                prev, nxt = r_nodes[pos - 1], r_nodes[pos]
-                delta = data.dist[prev][customer] + data.dist[customer][nxt] - data.dist[prev][nxt]
-                if delta < best_delta:
+            prev, nxt = r_nodes[pos - 1], r_nodes[pos]
+            delta = data.dist[prev][customer] + data.dist[customer][nxt] - data.dist[prev][nxt]
+            if delta < best_delta:
+                cand_nl = r_nodes[:pos] + [customer] + r_nodes[pos:]
+                flag, _ = _chk_route_list(cand_nl, data)
+                if flag:
                     best_delta = delta
                     best_r_idx = r_idx
                     best_pos = pos
@@ -170,10 +170,6 @@ def feasible_or_repair_algorithm_10_routes(routes: List[List[int]], data) -> Lis
     for c in infeasible_customers:
         _insert_customer_best_position_routes(final_routes, c, data)
 
-    # 5. Intra-route 2-opt trimming
-    for r_i in range(len(final_routes)):
-        final_routes[r_i] = optimize_route_nodes_2opt(final_routes[r_i], data)
-
     return final_routes
 
 
@@ -181,7 +177,7 @@ def feasible_or_repair_algorithm_10_routes(routes: List[List[int]], data) -> Lis
 # Multi-Operator Deep Local Search on Solution
 # =============================================================================
 
-def do_local_search(s: Solution, data, backend=None, max_passes: int = 15):
+def do_local_search(s: Solution, data, backend=None, max_passes: int = 3):
     """
     Multi-operator variable neighborhood descent (VND):
     - Intra-route 2-opt
@@ -608,213 +604,230 @@ def tensor_sa_warmup(
 # PyTorch GPU Tensorized Genetic Crossover & WOA Operators
 # =============================================================================
 
-def tensor_guided_crossover(
+def tensor_gpu_elite_crossover(
     pop_routes: torch.Tensor,
     pop_lengths: torch.Tensor,
     pop_route_counts: torch.Tensor,
     best_indices,
-    peer_indices: torch.Tensor,
     p_hybrid_mask: torch.Tensor,
     backend,
     data
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
-    Performs PyTorch CUDA Guided Crossover with Greedy Feasible Insertion & Algorithm 10 Repair.
-    Guarantees 100% solution validity and eliminates duplicate/dropped customers.
+    100% Pure GPU Tensorized Elite Route Crossover.
+    Operates strictly on GPU VRAM tensors without any CPU list conversions.
     """
     P, R, L = pop_routes.shape
     device = backend.device
     depot = data.DC
 
-    offspring_routes = pop_routes.clone()
-    offspring_lengths = pop_lengths.clone()
-    offspring_counts = pop_route_counts.clone()
+    cand_routes = pop_routes.clone()
+    cand_lengths = pop_lengths.clone()
+    cand_counts = pop_route_counts.clone()
 
-    for p in range(P):
-        if not p_hybrid_mask[p].item():
+    active_p = torch.nonzero(p_hybrid_mask, as_tuple=True)[0]
+    if len(active_p) == 0:
+        return cand_routes, cand_lengths, cand_counts
+
+    for p in active_p:
+        if isinstance(best_indices, int):
+            best_p = best_indices
+        elif hasattr(best_indices, "__getitem__"):
+            best_p = int(best_indices[p].item())
+        else:
+            best_p = int(best_indices)
+
+        best_r_cnt = int(pop_route_counts[best_p].item())
+        if best_r_cnt == 0:
             continue
 
-        if isinstance(best_indices, int):
-            best_i = best_indices
-        elif hasattr(best_indices, "__getitem__"):
-            best_i = int(best_indices[p].item())
+        elite_r = torch.randint(0, best_r_cnt, (1,), device=device).item()
+        elite_len = int(pop_lengths[best_p, elite_r].item())
+        if elite_len <= 2:
+            continue
+
+        elite_custs = pop_routes[best_p, elite_r, 1:elite_len-1]
+
+        # In individual p, remove any customer in elite_custs
+        curr_r_cnt = int(cand_counts[p].item())
+        active_r = 0
+        for r in range(curr_r_cnt):
+            r_len = int(cand_lengths[p, r].item())
+            nodes = cand_routes[p, r, :r_len]
+            keep_mask = ~torch.isin(nodes[1:-1], elite_custs)
+            kept = nodes[1:-1][keep_mask]
+            if len(kept) > 0:
+                new_len = len(kept) + 2
+                cand_routes[p, active_r].fill_(depot)
+                cand_routes[p, active_r, 1:new_len-1] = kept
+                cand_lengths[p, active_r] = new_len
+                active_r += 1
+
+        for r in range(active_r, R):
+            cand_routes[p, r].fill_(depot)
+            cand_lengths[p, r] = 2
+
+        if active_r < R:
+            cand_routes[p, active_r, :elite_len] = pop_routes[best_p, elite_r, :elite_len]
+            cand_lengths[p, active_r] = elite_len
+            cand_counts[p] = active_r + 1
         else:
-            best_i = int(best_indices)
+            cand_counts[p] = active_r
 
-        peer_i = int(peer_indices[p].item())
-        best_r_cnt = int(pop_route_counts[best_i].item())
-
-        child_routes: List[List[int]] = []
-        served_customers: Set[int] = set()
-
-        # Step 1: Inherit 1 or 2 elite routes from Best
-        if best_r_cnt > 0:
-            num_elite = 1 if (best_r_cnt == 1 or random.random() < 0.6) else 2
-            elite_r_indices = list(range(best_r_cnt))
-            random.shuffle(elite_r_indices)
-            for r_idx in elite_r_indices[:num_elite]:
-                r_len = int(pop_lengths[best_i, r_idx].item())
-                r_nodes = pop_routes[best_i, r_idx, :r_len].cpu().tolist()
-                custs = [c for c in r_nodes if c != depot and c not in served_customers]
-                if custs:
-                    child_routes.append([depot] + custs + [depot])
-                    served_customers.update(custs)
-
-        # Step 2: Collect unserved customers from Peer and Current
-        unserved: List[int] = []
-        for src_idx in [peer_i, p]:
-            src_r_cnt = int(pop_route_counts[src_idx].item())
-            for r_idx in range(src_r_cnt):
-                r_len = int(pop_lengths[src_idx, r_idx].item())
-                r_nodes = pop_routes[src_idx, r_idx, :r_len].cpu().tolist()
-                for c in r_nodes:
-                    if c != depot and c not in served_customers and c not in unserved:
-                        unserved.append(c)
-
-        # Step 3: Greedy Feasible Insertion for unserved customers
-        for c in unserved:
-            _insert_customer_best_position_routes(child_routes, c, data)
-            served_customers.add(c)
-
-        # Step 4: Repair with Algorithm 10
-        child_routes = feasible_or_repair_algorithm_10_routes(child_routes, data)
-
-        # Step 5: Write back into offspring tensor
-        num_r = min(len(child_routes), R)
-        offspring_counts[p] = num_r
-        offspring_routes[p].fill_(depot)
-        offspring_lengths[p].fill_(2)
-
-        for r_i in range(num_r):
-            r_nodes = child_routes[r_i]
-            r_len = min(len(r_nodes), L)
-            offspring_lengths[p, r_i] = r_len
-            offspring_routes[p, r_i, :r_len] = torch.tensor(r_nodes[:r_len], dtype=torch.long, device=device)
-
-    return offspring_routes, offspring_lengths, offspring_counts
+    return cand_routes, cand_lengths, cand_counts
 
 
-def tensor_woa_intensification(
+def tensor_gpu_neighborhood_moves(
     pop_routes: torch.Tensor,
     pop_lengths: torch.Tensor,
     pop_route_counts: torch.Tensor,
+    p_woa_mask: torch.Tensor,
+    backend,
+    data
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    100% Pure GPU Tensorized Multi-Operator Local Search & Mutation (TGA).
+    Applies Intra-2opt, Intra-swap, Inter-relocate (Vehicle Elimination), Inter-swap
+    directly on GPU VRAM tensors.
+    """
+    P, R, L = pop_routes.shape
+    device = backend.device
+    depot = data.DC
+
+    cand_routes = pop_routes.clone()
+    cand_lengths = pop_lengths.clone()
+    cand_counts = pop_route_counts.clone()
+
+    active_p = torch.nonzero(p_woa_mask, as_tuple=True)[0]
+    if len(active_p) == 0:
+        return cand_routes, cand_lengths, cand_counts
+
+    for p in active_p:
+        r_cnt = int(cand_counts[p].item())
+        if r_cnt == 0:
+            continue
+
+        move_type = torch.randint(0, 5, (1,), device=device).item()
+
+        if move_type == 0:
+            # 1. Intra-route 2-Opt (Subsegment Reverse on GPU)
+            r = torch.randint(0, r_cnt, (1,), device=device).item()
+            r_len = int(cand_lengths[p, r].item())
+            if r_len >= 5:
+                i1 = torch.randint(1, r_len - 3, (1,), device=device).item()
+                i2 = torch.randint(i1 + 1, r_len - 1, (1,), device=device).item()
+                sub = cand_routes[p, r, i1:i2+1].clone()
+                cand_routes[p, r, i1:i2+1] = torch.flip(sub, dims=[0])
+
+        elif move_type == 1:
+            # 2. Intra-route Swap (Swap 2 nodes on GPU)
+            r = torch.randint(0, r_cnt, (1,), device=device).item()
+            r_len = int(cand_lengths[p, r].item())
+            if r_len >= 4:
+                i1 = torch.randint(1, r_len - 1, (1,), device=device).item()
+                i2 = torch.randint(1, r_len - 1, (1,), device=device).item()
+                if i1 != i2:
+                    val1 = cand_routes[p, r, i1].clone()
+                    cand_routes[p, r, i1] = cand_routes[p, r, i2]
+                    cand_routes[p, r, i2] = val1
+
+        elif move_type == 2:
+            # 3. Inter-route Relocate (Vehicle Elimination)
+            if r_cnt >= 2:
+                r_src = torch.randint(0, r_cnt, (1,), device=device).item()
+                r_dst = torch.randint(0, r_cnt, (1,), device=device).item()
+                while r_src == r_dst:
+                    r_dst = torch.randint(0, r_cnt, (1,), device=device).item()
+
+                len_src = int(cand_lengths[p, r_src].item())
+                len_dst = int(cand_lengths[p, r_dst].item())
+
+                if len_src >= 3 and len_dst < L - 1:
+                    pos_src = torch.randint(1, len_src - 1, (1,), device=device).item()
+                    cust = cand_routes[p, r_src, pos_src].clone()
+                    pos_dst = torch.randint(1, len_dst, (1,), device=device).item()
+
+                    # Shift dst right & insert
+                    cand_routes[p, r_dst, pos_dst+1:len_dst+1] = cand_routes[p, r_dst, pos_dst:len_dst].clone()
+                    cand_routes[p, r_dst, pos_dst] = cust
+                    cand_lengths[p, r_dst] = len_dst + 1
+
+                    # Remove from src
+                    cand_routes[p, r_src, pos_src:len_src-1] = cand_routes[p, r_src, pos_src+1:len_src].clone()
+                    cand_routes[p, r_src, len_src-1] = depot
+                    cand_lengths[p, r_src] = len_src - 1
+
+                    # If r_src became empty (len <= 2), eliminate route!
+                    if cand_lengths[p, r_src] <= 2:
+                        for r_shift in range(r_src, r_cnt - 1):
+                            cand_routes[p, r_shift] = cand_routes[p, r_shift + 1].clone()
+                            cand_lengths[p, r_shift] = cand_lengths[p, r_shift + 1]
+                        cand_routes[p, r_cnt - 1].fill_(depot)
+                        cand_lengths[p, r_cnt - 1] = 2
+                        cand_counts[p] = r_cnt - 1
+
+        elif move_type == 3:
+            # 4. Inter-route Swap
+            if r_cnt >= 2:
+                r1 = torch.randint(0, r_cnt, (1,), device=device).item()
+                r2 = torch.randint(0, r_cnt, (1,), device=device).item()
+                while r1 == r2:
+                    r2 = torch.randint(0, r_cnt, (1,), device=device).item()
+                len1 = int(cand_lengths[p, r1].item())
+                len2 = int(cand_lengths[p, r2].item())
+                if len1 >= 3 and len2 >= 3:
+                    p1 = torch.randint(1, len1 - 1, (1,), device=device).item()
+                    p2 = torch.randint(1, len2 - 1, (1,), device=device).item()
+                    v1 = cand_routes[p, r1, p1].clone()
+                    v2 = cand_routes[p, r2, p2].clone()
+                    cand_routes[p, r1, p1] = v2
+                    cand_routes[p, r2, p2] = v1
+
+        elif move_type == 4:
+            # 5. Intra-route Relocate (Single customer relocation within route)
+            r = torch.randint(0, r_cnt, (1,), device=device).item()
+            r_len = int(cand_lengths[p, r].item())
+            if r_len >= 4:
+                pos_src = torch.randint(1, r_len - 1, (1,), device=device).item()
+                pos_dst = torch.randint(1, r_len - 1, (1,), device=device).item()
+                if pos_src != pos_dst:
+                    cust = cand_routes[p, r, pos_src].clone()
+                    if pos_src < pos_dst:
+                        cand_routes[p, r, pos_src:pos_dst] = cand_routes[p, r, pos_src+1:pos_dst+1].clone()
+                    else:
+                        cand_routes[p, r, pos_dst+1:pos_src+1] = cand_routes[p, r, pos_dst:pos_src].clone()
+                    cand_routes[p, r, pos_dst] = cust
+
+    return cand_routes, cand_lengths, cand_counts
+
+
+def tensor_guided_crossover(
+    pop_routes: torch.Tensor,
+    pop_lengths: torch.Tensor,
+    pop_route_counts: torch.Tensor,
+    best_indices,
+    peer_indices,
+    p_hybrid_mask: torch.Tensor,
+    backend,
+    data
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """100% Pure GPU Tensorized Crossover alias."""
+    return tensor_gpu_elite_crossover(
+        pop_routes, pop_lengths, pop_route_counts, best_indices, p_hybrid_mask, backend, data
+    )
+
+
+def tensor_woa_intensification(
+    cand_routes: torch.Tensor,
+    cand_lengths: torch.Tensor,
+    cand_counts: torch.Tensor,
     best_indices,
     a_param: float,
     p_woa_mask: torch.Tensor,
     backend,
     data
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """
-    Performs PyTorch CUDA WOA (Whale Optimization Algorithm) Intensification:
-    - If |A| < 1: Elite route injection from Best + Feasible Repair.
-    - If |A| >= 1: Li & Lim customer sequence perturbation + Feasible Repair.
-    """
-    P, R, L = pop_routes.shape
-    device = backend.device
-    depot = data.DC
-
-    offspring_routes = pop_routes.clone()
-    offspring_lengths = pop_lengths.clone()
-    offspring_counts = pop_route_counts.clone()
-
-    for p in range(P):
-        if not p_woa_mask[p].item():
-            continue
-
-        if isinstance(best_indices, int):
-            best_i = best_indices
-        elif hasattr(best_indices, "__getitem__"):
-            best_i = int(best_indices[p].item())
-        else:
-            best_i = int(best_indices)
-
-        best_r_cnt = int(pop_route_counts[best_i].item())
-        curr_r_cnt = int(pop_route_counts[p].item())
-
-        r1 = random.random()
-        A_vec = 2.0 * a_param * r1 - a_param
-
-        child_routes: List[List[int]] = []
-
-        if abs(A_vec) < 1.0 and best_r_cnt > 0:
-            # Mode A: Encircling Prey (Inject 1 or 2 elite routes from Best)
-            elite_r_indices = list(range(best_r_cnt))
-            random.shuffle(elite_r_indices)
-            take = 1 if (best_r_cnt == 1 or random.random() < 0.6) else 2
-
-            served: Set[int] = set()
-            for r_idx in elite_r_indices[:take]:
-                r_len = int(pop_lengths[best_i, r_idx].item())
-                r_nodes = pop_routes[best_i, r_idx, :r_len].cpu().tolist()
-                custs = [c for c in r_nodes if c != depot]
-                if custs:
-                    child_routes.append([depot] + custs + [depot])
-                    served.update(custs)
-
-            # Keep remaining routes from current
-            for r_idx in range(curr_r_cnt):
-                r_len = int(pop_lengths[p, r_idx].item())
-                r_nodes = pop_routes[p, r_idx, :r_len].cpu().tolist()
-                custs = [c for c in r_nodes if c != depot and c not in served]
-                if custs:
-                    child_routes.append([depot] + custs + [depot])
-                    served.update(custs)
-
-            child_routes = feasible_or_repair_algorithm_10_routes(child_routes, data)
-
-        else:
-            # Mode B: Search for Prey (Li & Lim Customer Sequence Perturbation)
-            sequence: List[int] = []
-            for r_idx in range(curr_r_cnt):
-                r_len = int(pop_lengths[p, r_idx].item())
-                r_nodes = pop_routes[p, r_idx, :r_len].cpu().tolist()
-                for c in r_nodes:
-                    if c != depot:
-                        sequence.append(c)
-
-            if len(sequence) >= 2:
-                pert_type = random.randint(0, 2)
-                if pert_type == 0:  # Swap
-                    i, j = random.randint(0, len(sequence) - 1), random.randint(0, len(sequence) - 1)
-                    sequence[i], sequence[j] = sequence[j], sequence[i]
-                elif pert_type == 1:  # Relocate
-                    i, j = random.randint(0, len(sequence) - 1), random.randint(0, len(sequence) - 1)
-                    c = sequence.pop(i)
-                    sequence.insert(j, c)
-                else:  # Reverse
-                    i, j = random.randint(0, len(sequence) - 1), random.randint(0, len(sequence) - 1)
-                    if i > j:
-                        i, j = j, i
-                    sequence[i:j+1] = reversed(sequence[i:j+1])
-
-            # Split sequence into feasible routes
-            cur_r = [depot]
-            for c in sequence:
-                cand = cur_r + [c, depot]
-                flag, _ = _chk_route_list(cand, data)
-                if flag:
-                    cur_r.append(c)
-                else:
-                    if len(cur_r) > 1:
-                        cur_r.append(depot)
-                        child_routes.append(cur_r)
-                    cur_r = [depot, c]
-            if len(cur_r) > 1:
-                cur_r.append(depot)
-                child_routes.append(cur_r)
-
-            child_routes = feasible_or_repair_algorithm_10_routes(child_routes, data)
-
-        # Write back into offspring tensor
-        num_r = min(len(child_routes), R)
-        offspring_counts[p] = num_r
-        offspring_routes[p].fill_(depot)
-        offspring_lengths[p].fill_(2)
-
-        for r_i in range(num_r):
-            r_nodes = child_routes[r_i]
-            r_len = min(len(r_nodes), L)
-            offspring_lengths[p, r_i] = r_len
-            offspring_routes[p, r_i, :r_len] = torch.tensor(r_nodes[:r_len], dtype=torch.long, device=device)
-
-    return offspring_routes, offspring_lengths, offspring_counts
+    """100% Pure GPU Tensorized Multi-Operator Mutation alias."""
+    return tensor_gpu_neighborhood_moves(
+        cand_routes, cand_lengths, cand_counts, p_woa_mask, backend, data
+    )
