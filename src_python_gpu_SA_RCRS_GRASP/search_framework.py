@@ -35,6 +35,9 @@ from .operator import (
     tensor_woa_intensification,
     tensor_gpu_elite_crossover,
     tensor_gpu_neighborhood_moves,
+    tensor_gpu_intra_2opt,
+    tensor_gpu_smart_relocate,
+    tensor_gpu_ruin_and_recreate,
 )
 from .solution import Route, Solution
 from .util import argsort, mean, rand
@@ -1418,7 +1421,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
             c_nv, r_nv = cand_v_cnts, v_counts
             c_d, r_d = cand_dists, total_dists
 
-            better_nv = c_nv < r_nv
+            better_nv = (c_nv < r_nv) & (c_d - r_d <= (r_nv - c_nv).float() * 2000.0)
             worse_nv = c_nv > r_nv
             same_nv = c_nv == r_nv
             delta_d = c_d - r_d
@@ -1443,25 +1446,38 @@ def gpu_pure_tensor_search_framework(data, best_s):
             if gen % ls_interval == 0:
                 target_mask = torch.zeros(P, dtype=torch.bool, device=device)
                 target_mask[island_bests_gpu] = True
-                for _ in range(5):
-                    ls_routes, ls_lengths, ls_counts = tensor_gpu_neighborhood_moves(
-                        pop_routes, pop_lengths, pop_route_counts, target_mask, backend, data
-                    )
-                    ls_feas, ls_costs, ls_v, ls_d = backend.evaluate_population_tensor(
-                        ls_routes, ls_lengths, ls_counts
-                    )
-                    ls_better = ls_feas & target_mask & (
-                        (ls_v < v_counts) | ((ls_v == v_counts) & (ls_d < total_dists - 1e-4))
-                    )
-                    pop_routes[ls_better] = ls_routes[ls_better]
-                    pop_lengths[ls_better] = ls_lengths[ls_better]
-                    pop_route_counts[ls_better] = ls_counts[ls_better]
-                    feas[ls_better] = ls_feas[ls_better]
-                    costs[ls_better] = ls_costs[ls_better]
-                    v_counts[ls_better] = ls_v[ls_better]
-                    total_dists[ls_better] = ls_d[ls_better]
 
-            # 6. Pure GPU Island Migration
+                # A. Smart Inter-route Relocate (Vehicle elimination & distance reduction)
+                pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_smart_relocate(
+                    pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+                    target_mask, backend, data, max_attempts=4
+                )
+
+                # B. Batched Intra-route 2-Opt on Island Bests
+                pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_intra_2opt(
+                    pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+                    target_mask, backend, data, max_passes=3
+                )
+
+            # 6. Pure GPU Stagnation-Triggered Ruin & Recreate
+            stag_interval = getattr(data, "stagnation_interval", 50)
+            if gen % stag_interval == 0 and (gen - last_improvement_gen >= stag_interval):
+                div_mask = torch.zeros(P, dtype=torch.bool, device=device)
+                for k in range(num_islands):
+                    s_idx = k * island_size
+                    e_idx = s_idx + island_size
+                    island_scores = lex_scores[s_idx:e_idx]
+                    sorted_rel = torch.argsort(island_scores)
+                    div_cnt = max(1, int(round(island_size * 0.40)))
+                    for d_i in range(island_size - div_cnt, island_size):
+                        div_mask[s_idx + sorted_rel[d_i]] = True
+
+                pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_ruin_and_recreate(
+                    pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+                    div_mask, backend, data, removal_fraction=0.30
+                )
+
+            # 7. Pure GPU Island Migration
             mig_interval = getattr(data, "migration_interval", 25)
             if gen % mig_interval == 0 and num_islands > 1 and P % num_islands == 0:
                 for k in range(num_islands):
@@ -1480,7 +1496,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                         v_counts[worst_p] = v_counts[src_best]
                         total_dists[worst_p] = total_dists[src_best]
 
-            # 7. Global Best Solution Tracking with Zero Sync Overhead
+            # 8. Global Best Solution Tracking with Zero Sync Overhead
             lex_scores = compute_lex_scores(feas, v_counts, total_dists)
             curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
             best_nv = best_s.len()
@@ -1507,7 +1523,16 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 time_exhausted = True
                 break
 
-        # Final pass at run end to guarantee best_s holds the optimum
+        # Final pass at run end: deep 2-opt trimming on the global best solution
+        lex_scores = compute_lex_scores(feas, v_counts, total_dists)
+        curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
+        best_mask = torch.zeros(P, dtype=torch.bool, device=device)
+        best_mask[curr_best_idx] = True
+        pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_intra_2opt(
+            pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+            best_mask, backend, data, max_passes=5
+        )
+
         lex_scores = compute_lex_scores(feas, v_counts, total_dists)
         curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
         sol_best = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, curr_best_idx.item())

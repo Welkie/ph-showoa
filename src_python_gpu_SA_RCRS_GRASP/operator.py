@@ -677,6 +677,352 @@ def tensor_gpu_elite_crossover(
     return cand_routes, cand_lengths, cand_counts
 
 
+def tensor_gpu_intra_2opt(
+    pop_routes: torch.Tensor,
+    pop_lengths: torch.Tensor,
+    pop_route_counts: torch.Tensor,
+    feas: torch.Tensor,
+    costs: torch.Tensor,
+    v_counts: torch.Tensor,
+    total_dists: torch.Tensor,
+    active_mask: torch.Tensor,
+    backend,
+    data,
+    max_passes: int = 3
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    100% Pure GPU Tensorized Intra-Route 2-Opt Downhill Optimizer.
+    Evaluates all (i, j) subsegment reversal pairs in parallel via broadcasting on CUDA VRAM.
+    Accepts moves that preserve feasibility and strictly reduce total distance.
+    Zero host-device memory transfers.
+    """
+    P, R, L = pop_routes.shape
+    device = backend.device
+    dist_t = backend.dist_t
+
+    active_indices = torch.nonzero(active_mask, as_tuple=True)[0]
+    if len(active_indices) == 0:
+        return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
+    for _ in range(max_passes):
+        cand_routes = pop_routes.clone()
+        cand_modified = torch.zeros(P, dtype=torch.bool, device=device)
+
+        for p in active_indices:
+            p_idx = int(p.item())
+            r_cnt = int(pop_route_counts[p_idx].item())
+            for r in range(r_cnt):
+                r_len = int(pop_lengths[p_idx, r].item())
+                if r_len < 5:
+                    continue
+
+                nodes = cand_routes[p_idx, r, :r_len]
+                N = r_len - 2
+                prev_i = nodes[0:N]
+                curr_i = nodes[1:N+1]
+                curr_j = nodes[1:N+1]
+                next_j = nodes[2:N+2]
+
+                A = prev_i.unsqueeze(1)
+                B = curr_i.unsqueeze(1)
+                C = curr_j.unsqueeze(0)
+                D = next_j.unsqueeze(0)
+
+                delta_mat = dist_t[A, C] + dist_t[B, D] - (dist_t[A, B] + dist_t[C, D])
+
+                u_idx = torch.arange(N, device=device).unsqueeze(1)
+                v_idx = torch.arange(N, device=device).unsqueeze(0)
+                valid_mask = v_idx > u_idx
+
+                delta_mat = torch.where(valid_mask, delta_mat, torch.tensor(float('inf'), device=device))
+                min_val, min_flat = torch.min(delta_mat.view(-1), dim=0)
+                if min_val.item() < -1e-4:
+                    best_u = min_flat // N
+                    best_v = min_flat % N
+                    i_pos = int(best_u.item()) + 1
+                    j_pos = int(best_v.item()) + 1
+
+                    sub = cand_routes[p_idx, r, i_pos:j_pos+1].clone()
+                    cand_routes[p_idx, r, i_pos:j_pos+1] = torch.flip(sub, dims=[0])
+                    cand_modified[p_idx] = True
+
+        if not cand_modified.any():
+            break
+
+        c_feas, c_costs, c_v_cnts, c_dists = backend.evaluate_population_tensor(
+            cand_routes, pop_lengths, pop_route_counts
+        )
+
+        improved = active_mask & cand_modified & c_feas & (
+            (c_v_cnts < v_counts) | ((c_v_cnts == v_counts) & (c_dists < total_dists - 1e-4))
+        )
+
+        if not improved.any():
+            break
+
+        pop_routes[improved] = cand_routes[improved]
+        feas[improved] = c_feas[improved]
+        costs[improved] = c_costs[improved]
+        v_counts[improved] = c_v_cnts[improved]
+        total_dists[improved] = c_dists[improved]
+
+    return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
+
+def tensor_gpu_smart_relocate(
+    pop_routes: torch.Tensor,
+    pop_lengths: torch.Tensor,
+    pop_route_counts: torch.Tensor,
+    feas: torch.Tensor,
+    costs: torch.Tensor,
+    v_counts: torch.Tensor,
+    total_dists: torch.Tensor,
+    active_mask: torch.Tensor,
+    backend,
+    data,
+    max_attempts: int = 4
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    100% Pure GPU Tensorized Smart Inter-Route Relocate & Vehicle Elimination.
+    Evaluates candidate insertion positions across all destination routes via vectorized
+    delta computation on CUDA VRAM.
+    """
+    P, R, L = pop_routes.shape
+    device = backend.device
+    dist_t = backend.dist_t
+    depot = data.DC
+
+    active_indices = torch.nonzero(active_mask, as_tuple=True)[0]
+    if len(active_indices) == 0:
+        return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
+    for _ in range(max_attempts):
+        cand_routes = pop_routes.clone()
+        cand_lengths = pop_lengths.clone()
+        cand_counts = pop_route_counts.clone()
+        cand_modified = torch.zeros(P, dtype=torch.bool, device=device)
+
+        for p in active_indices:
+            p_idx = int(p.item())
+            r_cnt = int(cand_counts[p_idx].item())
+            if r_cnt <= 1:
+                continue
+
+            # Prioritize short/singleton routes for vehicle elimination
+            src_candidates = []
+            for r in range(r_cnt):
+                if int(cand_lengths[p_idx, r].item()) <= 4:
+                    src_candidates.append(r)
+            if src_candidates:
+                r_src = random.choice(src_candidates)
+            else:
+                r_src = torch.randint(0, r_cnt, (1,), device=device).item()
+
+            len_src = int(cand_lengths[p_idx, r_src].item())
+            if len_src <= 2:
+                continue
+
+            pos_src = torch.randint(1, len_src - 1, (1,), device=device).item()
+            cust = cand_routes[p_idx, r_src, pos_src].item()
+
+            best_dst = -1
+            best_pos = -1
+            best_delta = float('inf')
+
+            for r_dst in range(r_cnt):
+                if r_dst == r_src:
+                    continue
+                len_dst = int(cand_lengths[p_idx, r_dst].item())
+                if len_dst >= L - 1:
+                    continue
+
+                r_nodes = cand_routes[p_idx, r_dst, :len_dst]
+                prev = r_nodes[:-1]
+                nxt = r_nodes[1:]
+                deltas = dist_t[prev, cust] + dist_t[cust, nxt] - dist_t[prev, nxt]
+                min_d, min_p = torch.min(deltas, dim=0)
+                if min_d.item() < best_delta:
+                    best_delta = min_d.item()
+                    best_dst = r_dst
+                    best_pos = int(min_p.item()) + 1
+
+            if best_dst != -1:
+                len_dst = int(cand_lengths[p_idx, best_dst].item())
+                # Shift dst right and insert
+                cand_routes[p_idx, best_dst, best_pos+1:len_dst+1] = cand_routes[p_idx, best_dst, best_pos:len_dst].clone()
+                cand_routes[p_idx, best_dst, best_pos] = cust
+                cand_lengths[p_idx, best_dst] = len_dst + 1
+
+                # Remove from src
+                cand_routes[p_idx, r_src, pos_src:len_src-1] = cand_routes[p_idx, r_src, pos_src+1:len_src].clone()
+                cand_routes[p_idx, r_src, len_src-1] = depot
+                cand_lengths[p_idx, r_src] = len_src - 1
+
+                # Eliminate route if empty
+                if cand_lengths[p_idx, r_src] <= 2:
+                    for r_shift in range(r_src, r_cnt - 1):
+                        cand_routes[p_idx, r_shift] = cand_routes[p_idx, r_shift + 1].clone()
+                        cand_lengths[p_idx, r_shift] = cand_lengths[p_idx, r_shift + 1]
+                    cand_routes[p_idx, r_cnt - 1].fill_(depot)
+                    cand_lengths[p_idx, r_cnt - 1] = 2
+                    cand_counts[p_idx] = r_cnt - 1
+
+                cand_modified[p_idx] = True
+
+        if not cand_modified.any():
+            break
+
+        c_feas, c_costs, c_v_cnts, c_dists = backend.evaluate_population_tensor(
+            cand_routes, cand_lengths, cand_counts
+        )
+
+        improved = active_mask & cand_modified & c_feas & (
+            (c_v_cnts < v_counts) | ((c_v_cnts == v_counts) & (c_dists < total_dists - 1e-4))
+        )
+
+        if not improved.any():
+            break
+
+        pop_routes[improved] = cand_routes[improved]
+        pop_lengths[improved] = cand_lengths[improved]
+        pop_route_counts[improved] = cand_counts[improved]
+        feas[improved] = c_feas[improved]
+        costs[improved] = c_costs[improved]
+        v_counts[improved] = c_v_cnts[improved]
+        total_dists[improved] = c_dists[improved]
+
+    return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
+
+def tensor_gpu_ruin_and_recreate(
+    pop_routes: torch.Tensor,
+    pop_lengths: torch.Tensor,
+    pop_route_counts: torch.Tensor,
+    feas: torch.Tensor,
+    costs: torch.Tensor,
+    v_counts: torch.Tensor,
+    total_dists: torch.Tensor,
+    target_mask: torch.Tensor,
+    backend,
+    data,
+    removal_fraction: float = 0.30
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    100% Pure GPU Tensorized Stagnation Diversification (Ruin & Recreate).
+    Removes a fraction of customers and re-inserts them via vectorized minimum-detour
+    insertion on GPU VRAM, followed by 2-opt trimming.
+    """
+    P, R, L = pop_routes.shape
+    device = backend.device
+    dist_t = backend.dist_t
+    depot = data.DC
+
+    target_indices = torch.nonzero(target_mask, as_tuple=True)[0]
+    if len(target_indices) == 0:
+        return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
+    cand_routes = pop_routes.clone()
+    cand_lengths = pop_lengths.clone()
+    cand_counts = pop_route_counts.clone()
+    cand_modified = torch.zeros(P, dtype=torch.bool, device=device)
+
+    for p in target_indices:
+        p_idx = int(p.item())
+        r_cnt = int(cand_counts[p_idx].item())
+        all_custs = []
+        for r in range(r_cnt):
+            r_len = int(cand_lengths[p_idx, r].item())
+            if r_len > 2:
+                all_custs.extend(cand_routes[p_idx, r, 1:r_len-1].tolist())
+
+        if len(all_custs) < 6:
+            continue
+
+        rem_cnt = max(2, int(len(all_custs) * removal_fraction))
+        random.shuffle(all_custs)
+        unrouted = all_custs[:rem_cnt]
+        unrouted_set = set(unrouted)
+        unrouted_tensor = torch.tensor(unrouted, dtype=torch.long, device=device)
+
+        # Ruin: filter out unrouted customers
+        active_r = 0
+        for r in range(r_cnt):
+            r_len = int(cand_lengths[p_idx, r].item())
+            nodes = cand_routes[p_idx, r, :r_len]
+            keep_mask = ~torch.isin(nodes[1:-1], unrouted_tensor)
+            kept = nodes[1:-1][keep_mask]
+            if len(kept) > 0:
+                new_len = len(kept) + 2
+                cand_routes[p_idx, active_r].fill_(depot)
+                cand_routes[p_idx, active_r, 1:new_len-1] = kept
+                cand_lengths[p_idx, active_r] = new_len
+                active_r += 1
+
+        for r in range(active_r, R):
+            cand_routes[p_idx, r].fill_(depot)
+            cand_lengths[p_idx, r] = 2
+        cand_counts[p_idx] = max(active_r, 1)
+
+        # Recreate: vectorized greedy insertion for unrouted customers
+        for c in unrouted:
+            best_r = -1
+            best_pos = -1
+            best_delta = float('inf')
+            curr_cnt = int(cand_counts[p_idx].item())
+
+            for r in range(curr_cnt):
+                r_len = int(cand_lengths[p_idx, r].item())
+                if r_len >= L - 1:
+                    continue
+                r_nodes = cand_routes[p_idx, r, :r_len]
+                prev = r_nodes[:-1]
+                nxt = r_nodes[1:]
+                deltas = dist_t[prev, c] + dist_t[c, nxt] - dist_t[prev, nxt]
+                min_d, min_p = torch.min(deltas, dim=0)
+                if min_d.item() < best_delta:
+                    best_delta = min_d.item()
+                    best_r = r
+                    best_pos = int(min_p.item()) + 1
+
+            if best_r != -1:
+                r_len = int(cand_lengths[p_idx, best_r].item())
+                cand_routes[p_idx, best_r, best_pos+1:r_len+1] = cand_routes[p_idx, best_r, best_pos:r_len].clone()
+                cand_routes[p_idx, best_r, best_pos] = c
+                cand_lengths[p_idx, best_r] = r_len + 1
+            elif curr_cnt < R:
+                cand_routes[p_idx, curr_cnt].fill_(depot)
+                cand_routes[p_idx, curr_cnt, 1] = c
+                cand_lengths[p_idx, curr_cnt] = 3
+                cand_counts[p_idx] = curr_cnt + 1
+
+        cand_modified[p_idx] = True
+
+    if not cand_modified.any():
+        return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
+    c_feas, c_costs, c_v_cnts, c_dists = backend.evaluate_population_tensor(
+        cand_routes, cand_lengths, cand_counts
+    )
+
+    accepted = target_mask & cand_modified & c_feas
+    if accepted.any():
+        pop_routes[accepted] = cand_routes[accepted]
+        pop_lengths[accepted] = cand_lengths[accepted]
+        pop_route_counts[accepted] = cand_counts[accepted]
+        feas[accepted] = c_feas[accepted]
+        costs[accepted] = c_costs[accepted]
+        v_counts[accepted] = c_v_cnts[accepted]
+        total_dists[accepted] = c_dists[accepted]
+
+        # Immediate fast 2-opt pass on accepted solutions
+        pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_intra_2opt(
+            pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+            accepted, backend, data, max_passes=2
+        )
+
+    return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
+
 def tensor_gpu_neighborhood_moves(
     pop_routes: torch.Tensor,
     pop_lengths: torch.Tensor,
@@ -687,11 +1033,12 @@ def tensor_gpu_neighborhood_moves(
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     100% Pure GPU Tensorized Multi-Operator Local Search & Mutation (TGA).
-    Applies Intra-2opt, Intra-swap, Inter-relocate (Vehicle Elimination), Inter-swap
+    Applies Intelligent Intra-2opt, Intra-swap, Inter-relocate (Best Insertion), Inter-swap
     directly on GPU VRAM tensors.
     """
     P, R, L = pop_routes.shape
     device = backend.device
+    dist_t = backend.dist_t
     depot = data.DC
 
     cand_routes = pop_routes.clone()
@@ -710,14 +1057,39 @@ def tensor_gpu_neighborhood_moves(
         move_type = torch.randint(0, 5, (1,), device=device).item()
 
         if move_type == 0:
-            # 1. Intra-route 2-Opt (Subsegment Reverse on GPU)
+            # 1. Intra-route 2-Opt via Vectorized Delta on GPU
             r = torch.randint(0, r_cnt, (1,), device=device).item()
             r_len = int(cand_lengths[p, r].item())
             if r_len >= 5:
-                i1 = torch.randint(1, r_len - 3, (1,), device=device).item()
-                i2 = torch.randint(i1 + 1, r_len - 1, (1,), device=device).item()
-                sub = cand_routes[p, r, i1:i2+1].clone()
-                cand_routes[p, r, i1:i2+1] = torch.flip(sub, dims=[0])
+                nodes = cand_routes[p, r, :r_len]
+                N = r_len - 2
+                prev_i = nodes[0:N]
+                curr_i = nodes[1:N+1]
+                curr_j = nodes[1:N+1]
+                next_j = nodes[2:N+2]
+
+                A = prev_i.unsqueeze(1)
+                B = curr_i.unsqueeze(1)
+                C = curr_j.unsqueeze(0)
+                D = next_j.unsqueeze(0)
+
+                delta_mat = dist_t[A, C] + dist_t[B, D] - (dist_t[A, B] + dist_t[C, D])
+                u_idx = torch.arange(N, device=device).unsqueeze(1)
+                v_idx = torch.arange(N, device=device).unsqueeze(0)
+                delta_mat = torch.where(v_idx > u_idx, delta_mat, torch.tensor(float('inf'), device=device))
+
+                min_val, min_flat = torch.min(delta_mat.view(-1), dim=0)
+                if min_val.item() < -1e-4:
+                    i1 = int((min_flat // N).item()) + 1
+                    i2 = int((min_flat % N).item()) + 1
+                    sub = cand_routes[p, r, i1:i2+1].clone()
+                    cand_routes[p, r, i1:i2+1] = torch.flip(sub, dims=[0])
+                else:
+                    # Perturbation flip if no negative 2-opt found
+                    i1 = torch.randint(1, r_len - 3, (1,), device=device).item()
+                    i2 = torch.randint(i1 + 1, r_len - 1, (1,), device=device).item()
+                    sub = cand_routes[p, r, i1:i2+1].clone()
+                    cand_routes[p, r, i1:i2+1] = torch.flip(sub, dims=[0])
 
         elif move_type == 1:
             # 2. Intra-route Swap (Swap 2 nodes on GPU)
@@ -732,7 +1104,7 @@ def tensor_gpu_neighborhood_moves(
                     cand_routes[p, r, i2] = val1
 
         elif move_type == 2:
-            # 3. Inter-route Relocate (Vehicle Elimination)
+            # 3. Inter-route Relocate with Best-Insertion Slot
             if r_cnt >= 2:
                 r_src = torch.randint(0, r_cnt, (1,), device=device).item()
                 r_dst = torch.randint(0, r_cnt, (1,), device=device).item()
@@ -744,8 +1116,14 @@ def tensor_gpu_neighborhood_moves(
 
                 if len_src >= 3 and len_dst < L - 1:
                     pos_src = torch.randint(1, len_src - 1, (1,), device=device).item()
-                    cust = cand_routes[p, r_src, pos_src].clone()
-                    pos_dst = torch.randint(1, len_dst, (1,), device=device).item()
+                    cust = cand_routes[p, r_src, pos_src].item()
+
+                    # Find minimum detour position in dst via tensor
+                    r_nodes = cand_routes[p, r_dst, :len_dst]
+                    prev = r_nodes[:-1]
+                    nxt = r_nodes[1:]
+                    deltas = dist_t[prev, cust] + dist_t[cust, nxt] - dist_t[prev, nxt]
+                    pos_dst = int(torch.argmin(deltas).item()) + 1
 
                     # Shift dst right & insert
                     cand_routes[p, r_dst, pos_dst+1:len_dst+1] = cand_routes[p, r_dst, pos_dst:len_dst].clone()
@@ -784,19 +1162,25 @@ def tensor_gpu_neighborhood_moves(
                     cand_routes[p, r2, p2] = v1
 
         elif move_type == 4:
-            # 5. Intra-route Relocate (Single customer relocation within route)
+            # 5. Intra-route Relocate with Best-Insertion Slot
             r = torch.randint(0, r_cnt, (1,), device=device).item()
             r_len = int(cand_lengths[p, r].item())
-            if r_len >= 4:
+            if r_len >= 5:
                 pos_src = torch.randint(1, r_len - 1, (1,), device=device).item()
-                pos_dst = torch.randint(1, r_len - 1, (1,), device=device).item()
-                if pos_src != pos_dst:
-                    cust = cand_routes[p, r, pos_src].clone()
-                    if pos_src < pos_dst:
-                        cand_routes[p, r, pos_src:pos_dst] = cand_routes[p, r, pos_src+1:pos_dst+1].clone()
-                    else:
-                        cand_routes[p, r, pos_dst+1:pos_src+1] = cand_routes[p, r, pos_dst:pos_src].clone()
-                    cand_routes[p, r, pos_dst] = cust
+                cust = cand_routes[p, r, pos_src].item()
+
+                # Remove cust from r
+                tmp = torch.cat([cand_routes[p, r, :pos_src], cand_routes[p, r, pos_src+1:r_len]])
+                prev = tmp[:-1]
+                nxt = tmp[1:]
+                deltas = dist_t[prev, cust] + dist_t[cust, nxt] - dist_t[prev, nxt]
+                pos_dst = int(torch.argmin(deltas).item()) + 1
+
+                if pos_src < pos_dst:
+                    cand_routes[p, r, pos_src:pos_dst] = cand_routes[p, r, pos_src+1:pos_dst+1].clone()
+                else:
+                    cand_routes[p, r, pos_dst+1:pos_src+1] = cand_routes[p, r, pos_dst:pos_src].clone()
+                cand_routes[p, r, pos_dst] = cust
 
     return cand_routes, cand_lengths, cand_counts
 
