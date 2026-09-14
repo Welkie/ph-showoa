@@ -1447,11 +1447,15 @@ def gpu_pure_tensor_search_framework(data, best_s):
             v_counts[accept_mask] = cand_v_cnts[accept_mask]
             total_dists[accept_mask] = cand_dists[accept_mask]
 
-            # 5. Pure GPU Local Search Intensification on Island Bests
+            # 5. Pure GPU Local Search Intensification on Global Best & Island Lead
             ls_interval = getattr(data, "local_search_interval", 25)
             if gen % ls_interval == 0:
                 target_mask = torch.zeros(P, dtype=torch.bool, device=device)
-                target_mask[island_bests_gpu] = True
+                best_idx = torch.argmin(lex_scores)
+                target_mask[best_idx] = True
+                if num_islands > 1:
+                    island_lead = island_bests_gpu[(gen // ls_interval) % num_islands]
+                    target_mask[island_lead] = True
 
                 # A. Dedicated Pure-GPU Vehicle Elimination
                 pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_vehicle_elimination(
@@ -1485,10 +1489,8 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     s_idx = k * island_size
                     e_idx = s_idx + island_size
                     island_scores = lex_scores[s_idx:e_idx]
-                    sorted_rel = torch.argsort(island_scores)
-                    div_cnt = max(1, int(round(island_size * 0.40)))
-                    for d_i in range(island_size - div_cnt, island_size):
-                        div_mask[s_idx + sorted_rel[d_i]] = True
+                    worst_rel = torch.argmax(island_scores)
+                    div_mask[s_idx + worst_rel] = True
 
                 pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_ruin_and_recreate(
                     pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
