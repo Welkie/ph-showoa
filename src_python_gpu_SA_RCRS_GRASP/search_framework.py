@@ -1527,7 +1527,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 update_best_solution(sol_best, best_s, used, run, gen, data)
                 last_improvement_gen = gen
 
-            if gen % OUTPUT_PER_GENS == 0:
+            if gen % 50 == 0 or gen == 1 or gen == data.max_iter:
                 valid_dists = total_dists[feas]
                 avg_dist = float(valid_dists.mean().item()) if len(valid_dists) > 0 else float('inf')
                 curr_td = best_s.cost - 2000.0 * best_s.len()
