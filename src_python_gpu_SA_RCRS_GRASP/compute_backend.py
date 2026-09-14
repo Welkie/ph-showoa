@@ -686,16 +686,16 @@ class TorchComputeBackend(BaseComputeBackend):
         self.dist_t = torch.as_tensor(snapshot.dist, dtype=torch.float32, device=self.device)
         self.time_t = torch.as_tensor(snapshot.time, dtype=torch.float32, device=self.device)
 
-    def evaluate_routes(self, routes: Sequence[Sequence[int]]) -> List[RouteEval]:
-        if len(routes) == 0:
-            return []
-        packed, lengths = _pack_routes(routes, self.depot)
-        if packed.shape[1] < 2:
-            return [(False, 0.0) for _ in routes]
-
-        routes_t = torch.as_tensor(packed, dtype=torch.long, device=self.device)
-        lengths_t = torch.as_tensor(lengths, dtype=torch.long, device=self.device)
+    def evaluate_routes_gpu(self, routes_t: torch.Tensor, lengths_t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        100% Pure GPU tensor evaluation of an arbitrary batch of N routes on CUDA VRAM.
+        Computes exact capacity feasibility (running delivery & pickup load constraints),
+        time-window feasibility, and route distance in fully vectorized PyTorch operations.
+        Zero host-device memory transfers.
+        """
         N, L = routes_t.shape
+        if N == 0 or L < 2:
+            return torch.zeros(N, dtype=torch.bool, device=self.device), torch.zeros(N, dtype=torch.float32, device=self.device)
 
         prev = routes_t[:, :-1]
         curr = routes_t[:, 1:]
@@ -743,6 +743,18 @@ class TorchComputeBackend(BaseComputeBackend):
             time_val = torch.where(is_active, torch.max(arrival, t_start) + t_serv, time_val)
 
         feasible = valid_endpoints & load_valid & tw_valid
+        return feasible, total_dist
+
+    def evaluate_routes(self, routes: Sequence[Sequence[int]]) -> List[RouteEval]:
+        if len(routes) == 0:
+            return []
+        packed, lengths = _pack_routes(routes, self.depot)
+        if packed.shape[1] < 2:
+            return [(False, 0.0) for _ in routes]
+
+        routes_t = torch.as_tensor(packed, dtype=torch.long, device=self.device)
+        lengths_t = torch.as_tensor(lengths, dtype=torch.long, device=self.device)
+        feasible, total_dist = self.evaluate_routes_gpu(routes_t, lengths_t)
         costs = torch.where(feasible, self.dispatch_cost + total_dist * self.unit_cost, 0.0)
 
         feas_np = feasible.cpu().numpy()
@@ -806,11 +818,17 @@ class TorchComputeBackend(BaseComputeBackend):
 
         route_tw_valid = torch.where(route_mask, tw_valid, True).all(dim=-1)
 
+        # Check that exactly self.customer_num customers are visited
+        cust_nodes = pop_routes_t * (route_mask.unsqueeze(-1))
+        is_cust = (cust_nodes > 0) & (cust_nodes <= self.customer_num)
+        cust_count = is_cust.sum(dim=(1, 2))
+        coverage_valid = cust_count == self.customer_num
+
+        pop_feasible = route_load_valid & route_tw_valid & coverage_valid
+
         active_routes = route_mask & (pop_lengths_t > 2)
         vehicle_counts = active_routes.sum(dim=-1).long()
         total_costs = vehicle_counts.float() * self.dispatch_cost + total_distances * self.unit_cost
-
-        pop_feasible = route_load_valid & route_tw_valid
         total_costs = torch.where(pop_feasible, total_costs, torch.tensor(float("inf"), device=self.device))
 
         return pop_feasible, total_costs, vehicle_counts, total_distances

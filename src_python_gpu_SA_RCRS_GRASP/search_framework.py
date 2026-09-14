@@ -36,6 +36,8 @@ from .operator import (
     tensor_gpu_elite_crossover,
     tensor_gpu_neighborhood_moves,
     tensor_gpu_intra_2opt,
+    tensor_gpu_vehicle_elimination,
+    tensor_gpu_inter_2opt_star,
     tensor_gpu_smart_relocate,
     tensor_gpu_ruin_and_recreate,
 )
@@ -233,7 +235,7 @@ def _sa_initialization(s_0: Solution, data, rng: random.Random) -> Solution:
                     if delta < 0 or rng.random() < math.exp(-delta / (1e-6 + t * abs(s.cost))):
                         route.node_list = nl
                         route.update(data)
-                        s.cal_cost(data)
+                        s.cost = new_cost
                         if s.cost < best_cost:
                             best_cost = s.cost
                             s_best = s.clone()
@@ -276,14 +278,17 @@ def _sa_initialization(s_0: Solution, data, rng: random.Random) -> Solution:
                     if delta < 0 or rng.random() < math.exp(-delta / (1e-6 + t * abs(s.cost))):
                         route1.node_list = nl1
                         route2.node_list = nl2
-                        s.update(data)
-                        s.cal_cost(data)
+                        route1.update(data)
+                        route2.update(data)
+                        s.cost = new_cost
                         if s.cost < best_cost:
                             best_cost = s.cost
                             s_best = s.clone()
                             
         t = alpha * t
         
+    s_best.update(data)
+    s_best.cal_cost(data)
     return s_best
 
 
@@ -1296,7 +1301,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
     time_exhausted = False
     completed_runs = 0
 
-    sa_iters = getattr(data, "sa_iterations", 25)
+    sa_iters = getattr(data, "sa_iterations", 150)
     alpha_lo = getattr(data, "grasp_alpha_lo", 0.10)
     alpha_hi = getattr(data, "grasp_alpha_hi", 0.40)
     num_islands = getattr(data, "num_islands", 6)
@@ -1319,9 +1324,10 @@ def gpu_pure_tensor_search_framework(data, best_s):
         for r_i in range(r_cnt):
             r_len = int(pop_lengths[p_idx, r_i].item())
             r_nodes = pop_routes[p_idx, r_i, :r_len].cpu().tolist()
-            if len(r_nodes) >= 3:
-                r_nodes = optimize_route_nodes_2opt(r_nodes, data)
-                sol.append(_make_route(r_nodes[1:-1], data))
+            custs = [node for node in r_nodes if node != data.DC and 1 <= node <= data.customer_num]
+            if custs:
+                clean_nl = optimize_route_nodes_2opt([data.DC] + custs + [data.DC], data)
+                sol.append(_make_route(clean_nl[1:-1], data))
         sol.update(data)
         sol.cal_cost(data)
         return sol
@@ -1421,11 +1427,11 @@ def gpu_pure_tensor_search_framework(data, best_s):
             c_nv, r_nv = cand_v_cnts, v_counts
             c_d, r_d = cand_dists, total_dists
 
-            better_nv = (c_nv < r_nv) & (c_d - r_d <= (r_nv - c_nv).float() * 2000.0)
+            better_nv = c_nv < r_nv
             worse_nv = c_nv > r_nv
             same_nv = c_nv == r_nv
             delta_d = c_d - r_d
-            better_d = same_nv & (delta_d <= 0.001)
+            better_d = same_nv & (delta_d < -1e-4)
 
             denom = 1e-6 + temp * r_d.abs()
             sa_prob = torch.exp(-delta_d.clamp(min=0.0) / denom)
@@ -1447,16 +1453,28 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 target_mask = torch.zeros(P, dtype=torch.bool, device=device)
                 target_mask[island_bests_gpu] = True
 
-                # A. Smart Inter-route Relocate (Vehicle elimination & distance reduction)
+                # A. Dedicated Pure-GPU Vehicle Elimination
+                pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_vehicle_elimination(
+                    pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+                    target_mask, backend, data, max_customers_in_route=4
+                )
+
+                # B. Smart Inter-route Relocate
                 pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_smart_relocate(
                     pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
                     target_mask, backend, data, max_attempts=4
                 )
 
-                # B. Batched Intra-route 2-Opt on Island Bests
+                # C. Pure GPU Inter-route 2-Opt* (Tail exchange)
+                pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_inter_2opt_star(
+                    pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+                    target_mask, backend, data, max_pairs=10
+                )
+
+                # D. Batched Per-Route Intra-route 2-Opt on Island Bests
                 pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_intra_2opt(
                     pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
-                    target_mask, backend, data, max_passes=3
+                    target_mask, backend, data, max_passes=5
                 )
 
             # 6. Pure GPU Stagnation-Triggered Ruin & Recreate
@@ -1523,14 +1541,22 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 time_exhausted = True
                 break
 
-        # Final pass at run end: deep 2-opt trimming on the global best solution
+        # Final pass at run end: deep pure-GPU VND on the global best solution
         lex_scores = compute_lex_scores(feas, v_counts, total_dists)
         curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
         best_mask = torch.zeros(P, dtype=torch.bool, device=device)
         best_mask[curr_best_idx] = True
+        pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_vehicle_elimination(
+            pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+            best_mask, backend, data, max_customers_in_route=4
+        )
+        pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_inter_2opt_star(
+            pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
+            best_mask, backend, data, max_pairs=15
+        )
         pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_intra_2opt(
             pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
-            best_mask, backend, data, max_passes=5
+            best_mask, backend, data, max_passes=8
         )
 
         lex_scores = compute_lex_scores(feas, v_counts, total_dists)
