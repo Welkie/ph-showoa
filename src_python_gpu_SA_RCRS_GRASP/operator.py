@@ -354,7 +354,7 @@ def tensor_rcrs_grasp_init(
     dist_t = backend.dist_t
     delivery_t = backend.delivery_t
 
-    max_routes = min(num_customers, 30)
+    max_routes = min(num_customers, 60)
     max_nodes = num_customers + 2
 
     pop_routes = torch.full((P, max_routes, max_nodes), depot, dtype=torch.long, device=device)
@@ -423,6 +423,15 @@ def tensor_rcrs_grasp_init(
                         pop_lengths[p, new_r] = 3
                         pop_route_counts[p] = new_r + 1
                         unrouted_mask[p, c_new] = False
+                    else:
+                        # Safety fallback: append to the shortest existing route to guarantee termination
+                        min_r = int(torch.argmin(pop_lengths[p, :new_r]).item())
+                        cur_len = int(pop_lengths[p, min_r].item())
+                        if cur_len < max_nodes - 1:
+                            pop_routes[p, min_r, cur_len - 1] = c_new
+                            pop_routes[p, min_r, cur_len] = depot
+                            pop_lengths[p, min_r] = cur_len + 1
+                        unrouted_mask[p, c_new] = False
             continue
 
         N_batch = len(batch_routes)
@@ -471,6 +480,15 @@ def tensor_rcrs_grasp_init(
                         pop_routes[p, new_r, 1] = c_new
                         pop_lengths[p, new_r] = 3
                         pop_route_counts[p] = new_r + 1
+                        unrouted_mask[p, c_new] = False
+                    else:
+                        # Safety fallback: append to the shortest existing route to guarantee termination
+                        min_r = int(torch.argmin(pop_lengths[p, :new_r]).item())
+                        cur_len = int(pop_lengths[p, min_r].item())
+                        if cur_len < max_nodes - 1:
+                            pop_routes[p, min_r, cur_len - 1] = c_new
+                            pop_routes[p, min_r, cur_len] = depot
+                            pop_lengths[p, min_r] = cur_len + 1
                         unrouted_mask[p, c_new] = False
 
     if sa_iters > 0:

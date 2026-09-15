@@ -3,6 +3,7 @@ from __future__ import annotations
 import concurrent.futures
 import math
 import random
+import sys
 import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -1348,7 +1349,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
             pop_routes[p_idx, r_i, :r_len] = torch.tensor(r_nodes[:r_len], dtype=torch.long, device=device)
 
     for run in range(1, data.runs + 1):
-        print("---------------------------------Run %d (Pure GPU Multi-Island)---------------------------" % run)
+        print("---------------------------------Run %d (Pure GPU Multi-Island)---------------------------" % run, flush=True)
 
         pop_routes, pop_lengths, pop_route_counts = tensor_rcrs_grasp_init(
             P, data, backend, alpha_lo=alpha_lo, alpha_hi=alpha_hi, sa_iters=sa_iters
@@ -1364,7 +1365,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
         used = int(time.perf_counter() - stime)
         update_best_solution(init_sol, best_s, used, run, 0, data)
         curr_init_td = best_s.cost - 2000.0 * best_s.len()
-        print("Initialization done on CUDA VRAM. Best NV: %d, Best TD: %.4f" % (best_s.len(), curr_init_td))
+        print("Initialization done on CUDA VRAM. Best NV: %d, Best TD: %.4f" % (best_s.len(), curr_init_td), flush=True)
 
         last_improvement_gen = 0
 
@@ -1536,7 +1537,8 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 accepted_count = int(accept_mask.sum().item())
                 print(
                     "Gen: %d. a %.4f, p_hybrid %.4f, accepted %d. Avg TD %.4f, Best NV %d, Best TD %.4f"
-                    % (gen, a, p_mode, accepted_count, avg_dist, best_s.len(), curr_td)
+                    % (gen, a, p_mode, accepted_count, avg_dist, best_s.len(), curr_td),
+                    flush=True
                 )
 
             if data.tmax != -1 and used > int(data.tmax):
@@ -1572,14 +1574,16 @@ def gpu_pure_tensor_search_framework(data, best_s):
         if time_exhausted:
             break
 
-    print("------------Summary-----------")
-    print("Total %d runs, total consumed %d sec" % (completed_runs, int(used)))
+    print("------------Summary-----------", flush=True)
+    print("Total %d runs, total consumed %d sec" % (completed_runs, int(used)), flush=True)
     best_s.output(data)
     print(
         "In run %d, gen %d, find this solution, at time %d."
-        % (state.find_best_run, state.find_best_gen, int(state.find_best_time))
+        % (state.find_best_run, state.find_best_gen, int(state.find_best_time)),
+        flush=True
     )
-    print("Time to surpass BKS: %d." % int(state.find_bks_time))
+    print("Time to surpass BKS: %d." % int(state.find_bks_time), flush=True)
+    sys.stdout.flush()
     best_s.check(data)
 
 
