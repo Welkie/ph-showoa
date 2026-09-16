@@ -353,6 +353,7 @@ def tensor_rcrs_grasp_init(
     capacity = backend.capacity
     dist_t = backend.dist_t
     delivery_t = backend.delivery_t
+    pickup_t = backend.pickup_t
 
     max_routes = min(num_customers, 60)
     max_nodes = num_customers + 2
@@ -363,6 +364,12 @@ def tensor_rcrs_grasp_init(
 
     unrouted_mask = torch.zeros((P, num_customers + 1), dtype=torch.bool, device=device)
     unrouted_mask[:, 1:num_customers+1] = True
+
+    # RCRS Weights and Capacity Threshold (matching C++ paper formulation)
+    w_td = 1.0
+    w_rc = 0.5
+    w_rs = 0.3
+    rc_thr = 0.70
 
     # Initial seed customer for each individual
     for p in range(P):
@@ -382,35 +389,65 @@ def tensor_rcrs_grasp_init(
                 continue
 
             r_cnt = int(pop_route_counts[p].item())
-            K = min(len(p_unrouted), 8)
-            perm = torch.randperm(len(p_unrouted), device=device)[:K]
-            cands = p_unrouted[perm]
+
+            # Evaluate up to 32 candidates (all unrouted customers when <= 32)
+            if len(p_unrouted) <= 32:
+                cands = p_unrouted
+            else:
+                perm = torch.randperm(len(p_unrouted), device=device)[:32]
+                cands = p_unrouted[perm]
 
             for c_t in cands:
                 c_val = int(c_t.item())
                 c_deliv = delivery_t[c_val].item()
+                c_pickup = pickup_t[c_val].item()
+                c_max_dem = max(c_deliv, c_pickup)
+                dx_c = dist_t[depot, c_val]
+
+                cust_route_cands = []
 
                 for r in range(r_cnt):
                     cur_len = int(pop_lengths[p, r].item())
                     if cur_len >= max_nodes - 1:
                         continue
                     r_nodes = pop_routes[p, r, :cur_len]
-                    if delivery_t[r_nodes].sum().item() + c_deliv > capacity:
+                    r_deliv_sum = delivery_t[r_nodes].sum().item()
+                    if r_deliv_sum + c_deliv > capacity:
                         continue
 
                     prev = r_nodes[:-1]
                     next_n = r_nodes[1:]
-                    delta = dist_t[prev, c_val] + dist_t[c_val, next_n] - dist_t[prev, next_n]
-                    best_pos_rel = int(torch.argmin(delta).item())
+                    delta_td = torch.clamp(dist_t[prev, c_val] + dist_t[c_val, next_n] - dist_t[prev, next_n], min=0.0)
+                    dx_prev = dist_t[depot, prev]
+                    rs_pen = torch.abs(dx_prev + dist_t[prev, c_val] - dx_c)
+
+                    # Position selection inside route r: minimizes delta_td + w_rs * rs_pen
+                    pos_scores = w_td * delta_td + w_rs * rs_pen
+                    best_pos_rel = int(torch.argmin(pos_scores).item())
                     pos = best_pos_rel + 1
 
-                    cand_r = torch.empty(cur_len + 1, dtype=torch.long, device=device)
-                    cand_r[:pos] = r_nodes[:pos]
-                    cand_r[pos] = c_val
-                    cand_r[pos+1:] = r_nodes[pos:]
-                    batch_routes.append(cand_r)
-                    batch_lens.append(cur_len + 1)
-                    metadata.append((p, c_val, r, pos))
+                    best_delta = delta_td[best_pos_rel].item()
+                    best_rs = rs_pen[best_pos_rel].item()
+
+                    # Exact peak load and RC penalty (preserving buffer for later customers)
+                    c_h_est = r_deliv_sum + c_max_dem
+                    rc_pen = max(0.0, c_h_est - capacity * rc_thr)
+                    rcrs_score = w_td * best_delta + w_rc * rc_pen + w_rs * best_rs
+
+                    cust_route_cands.append((rcrs_score, r, pos, cur_len, r_nodes))
+
+                if cust_route_cands:
+                    cust_route_cands.sort(key=lambda x: x[0])
+                    # Send top most promising routes for customer c to GPU evaluation
+                    top_k_routes = 2 if r_cnt > 3 else len(cust_route_cands)
+                    for score_val, r_chosen, pos_chosen, cur_len, r_nodes in cust_route_cands[:top_k_routes]:
+                        cand_r = torch.empty(cur_len + 1, dtype=torch.long, device=device)
+                        cand_r[:pos_chosen] = r_nodes[:pos_chosen]
+                        cand_r[pos_chosen] = c_val
+                        cand_r[pos_chosen+1:] = r_nodes[pos_chosen:]
+                        batch_routes.append(cand_r)
+                        batch_lens.append(cur_len + 1)
+                        metadata.append((p, c_val, r_chosen, pos_chosen, score_val))
 
         if not batch_routes:
             for p in range(P):
@@ -446,13 +483,11 @@ def tensor_rcrs_grasp_init(
 
         p_cands = {p: [] for p in range(P)}
         feas_np = batch_feas.cpu().numpy()
-        dists_np = batch_dists.cpu().numpy()
 
         for b_i in range(N_batch):
             if feas_np[b_i]:
-                p, c, r, pos = metadata[b_i]
-                d = dists_np[b_i]
-                p_cands[p].append((d, c, r, pos))
+                p, c, r, pos, score_val = metadata[b_i]
+                p_cands[p].append((score_val, c, r, pos))
 
         for p in range(P):
             cands_list = p_cands[p]
@@ -1395,7 +1430,11 @@ def tensor_gpu_ruin_and_recreate(
                 prev = r_nodes[:-1]
                 nxt = r_nodes[1:]
                 deltas = dist_t[prev, c] + dist_t[c, nxt] - dist_t[prev, nxt]
-                min_d, min_p = torch.min(deltas, dim=0)
+                dx_prev = dist_t[depot, prev]
+                dx_c = dist_t[depot, c]
+                rs_pen = torch.abs(dx_prev + dist_t[prev, c] - dx_c)
+                scores = deltas + 0.3 * rs_pen
+                min_d, min_p = torch.min(scores, dim=0)
                 if min_d.item() < best_delta:
                     best_delta = min_d.item()
                     best_r = r
