@@ -6,13 +6,7 @@ from typing import List, Tuple, Set
 import numpy as np
 import torch
 
-try:
-    from numba import njit  # type: ignore
-except Exception:  # pragma: no cover
-    def njit(*args, **kwargs):
-        if len(args) == 1 and callable(args[0]) and not kwargs:
-            return args[0]
-        return lambda f: f
+
 
 from .eval import _chk_route_list, evaluate_route_batch
 from .solution import Route, Solution
@@ -342,76 +336,6 @@ def new_route_insertion(s: Solution, data, backend=None, rng=None, initial_node=
 # Pure PyTorch GPU Tensorized Population Initialization & SA Warmup
 # =============================================================================
 
-@njit(fastmath=True)
-def _fast_rcrs_candidate_search(
-    P: int, K: int, max_r: int,
-    cands_np: np.ndarray,       # (P, K) int32
-    pop_routes_np: np.ndarray,  # (P, max_r, max_nodes) int32
-    pop_lens_np: np.ndarray,    # (P, max_r) int32
-    pop_r_cnts_np: np.ndarray,  # (P,) int32
-    route_loads_np: np.ndarray, # (P, max_r) float64
-    dist_np: np.ndarray,        # (N, N) float64
-    deliv_np: np.ndarray,       # (N,) float64
-    pickup_np: np.ndarray,      # (N,) float64
-    capacity: float,
-    rc_thr: float,
-    w_td: float, w_rc: float, w_rs: float
-):
-    out_r1 = np.full((P, K), -1, dtype=np.int32)
-    out_pos1 = np.full((P, K), -1, dtype=np.int32)
-    out_score1 = np.full((P, K), 1e9, dtype=np.float64)
-
-    out_r2 = np.full((P, K), -1, dtype=np.int32)
-    out_pos2 = np.full((P, K), -1, dtype=np.int32)
-    out_score2 = np.full((P, K), 1e9, dtype=np.float64)
-
-    for p in range(P):
-        r_cnt = pop_r_cnts_np[p]
-        for k in range(K):
-            c = cands_np[p, k]
-            if c <= 0:
-                continue
-            c_deliv = deliv_np[c]
-            c_dem = max(c_deliv, pickup_np[c])
-            dx_c = dist_np[0, c]
-
-            b_r1, b_pos1, b_s1 = -1, -1, 1e9
-            b_r2, b_pos2, b_s2 = -1, -1, 1e9
-
-            for r in range(r_cnt):
-                r_load = route_loads_np[p, r]
-                if r_load + c_deliv > capacity:
-                    continue
-                cur_len = pop_lens_np[p, r]
-                if cur_len <= 1:
-                    continue
-
-                rc_pen = max(0.0, r_load + c_dem - capacity * rc_thr)
-
-                for pos in range(1, cur_len):
-                    prev = pop_routes_np[p, r, pos - 1]
-                    nxt = pop_routes_np[p, r, pos]
-
-                    delta_td = dist_np[prev, c] + dist_np[c, nxt] - dist_np[prev, nxt]
-                    if delta_td < 0.0:
-                        delta_td = 0.0
-                    dx_prev = dist_np[0, prev]
-                    rs_pen = abs(dx_prev + dist_np[prev, c] - dx_c)
-
-                    score = w_td * delta_td + w_rc * rc_pen + w_rs * rs_pen
-
-                    if score < b_s1:
-                        b_s2, b_r2, b_pos2 = b_s1, b_r1, b_pos1
-                        b_s1, b_r1, b_pos1 = score, r, pos
-                    elif score < b_s2:
-                        b_s2, b_r2, b_pos2 = score, r, pos
-
-            out_r1[p, k], out_pos1[p, k], out_score1[p, k] = b_r1, b_pos1, b_s1
-            out_r2[p, k], out_pos2[p, k], out_score2[p, k] = b_r2, b_pos2, b_s2
-
-    return out_r1, out_pos1, out_score1, out_r2, out_pos2, out_score2
-
-
 def tensor_rcrs_grasp_init(
     P: int,
     data,
@@ -421,19 +345,18 @@ def tensor_rcrs_grasp_init(
     sa_iters: int = 50
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
-    Ultra-Fast Numba JIT + GPU Mega-Batch Vectorized RCRS-GRASP Initialization.
-    Eliminates all Python loop overhead and CUDA sync barriers.
-    Computes full RCRS scores (delta_td + rc_penalty + rs_penalty) at native speed (~0.2ms/step)
-    and evaluates Time Window feasibility in unified GPU mega-batches.
+    100% Pure PyTorch GPU 4D Batched Masked Tensor RCRS-GRASP Initialization.
+    Eliminates all CPU loops and Numba dependencies.
+    Computes delta_td, rc_penalty, rs_penalty across all (P x K x routes x positions)
+    in a unified 4D tensor with padding & capacity masks, then reduces via torch.min & torch.topk.
     """
     device = backend.device
     num_customers = data.customer_num
     depot = data.DC
-    capacity = float(backend.capacity)
-
-    dist_np = backend.dist_t.cpu().numpy().astype(np.float64)
-    deliv_np = backend.delivery_t.cpu().numpy().astype(np.float64)
-    pickup_np = backend.pickup_t.cpu().numpy().astype(np.float64)
+    capacity = backend.capacity
+    dist_t = backend.dist_t
+    delivery_t = backend.delivery_t
+    pickup_t = backend.pickup_t
 
     max_routes = min(num_customers, 60)
     max_nodes = num_customers + 2
@@ -444,119 +367,155 @@ def tensor_rcrs_grasp_init(
     w_rs = 0.3
     rc_thr = 0.70
 
-    pop_routes_np = np.full((P, max_routes, max_nodes), depot, dtype=np.int32)
-    pop_lens_np = np.full((P, max_routes), 2, dtype=np.int32)
-    pop_r_cnts_np = np.ones(P, dtype=np.int32)
-    route_loads_np = np.zeros((P, max_routes), dtype=np.float64)
+    pop_routes = torch.full((P, max_routes, max_nodes), depot, dtype=torch.long, device=device)
+    pop_lengths = torch.full((P, max_routes), 2, dtype=torch.long, device=device)
+    pop_route_counts = torch.ones(P, dtype=torch.long, device=device)
+    pop_loads = torch.zeros((P, max_routes), dtype=torch.float32, device=device)
 
-    unrouted = [set(range(1, num_customers + 1)) for _ in range(P)]
+    unrouted_mask = torch.zeros((P, num_customers + 1), dtype=torch.bool, device=device)
+    unrouted_mask[:, 1:num_customers+1] = True
 
     # Initial seed customer for each individual
     for p in range(P):
         seed_c = random.randint(1, num_customers)
-        pop_routes_np[p, 0, 1] = seed_c
-        pop_routes_np[p, 0, 2] = depot
-        pop_lens_np[p, 0] = 3
-        route_loads_np[p, 0] = deliv_np[seed_c]
-        unrouted[p].remove(seed_c)
+        pop_routes[p, 0, 1] = seed_c
+        pop_lengths[p, 0] = 3
+        pop_loads[p, 0] = delivery_t[seed_c].item()
+        unrouted_mask[p, seed_c] = False
 
-    while any(len(u) > 0 for u in unrouted):
-        K = 0
-        p_cands_list = []
-        for p in range(P):
-            u_list = list(unrouted[p])
-            if not u_list:
-                p_cands_list.append([])
-            elif len(u_list) <= 32:
-                p_cands_list.append(u_list)
-            else:
-                p_cands_list.append(random.sample(u_list, 32))
-            K = max(K, len(p_cands_list[-1]))
+    # Pre-allocated index grids for 4D masking
+    pos_grid = torch.arange(max_nodes - 1, device=device)[None, None, None, :]  # (1, 1, 1, max_nodes - 1)
+    routes_grid = torch.arange(max_routes, device=device)[None, None, :, None]   # (1, 1, max_routes, 1)
+    inf_val = torch.tensor(float('inf'), device=device)
 
-        if K == 0:
+    while unrouted_mask.any():
+        # 1. Fully vectorized GPU candidate sampling
+        K = min(32, num_customers)
+        rand_keys = torch.rand((P, num_customers + 1), device=device)
+        rand_keys = torch.where(unrouted_mask, rand_keys, torch.tensor(-1.0, device=device))
+        _, cands = torch.topk(rand_keys, k=K, dim=-1)
+        cand_valid_mask = torch.gather(unrouted_mask, dim=1, index=cands)
+
+        if not cand_valid_mask.any():
             break
 
-        cands_np = np.zeros((P, K), dtype=np.int32)
-        for p in range(P):
-            for idx, c in enumerate(p_cands_list[p]):
-                cands_np[p, idx] = c
+        # 2. 4D Batched Masked Tensor Computation (P x K x max_routes x (max_nodes - 1))
+        prev = pop_routes[:, None, :, :-1]  # (P, 1, R, max_nodes - 1)
+        nxt  = pop_routes[:, None, :, 1:]   # (P, 1, R, max_nodes - 1)
+        c    = cands[:, :, None, None]      # (P, K, 1, 1)
 
-        # Ultra-fast Numba candidate search (0.2 ms!)
-        r1, pos1, s1, r2, pos2, s2 = _fast_rcrs_candidate_search(
-            P, K, max_routes, cands_np, pop_routes_np, pop_lens_np, pop_r_cnts_np, route_loads_np,
-            dist_np, deliv_np, pickup_np, capacity, rc_thr, w_td, w_rc, w_rs
+        d_prev_c = dist_t[prev, c]
+        d_c_nxt  = dist_t[c, nxt]
+        d_prev_nxt = dist_t[prev, nxt]
+        delta_td = torch.clamp(d_prev_c + d_c_nxt - d_prev_nxt, min=0.0)
+
+        dx_prev = dist_t[depot, prev]
+        dx_c = dist_t[depot, c]
+        rs_pen = torch.abs(dx_prev + d_prev_c - dx_c)
+
+        pos_scores = w_td * delta_td + w_rs * rs_pen
+
+        # Mask invalid positions and routes
+        route_lens = pop_lengths[:, None, :, None]
+        valid_pos = (pos_grid < route_lens - 1)
+        valid_routes = (routes_grid < pop_route_counts[:, None, None, None])
+        valid_mask = valid_pos & valid_routes & cand_valid_mask[:, :, None, None]
+
+        pos_scores = torch.where(valid_mask, pos_scores, inf_val)
+
+        # 3. Reduce position to best_pos, and evaluate capacity + RC penalty
+        best_pos_score, best_pos_rel = torch.min(pos_scores, dim=-1)
+        best_pos = best_pos_rel + 1
+
+        c_deliv = delivery_t[cands]
+        c_pickup = pickup_t[cands]
+        c_dem = torch.maximum(c_deliv, c_pickup)
+
+        cap_feasible = (pop_loads[:, None, :] + c_deliv[:, :, None]) <= capacity
+        rc_pen = torch.clamp(pop_loads[:, None, :] + c_dem[:, :, None] - capacity * rc_thr, min=0.0)
+
+        rcrs_route_score = best_pos_score + w_rc * rc_pen
+        rcrs_route_score = torch.where(
+            cap_feasible & (routes_grid[:, :, :, 0] < pop_route_counts[:, None, None]) & cand_valid_mask[:, :, None],
+            rcrs_route_score,
+            inf_val
         )
 
-        batch_routes = []
-        batch_lens = []
-        metadata = []
+        # Top-2 routes per candidate via torch.topk
+        top2_scores, top2_routes = torch.topk(rcrs_route_score, k=2, dim=-1, largest=False)
+        top2_pos = torch.gather(best_pos, dim=-1, index=top2_routes)
 
-        for p in range(P):
-            for k in range(len(p_cands_list[p])):
-                c = cands_np[p, k]
-                if r1[p, k] != -1:
-                    r_idx = r1[p, k]
-                    pos = pos1[p, k]
-                    cur_len = pop_lens_np[p, r_idx]
-                    r_nodes = pop_routes_np[p, r_idx, :cur_len]
-                    cand = np.empty(cur_len + 1, dtype=np.int64)
-                    cand[:pos] = r_nodes[:pos]
-                    cand[pos] = c
-                    cand[pos+1:] = r_nodes[pos:]
-                    batch_routes.append(cand)
-                    batch_lens.append(cur_len + 1)
-                    metadata.append((p, c, r_idx, pos, s1[p, k]))
-                if r2[p, k] != -1 and r2[p, k] != r1[p, k]:
-                    r_idx = r2[p, k]
-                    pos = pos2[p, k]
-                    cur_len = pop_lens_np[p, r_idx]
-                    r_nodes = pop_routes_np[p, r_idx, :cur_len]
-                    cand = np.empty(cur_len + 1, dtype=np.int64)
-                    cand[:pos] = r_nodes[:pos]
-                    cand[pos] = c
-                    cand[pos+1:] = r_nodes[pos:]
-                    batch_routes.append(cand)
-                    batch_lens.append(cur_len + 1)
-                    metadata.append((p, c, r_idx, pos, s2[p, k]))
+        # 4. Vectorized route candidate construction on GPU & Batch Feasibility Check
+        valid_0 = cand_valid_mask & (top2_scores[..., 0] < 1e8)
+        valid_1 = cand_valid_mask & (top2_scores[..., 1] < 1e8) & (top2_routes[..., 1] != top2_routes[..., 0])
+        valid_mask_2d = torch.stack([valid_0, valid_1], dim=-1)  # (P, K, 2)
 
-        if not batch_routes:
+        flat_valid = valid_mask_2d.flatten()
+        valid_idx = torch.nonzero(flat_valid, as_tuple=False).squeeze(-1)
+
+        if len(valid_idx) == 0:
             for p in range(P):
-                if unrouted[p]:
-                    c_new = unrouted[p].pop()
-                    new_r = pop_r_cnts_np[p]
+                p_unr = torch.nonzero(unrouted_mask[p], as_tuple=True)[0]
+                if len(p_unr) > 0:
+                    c_new = int(p_unr[0].item())
+                    new_r = int(pop_route_counts[p].item())
                     if new_r < max_routes:
-                        pop_routes_np[p, new_r, 1] = c_new
-                        pop_routes_np[p, new_r, 2] = depot
-                        pop_lens_np[p, new_r] = 3
-                        pop_r_cnts_np[p] = new_r + 1
-                        route_loads_np[p, new_r] = deliv_np[c_new]
+                        pop_routes[p, new_r, 1] = c_new
+                        pop_routes[p, new_r, 2] = depot
+                        pop_lengths[p, new_r] = 3
+                        pop_loads[p, new_r] = delivery_t[c_new].item()
+                        pop_route_counts[p] = new_r + 1
+                        unrouted_mask[p, c_new] = False
                     else:
-                        min_r = int(np.argmin(pop_lens_np[p, :new_r]))
-                        cur_len = pop_lens_np[p, min_r]
-                        pop_routes_np[p, min_r, cur_len - 1] = c_new
-                        pop_routes_np[p, min_r, cur_len] = depot
-                        pop_lens_np[p, min_r] = cur_len + 1
-                        route_loads_np[p, min_r] += deliv_np[c_new]
+                        min_r = int(torch.argmin(pop_lengths[p, :new_r]).item())
+                        cur_len = int(pop_lengths[p, min_r].item())
+                        pop_routes[p, min_r, cur_len - 1] = c_new
+                        pop_routes[p, min_r, cur_len] = depot
+                        pop_lengths[p, min_r] = cur_len + 1
+                        pop_loads[p, min_r] += delivery_t[c_new].item()
+                        unrouted_mask[p, c_new] = False
             continue
 
-        N_batch = len(batch_routes)
-        max_batch_len = max(batch_lens)
-        padded_batch = np.full((N_batch, max_batch_len), depot, dtype=np.int64)
-        for b_i in range(N_batch):
-            l_i = batch_lens[b_i]
-            padded_batch[b_i, :l_i] = batch_routes[b_i]
+        p_grid = torch.arange(P, device=device)[:, None, None].expand(P, K, 2)
+        c_expanded = cands[:, :, None].expand(P, K, 2)
 
-        padded_tensor = torch.from_numpy(padded_batch).to(device)
-        lens_tensor = torch.tensor(batch_lens, dtype=torch.long, device=device)
+        p_sub = p_grid.flatten()[valid_idx]
+        r_sub = top2_routes.flatten()[valid_idx]
+        pos_sub = top2_pos.flatten()[valid_idx]
+        c_sub = c_expanded.flatten()[valid_idx]
+        score_sub = top2_scores.flatten()[valid_idx]
 
-        batch_feas, _ = backend.evaluate_routes_gpu(padded_tensor, lens_tensor)
-        feas_np = batch_feas.cpu().numpy()
+        len_sub = pop_lengths[p_sub, r_sub]
+        new_len = len_sub + 1
+        max_L = int(new_len.max().item())
+
+        N_cands = len(valid_idx)
+        orig_routes = pop_routes[p_sub, r_sub, :max_L]
+
+        col_idx = torch.arange(max_L, device=device).unsqueeze(0).expand(N_cands, -1)
+        orig_idx = torch.where(col_idx < pos_sub.unsqueeze(1), col_idx, col_idx - 1)
+        orig_idx = torch.clamp(orig_idx, min=0)
+        gathered = torch.gather(orig_routes, dim=1, index=orig_idx)
+
+        cand_routes = torch.where(col_idx == pos_sub.unsqueeze(1), c_sub.unsqueeze(1), gathered)
+        cand_routes = torch.where(col_idx < new_len.unsqueeze(1), cand_routes, depot)
+
+        # Batch GPU feasibility evaluation (time windows + load dynamics)
+        batch_feas, _ = backend.evaluate_routes_gpu(cand_routes, new_len)
+
+        # Transfer compact 1D results to CPU in one single transfer
+        p_cpu = p_sub.cpu().numpy()
+        r_cpu = r_sub.cpu().numpy()
+        pos_cpu = pos_sub.cpu().numpy()
+        c_cpu = c_sub.cpu().numpy()
+        score_cpu = score_sub.cpu().numpy()
+        feas_cpu = batch_feas.cpu().numpy()
 
         p_cands = {p: [] for p in range(P)}
-        for b_i in range(N_batch):
-            if feas_np[b_i]:
-                p, c, r_idx, pos, score = metadata[b_i]
-                p_cands[p].append((score, c, r_idx, pos))
+        feasible_mask = feas_cpu & (score_cpu < 1e8)
+        for i in np.nonzero(feasible_mask)[0]:
+            p_val = p_cpu[i]
+            p_cands[p_val].append((score_cpu[i], int(c_cpu[i]), int(r_cpu[i]), int(pos_cpu[i])))
 
         for p in range(P):
             cands_list = p_cands[p]
@@ -570,33 +529,32 @@ def tensor_rcrs_grasp_init(
                 chosen = random.choice(rcl)
                 _, c_chosen, r_chosen, pos_chosen = chosen
 
-                cur_len = pop_lens_np[p, r_chosen]
-                pop_routes_np[p, r_chosen, pos_chosen+1:cur_len+1] = pop_routes_np[p, r_chosen, pos_chosen:cur_len]
-                pop_routes_np[p, r_chosen, pos_chosen] = c_chosen
-                pop_lens_np[p, r_chosen] = cur_len + 1
-                route_loads_np[p, r_chosen] += deliv_np[c_chosen]
-                unrouted[p].remove(c_chosen)
+                cur_len = int(pop_lengths[p, r_chosen].item())
+                pop_routes[p, r_chosen, pos_chosen+1:cur_len+1] = pop_routes[p, r_chosen, pos_chosen:cur_len].clone()
+                pop_routes[p, r_chosen, pos_chosen] = c_chosen
+                pop_lengths[p, r_chosen] = cur_len + 1
+                pop_loads[p, r_chosen] += delivery_t[c_chosen].item()
+                unrouted_mask[p, c_chosen] = False
             else:
-                if unrouted[p]:
-                    c_new = unrouted[p].pop()
-                    new_r = pop_r_cnts_np[p]
+                p_unr = torch.nonzero(unrouted_mask[p], as_tuple=True)[0]
+                if len(p_unr) > 0:
+                    c_new = int(p_unr[0].item())
+                    new_r = int(pop_route_counts[p].item())
                     if new_r < max_routes:
-                        pop_routes_np[p, new_r, 1] = c_new
-                        pop_routes_np[p, new_r, 2] = depot
-                        pop_lens_np[p, new_r] = 3
-                        pop_r_cnts_np[p] = new_r + 1
-                        route_loads_np[p, new_r] = deliv_np[c_new]
+                        pop_routes[p, new_r, 1] = c_new
+                        pop_routes[p, new_r, 2] = depot
+                        pop_lengths[p, new_r] = 3
+                        pop_loads[p, new_r] = delivery_t[c_new].item()
+                        pop_route_counts[p] = new_r + 1
+                        unrouted_mask[p, c_new] = False
                     else:
-                        min_r = int(np.argmin(pop_lens_np[p, :new_r]))
-                        cur_len = pop_lens_np[p, min_r]
-                        pop_routes_np[p, min_r, cur_len - 1] = c_new
-                        pop_routes_np[p, min_r, cur_len] = depot
-                        pop_lens_np[p, min_r] = cur_len + 1
-                        route_loads_np[p, min_r] += deliv_np[c_new]
-
-    pop_routes = torch.from_numpy(pop_routes_np).to(device=device, dtype=torch.long)
-    pop_lengths = torch.from_numpy(pop_lens_np).to(device=device, dtype=torch.long)
-    pop_route_counts = torch.from_numpy(pop_r_cnts_np).to(device=device, dtype=torch.long)
+                        min_r = int(torch.argmin(pop_lengths[p, :new_r]).item())
+                        cur_len = int(pop_lengths[p, min_r].item())
+                        pop_routes[p, min_r, cur_len - 1] = c_new
+                        pop_routes[p, min_r, cur_len] = depot
+                        pop_lengths[p, min_r] = cur_len + 1
+                        pop_loads[p, min_r] += delivery_t[c_new].item()
+                        unrouted_mask[p, c_new] = False
 
     if sa_iters > 0:
         pop_routes, pop_lengths, pop_route_counts = tensor_sa_warmup(
