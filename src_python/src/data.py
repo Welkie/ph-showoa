@@ -531,13 +531,6 @@ class Data:
         if parser.exists("bks"):
             self.bks = float(parser.retrieve("bks"))
 
-        self.paper_flags = False
-        if parser.exists("paper_flags"):
-            print("Paper flags: enabled (SA initialization & Targeted Feasibility-Repair)")
-            self.paper_flags = True
-            self.init = "sa"
-
-
         c_num = self.customer_num
         for i in range(c_num + 1):
             for j in range(c_num + 1):
@@ -547,7 +540,7 @@ class Data:
         self.backend = create_backend(self, self.compute_backend)
         print("Compute backend requested: %s" % self.compute_backend)
         print("Compute backend selected: %s" % self.backend.name)
-        if self.backend.is_cuda and not getattr(self.backend, "multi_process_safe", False) and self.parallel_workers != 1:
+        if self.backend.is_cuda and self.parallel_workers != 1:
             print(
                 "CUDA backend uses a single process. Forcing workers from %d to 1"
                 % self.parallel_workers

@@ -77,8 +77,6 @@ def main(argv=None):
     parser.add_argument("--rd_removal_insertion")
     parser.add_argument("--bks", 1)
     parser.add_argument("--random_seed", 1)
-    parser.add_argument("--paper_flags")
-
 
     parser.parse(argv)
     data = Data(parser)
