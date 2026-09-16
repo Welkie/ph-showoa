@@ -811,53 +811,46 @@ def tensor_gpu_elite_crossover(
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     100% Pure GPU Tensorized Giant-Tour Order Crossover (OX) (Zero Orphans & Invariant NV).
-    Inherits an unbroken contiguous sub-route sequence from the elite Best individual,
-    filling remaining customer positions in their exact relative order from Child p.
-    Guarantees:
-    - 100% customer coverage (zero duplicate, zero missing customers).
-    - Invariant vehicle count (NV_cand == NV_parent).
-    - 20x faster execution without orphan insertion loops.
+    Vectorized extraction and scatter:
+    - Zero host-device transfers (.tolist / torch.tensor).
+    - Zero route loops (rebuilt via single in-place scatter_).
     """
     P, R, L = pop_routes.shape
     device = backend.device
     depot = data.DC
     num_customers = data.customer_num
 
+    active_p = torch.nonzero(p_hybrid_mask, as_tuple=True)[0]
+    if len(active_p) == 0:
+        return pop_routes.clone(), pop_lengths.clone(), pop_route_counts.clone()
+
     cand_routes = pop_routes.clone()
     cand_lengths = pop_lengths.clone()
     cand_counts = pop_route_counts.clone()
 
-    active_p = torch.nonzero(p_hybrid_mask, as_tuple=True)[0]
-    if len(active_p) == 0:
-        return cand_routes, cand_lengths, cand_counts
+    if isinstance(best_indices, int):
+        best_indices_t = torch.full((P,), best_indices, dtype=torch.long, device=device)
+    elif not isinstance(best_indices, torch.Tensor):
+        best_indices_t = torch.tensor(best_indices, dtype=torch.long, device=device)
+    else:
+        best_indices_t = best_indices.to(device=device, dtype=torch.long)
+
+    flat = cand_routes.view(P, R * L)
+    cust_mask = (flat != depot) & (flat > 0) & (flat <= num_customers)
+    sort_idx = torch.argsort((~cust_mask).long(), dim=1, stable=True)
+    cust_flat_idx = sort_idx[:, :num_customers]
+    giant_tours = torch.gather(flat, 1, cust_flat_idx)
 
     for p in active_p:
-        if isinstance(best_indices, int):
-            best_p = best_indices
-        elif hasattr(best_indices, "__getitem__"):
-            best_p = int(best_indices[p].item())
-        else:
-            best_p = int(best_indices)
-
-        best_r_cnt = int(pop_route_counts[best_p].item())
-        curr_r_cnt = int(cand_counts[p].item())
-        if best_r_cnt == 0 or curr_r_cnt == 0:
+        p_idx = int(p.item())
+        best_p = int(best_indices_t[p_idx].item())
+        if best_p == p_idx:
             continue
 
-        best_custs = []
-        for r in range(best_r_cnt):
-            l = int(pop_lengths[best_p, r].item())
-            if l > 2:
-                best_custs.extend(pop_routes[best_p, r, 1:l-1].tolist())
-
-        child_custs = []
-        for r in range(curr_r_cnt):
-            l = int(cand_lengths[p, r].item())
-            if l > 2:
-                child_custs.extend(cand_routes[p, r, 1:l-1].tolist())
-
-        N = len(child_custs)
-        if N != len(best_custs) or N <= 3:
+        best_giant = giant_tours[best_p]
+        child_giant = giant_tours[p_idx]
+        N = num_customers
+        if N <= 3:
             continue
 
         i1 = random.randint(0, N - 1)
@@ -867,23 +860,14 @@ def tensor_gpu_elite_crossover(
         if i1 == i2:
             continue
 
-        slice_best = best_custs[i1:i2+1]
-        slice_set = set(slice_best)
-        rem = [c for c in child_custs if c not in slice_set]
-        needed_before = i1
-        needed_after = N - (i2 + 1)
+        slice_best = best_giant[i1:i2+1]
+        slice_mask = torch.isin(child_giant, slice_best)
+        rem = child_giant[~slice_mask]
+        if len(rem) == N - (i2 - i1 + 1):
+            new_tour_t = torch.cat([rem[:i1], slice_best, rem[i1:]])
+            giant_tours[p_idx] = new_tour_t
 
-        if len(rem) == needed_before + needed_after:
-            new_tour = rem[:needed_before] + slice_best + rem[needed_before:]
-            new_tour_t = torch.tensor(new_tour, dtype=torch.long, device=device)
-            idx = 0
-            for r in range(curr_r_cnt):
-                l = int(cand_lengths[p, r].item())
-                c_cnt = l - 2
-                if c_cnt > 0:
-                    cand_routes[p, r, 1:1+c_cnt] = new_tour_t[idx:idx+c_cnt]
-                    idx += c_cnt
-
+    flat.scatter_(1, cust_flat_idx, giant_tours)
     return cand_routes, cand_lengths, cand_counts
 
 
@@ -1654,82 +1638,137 @@ def tensor_gpu_ruin_and_recreate(
     cand_routes = pop_routes.clone()
     cand_lengths = pop_lengths.clone()
     cand_counts = pop_route_counts.clone()
-    cand_modified = torch.zeros(P, dtype=torch.bool, device=device)
+    num_customers = data.customer_num
 
+    # Extract giant tours to sample removed customers without tolist()
+    flat = cand_routes.view(P, R * L)
+    cust_mask = (flat != depot) & (flat > 0) & (flat <= num_customers)
+    sort_idx = torch.argsort((~cust_mask).long(), dim=1, stable=True)
+    cust_flat_idx = sort_idx[:, :num_customers]
+    giant_tours = torch.gather(flat, 1, cust_flat_idx)
+
+    rem_cnt = max(2, int(num_customers * removal_fraction))
+    is_unrouted_mask = torch.zeros((P, num_customers + 1), dtype=torch.bool, device=device)
     for p in target_indices:
         p_idx = int(p.item())
-        r_cnt = int(cand_counts[p_idx].item())
-        all_custs = []
-        for r in range(r_cnt):
-            r_len = int(cand_lengths[p_idx, r].item())
-            if r_len > 2:
-                all_custs.extend(cand_routes[p_idx, r, 1:r_len-1].tolist())
+        perm = torch.randperm(num_customers, device=device)[:rem_cnt]
+        rem_c = giant_tours[p_idx, perm]
+        is_unrouted_mask[p_idx, rem_c] = True
 
-        if len(all_custs) < 6:
-            continue
+    # Vectorized remove across target individuals
+    p_grid = torch.arange(P, device=device)[:, None, None].expand(P, R, L)
+    is_rem = is_unrouted_mask[p_grid, cand_routes] & target_mask[:, None, None] & (cand_routes != depot)
+    cand_routes = torch.where(is_rem, torch.tensor(depot, device=device), cand_routes)
 
-        rem_cnt = max(2, int(len(all_custs) * removal_fraction))
-        random.shuffle(all_custs)
-        unrouted = all_custs[:rem_cnt]
-        unrouted_set = set(unrouted)
-        unrouted_tensor = torch.tensor(unrouted, dtype=torch.long, device=device)
+    # Vectorized route repacking & empty route compaction via argsort
+    c_mask = (cand_routes != depot) & (cand_routes > 0) & (cand_routes <= num_customers)
+    r_cust_cnts = c_mask.sum(dim=-1)
+    sort_idx_r = torch.argsort((~c_mask).long(), dim=-1, stable=True)
+    sorted_nodes = torch.gather(cand_routes, -1, sort_idx_r)
 
-        # Ruin: filter out unrouted customers
-        active_r = 0
-        for r in range(r_cnt):
-            r_len = int(cand_lengths[p_idx, r].item())
-            nodes = cand_routes[p_idx, r, :r_len]
-            keep_mask = ~torch.isin(nodes[1:-1], unrouted_tensor)
-            kept = nodes[1:-1][keep_mask]
-            if len(kept) > 0:
-                new_len = len(kept) + 2
-                cand_routes[p_idx, active_r].fill_(depot)
-                cand_routes[p_idx, active_r, 1:new_len-1] = kept
-                cand_lengths[p_idx, active_r] = new_len
-                active_r += 1
+    col_grid = torch.arange(L, device=device)[None, None, :].expand(P, R, -1)
+    in_range = (col_grid >= 1) & (col_grid <= r_cust_cnts.unsqueeze(-1))
+    src_col = (col_grid - 1).clamp(min=0)
+    packed_routes = torch.where(in_range, torch.gather(sorted_nodes, -1, src_col), torch.tensor(depot, device=device))
 
-        for r in range(active_r, R):
-            cand_routes[p_idx, r].fill_(depot)
-            cand_lengths[p_idx, r] = 2
-        cand_counts[p_idx] = max(active_r, 1)
+    is_empty = (r_cust_cnts == 0)
+    empty_sort = torch.argsort(is_empty.long(), dim=1, stable=True)
+    empty_sort_3d = empty_sort.unsqueeze(-1).expand(-1, -1, L)
 
-        # Recreate: vectorized greedy insertion for unrouted customers
-        for c in unrouted:
-            best_r = -1
-            best_pos = -1
-            best_delta = float('inf')
-            curr_cnt = int(cand_counts[p_idx].item())
+    comp_routes = torch.gather(packed_routes, 1, empty_sort_3d)
+    comp_cust_cnts = torch.gather(r_cust_cnts, 1, empty_sort)
+    comp_lengths = torch.where(comp_cust_cnts > 0, comp_cust_cnts + 2, torch.tensor(2, device=device))
+    comp_counts = (~is_empty).sum(dim=1).clamp(min=1)
 
-            for r in range(curr_cnt):
-                r_len = int(cand_lengths[p_idx, r].item())
-                if r_len >= L - 1:
-                    continue
-                r_nodes = cand_routes[p_idx, r, :r_len]
-                prev = r_nodes[:-1]
-                nxt = r_nodes[1:]
-                deltas = dist_t[prev, c] + dist_t[c, nxt] - dist_t[prev, nxt]
-                dx_prev = dist_t[depot, prev]
-                dx_c = dist_t[depot, c]
-                rs_pen = torch.abs(dx_prev + dist_t[prev, c] - dx_c)
-                scores = deltas + 0.3 * rs_pen
-                min_d, min_p = torch.min(scores, dim=0)
-                if min_d.item() < best_delta:
-                    best_delta = min_d.item()
-                    best_r = r
-                    best_pos = int(min_p.item()) + 1
+    cand_routes = torch.where(target_mask[:, None, None], comp_routes, cand_routes)
+    cand_lengths = torch.where(target_mask[:, None], comp_lengths, cand_lengths)
+    cand_counts = torch.where(target_mask, comp_counts, cand_counts)
 
-            if best_r != -1:
-                r_len = int(cand_lengths[p_idx, best_r].item())
-                cand_routes[p_idx, best_r, best_pos+1:r_len+1] = cand_routes[p_idx, best_r, best_pos:r_len].clone()
-                cand_routes[p_idx, best_r, best_pos] = c
-                cand_lengths[p_idx, best_r] = r_len + 1
-            elif curr_cnt < R:
-                cand_routes[p_idx, curr_cnt].fill_(depot)
-                cand_routes[p_idx, curr_cnt, 1] = c
-                cand_lengths[p_idx, curr_cnt] = 3
-                cand_counts[p_idx] = curr_cnt + 1
+    # 4D Batched Masked Tensor insertion for unrouted customers
+    unrouted = is_unrouted_mask.clone()
+    if unrouted.any():
+        pos_grid = torch.arange(L - 1, device=device)[None, None, None, :]
+        routes_grid = torch.arange(R, device=device)[None, None, :, None]
+        inf_val = torch.tensor(float('inf'), device=device)
 
-        cand_modified[p_idx] = True
+        while unrouted.any():
+            K = min(16, num_customers)
+            rand_keys = torch.rand((P, num_customers + 1), device=device)
+            rand_keys = torch.where(unrouted, rand_keys, torch.tensor(-1.0, device=device))
+            _, cands = torch.topk(rand_keys, k=K, dim=-1)
+            cand_valid = torch.gather(unrouted, dim=1, index=cands)
+
+            if not cand_valid.any():
+                break
+
+            prev = cand_routes[:, None, :, :-1]
+            nxt  = cand_routes[:, None, :, 1:]
+            c    = cands[:, :, None, None]
+
+            d_prev_c = dist_t[prev, c]
+            d_c_nxt  = dist_t[c, nxt]
+            d_prev_nxt = dist_t[prev, nxt]
+            delta_td = torch.clamp(d_prev_c + d_c_nxt - d_prev_nxt, min=0.0)
+
+            dx_prev = dist_t[depot, prev]
+            dx_c = dist_t[depot, c]
+            rs_pen = torch.abs(dx_prev + d_prev_c - dx_c)
+
+            pos_scores = delta_td + 0.3 * rs_pen
+
+            route_lens = cand_lengths[:, None, :, None]
+            valid_pos = (pos_grid < route_lens - 1) & (route_lens < L - 1)
+            valid_routes = (routes_grid < cand_counts[:, None, None, None])
+            valid_mask = valid_pos & valid_routes & cand_valid[:, :, None, None]
+
+            pos_scores = torch.where(valid_mask, pos_scores, inf_val)
+
+            best_pos_score, best_pos_rel = torch.min(pos_scores, dim=-1)
+            best_pos = best_pos_rel + 1
+
+            best_r_score, best_r_idx = torch.min(best_pos_score, dim=-1)
+            best_cand_score, best_k_idx = torch.min(best_r_score, dim=-1)
+
+            c_chosen = torch.gather(cands, 1, best_k_idx.unsqueeze(1)).squeeze(1)
+            r_chosen = torch.gather(best_r_idx, 1, best_k_idx.unsqueeze(1)).squeeze(1)
+            pos_chosen = torch.gather(
+                torch.gather(best_pos, 1, best_k_idx.unsqueeze(1).unsqueeze(2).expand(-1, -1, R)).squeeze(1),
+                1,
+                r_chosen.unsqueeze(1)
+            ).squeeze(1)
+
+            act_p = torch.nonzero(cand_valid.any(dim=-1), as_tuple=True)[0]
+            for p in act_p:
+                p_idx = int(p.item())
+                c_val = int(c_chosen[p_idx].item())
+                if best_cand_score[p_idx].item() < 1e8:
+                    r_val = int(r_chosen[p_idx].item())
+                    pos_val = int(pos_chosen[p_idx].item())
+                    cur_l = int(cand_lengths[p_idx, r_val].item())
+                    if cur_l < L - 1:
+                        cand_routes[p_idx, r_val, pos_val+1:cur_l+1] = cand_routes[p_idx, r_val, pos_val:cur_l].clone()
+                        cand_routes[p_idx, r_val, pos_val] = c_val
+                        cand_lengths[p_idx, r_val] = cur_l + 1
+                        unrouted[p_idx, c_val] = False
+                        continue
+
+                cur_cnt = int(cand_counts[p_idx].item())
+                if cur_cnt < R:
+                    cand_routes[p_idx, cur_cnt].fill_(depot)
+                    cand_routes[p_idx, cur_cnt, 1] = c_val
+                    cand_lengths[p_idx, cur_cnt] = 3
+                    cand_counts[p_idx] = cur_cnt + 1
+                    unrouted[p_idx, c_val] = False
+                else:
+                    min_r = int(torch.argmin(cand_lengths[p_idx, :cur_cnt]).item())
+                    cur_l = int(cand_lengths[p_idx, min_r].item())
+                    if cur_l < L - 1:
+                        cand_routes[p_idx, min_r, cur_l - 1] = c_val
+                        cand_routes[p_idx, min_r, cur_l] = depot
+                        cand_lengths[p_idx, min_r] = cur_l + 1
+                    unrouted[p_idx, c_val] = False
+
+    cand_modified = target_mask.clone()
 
     if not cand_modified.any():
         return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
@@ -1769,228 +1808,258 @@ def tensor_gpu_woa_intensification(
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     100% Pure GPU Tensorized WOA Intensification with Dynamic Exploit vs Explore.
-    Controlled by parameter a (decaying linearly from 2.0 to 0.0):
-      - If |A| < 1.0 (Exploit branch):
-          Injects elite routes or spiral bubble-net segments from best_indices[p].
-          Applies fine-grained intra/inter refinement moves.
-      - If |A| >= 1.0 (Explore branch - Li & Lim style Random Search):
-          Applies broad global perturbations (multi-swap, multi-relocate, giant-tour inversion)
-          to break out of local optima basins.
+    Vectorized implementation:
+      - Explore branch (|A| >= 1.0): Full-batch giant-tour multi-swap, 2-opt reverse, and relocate
+        via torch.gather and in-place flat.scatter_ with zero route loops.
+      - Exploit branch (|A| < 1.0): Full-batch torch.isin remove, stable argsort compaction,
+        direct elite route injection, and 4D batched masked tensor insertion with zero route loops.
     """
     P, R, L = cand_routes.shape
     device = backend.device
     dist_t = backend.dist_t
     depot = data.DC
+    num_customers = data.customer_num
 
-    active_p = torch.nonzero(p_woa_mask, as_tuple=True)[0]
-    if len(active_p) == 0:
+    if not p_woa_mask.any():
         return cand_routes, cand_lengths, cand_counts
 
-    for p in active_p:
-        p_idx = int(p.item())
-        curr_r_cnt = int(cand_counts[p_idx].item())
-        if curr_r_cnt == 0:
-            continue
+    if isinstance(best_indices, int):
+        best_indices_t = torch.full((P,), best_indices, dtype=torch.long, device=device)
+    elif not isinstance(best_indices, torch.Tensor):
+        best_indices_t = torch.tensor(best_indices, dtype=torch.long, device=device)
+    else:
+        best_indices_t = best_indices.to(device=device, dtype=torch.long)
 
-        r1 = random.random()
-        r2 = random.random()
-        a_vec = 2.0 * a_param * r1 - a_param
-        c_vec = 2.0 * r2
+    # Compute a_vec for all individuals on GPU
+    r1 = torch.rand(P, device=device)
+    a_vec = 2.0 * a_param * r1 - a_param
+    exploit_mask = p_woa_mask & (torch.abs(a_vec) < 1.0)
+    explore_mask = p_woa_mask & (torch.abs(a_vec) >= 1.0)
 
-        if hasattr(best_indices, "__getitem__"):
-            best_p = int(best_indices[p_idx].item())
-        else:
-            best_p = int(best_indices)
+    # -------------------------------------------------------------
+    # 1. EXPLORE BRANCH (|A| >= 1.0): 100% Vectorized Giant-Tour Shaking
+    # -------------------------------------------------------------
+    if explore_mask.any():
+        flat = cand_routes.view(P, R * L)
+        cust_mask = (flat != depot) & (flat > 0) & (flat <= num_customers)
+        sort_idx = torch.argsort((~cust_mask).long(), dim=1, stable=True)
+        cust_flat_idx = sort_idx[:, :num_customers]
+        giant_tours = torch.gather(flat, 1, cust_flat_idx)
 
-        if abs(a_vec) < 1.0:
-            # -------------------------------------------------------------
-            # EXPLOIT BRANCH (|A| < 1.0): Elite Route & Bubble-net Spiral Injection
-            # -------------------------------------------------------------
-            best_r_cnt = int(cand_counts[best_p].item())
-            if best_p != p_idx and best_r_cnt > 0:
-                if random.random() < 0.5:
-                    # Method 1: Elite Route Injection
-                    k_routes = max(1, min(best_r_cnt, int(round(1.0 + max(0.0, 2.0 - c_vec)))))
-                    r_candidates = [r for r in range(best_r_cnt) if int(cand_lengths[best_p, r].item()) > 2]
-                    if r_candidates:
-                        chosen_r = random.sample(r_candidates, min(k_routes, len(r_candidates)))
-                        elite_custs = []
-                        for r_b in chosen_r:
-                            l_b = int(cand_lengths[best_p, r_b].item())
-                            elite_custs.extend(cand_routes[best_p, r_b, 1:l_b-1].tolist())
-                        elite_set = set(elite_custs)
+        # Batched randomized mutation: multi-swap, 2-opt reverse, relocate
+        op_types = torch.randint(0, 3, (P,), device=device)
 
-                        # Remove elite customers from child p
-                        for r in range(curr_r_cnt):
-                            lr = int(cand_lengths[p_idx, r].item())
-                            if lr > 2:
-                                kept = [c for c in cand_routes[p_idx, r, 1:lr-1].tolist() if c not in elite_set]
-                                new_lr = len(kept) + 2
-                                if len(kept) > 0:
-                                    cand_routes[p_idx, r, 1:new_lr-1] = torch.tensor(kept, dtype=torch.long, device=device)
-                                cand_routes[p_idx, r, new_lr-1:] = depot
-                                cand_lengths[p_idx, r] = new_lr
+        # Op 0: Batch Multi-Swap (2 random swaps)
+        tours_swap = giant_tours.clone()
+        for _ in range(2):
+            s1 = torch.randint(0, num_customers, (P, 1), device=device)
+            s2 = torch.randint(0, num_customers, (P, 1), device=device)
+            v1 = torch.gather(tours_swap, 1, s1)
+            v2 = torch.gather(tours_swap, 1, s2)
+            tours_swap.scatter_(1, s1, v2)
+            tours_swap.scatter_(1, s2, v1)
 
-                        # Compact routes: drop empty routes
-                        write_idx = 0
-                        for r in range(curr_r_cnt):
-                            if int(cand_lengths[p_idx, r].item()) > 2:
-                                if write_idx != r:
-                                    cand_routes[p_idx, write_idx] = cand_routes[p_idx, r].clone()
-                                    cand_lengths[p_idx, write_idx] = cand_lengths[p_idx, r]
-                                write_idx += 1
-                        for r in range(write_idx, R):
-                            cand_routes[p_idx, r].fill_(depot)
-                            cand_lengths[p_idx, r] = 2
-                        curr_r_cnt = max(write_idx, 1)
-                        cand_counts[p_idx] = curr_r_cnt
+        # Op 1: Batch 2-Opt Subsegment Reverse
+        r_rev1 = torch.randint(0, num_customers - 1, (P,), device=device)
+        r_rev2 = torch.randint(1, num_customers, (P,), device=device)
+        start_rev = torch.minimum(r_rev1, r_rev2).unsqueeze(1)
+        end_rev = torch.maximum(r_rev1, r_rev2).unsqueeze(1)
+        k_grid = torch.arange(num_customers, device=device).unsqueeze(0).expand(P, -1)
+        in_rev = (k_grid >= start_rev) & (k_grid <= end_rev)
+        rev_idx = start_rev + end_rev - k_grid
+        perm_rev = torch.where(in_rev, rev_idx, k_grid)
+        tours_rev = torch.gather(giant_tours, 1, perm_rev)
 
-                        # Inject elite routes or insert customers into best positions
-                        for r_b in chosen_r:
-                            l_b = int(cand_lengths[best_p, r_b].item())
-                            if curr_r_cnt < R:
-                                cand_routes[p_idx, curr_r_cnt, :l_b] = cand_routes[best_p, r_b, :l_b]
-                                cand_lengths[p_idx, curr_r_cnt] = l_b
-                                curr_r_cnt += 1
-                                cand_counts[p_idx] = curr_r_cnt
-                            else:
-                                for c in cand_routes[best_p, r_b, 1:l_b-1].tolist():
-                                    best_r = -1
-                                    best_pos = -1
-                                    best_delta = float('inf')
-                                    for r in range(curr_r_cnt):
-                                        lr = int(cand_lengths[p_idx, r].item())
-                                        if lr >= L - 1:
-                                            continue
-                                        nodes = cand_routes[p_idx, r, :lr]
-                                        prev = nodes[:-1]
-                                        nxt = nodes[1:]
-                                        deltas = dist_t[prev, c] + dist_t[c, nxt] - dist_t[prev, nxt]
-                                        min_d, min_p = torch.min(deltas, dim=0)
-                                        if min_d.item() < best_delta:
-                                            best_delta = min_d.item()
-                                            best_r = r
-                                            best_pos = int(min_p.item()) + 1
-                                    if best_r != -1:
-                                        lr = int(cand_lengths[p_idx, best_r].item())
-                                        cand_routes[p_idx, best_r, best_pos+1:lr+1] = cand_routes[p_idx, best_r, best_pos:lr].clone()
-                                        cand_routes[p_idx, best_r, best_pos] = c
-                                        cand_lengths[p_idx, best_r] = lr + 1
-                else:
-                    # Method 2: Elite Bubble-Net Spiral Segment Injection
-                    r_candidates = [r for r in range(best_r_cnt) if int(cand_lengths[best_p, r].item()) > 3]
-                    if r_candidates:
-                        r_b = random.choice(r_candidates)
-                        l_b = int(cand_lengths[best_p, r_b].item())
-                        l_param = random.uniform(-1.0, 1.0)
-                        spiral_scale = abs(math.exp(l_param) * math.cos(2.0 * math.pi * l_param))
-                        seg_len = max(1, min(l_b - 2, int(round(1.0 + spiral_scale))))
-                        start_pos = random.randint(1, l_b - 1 - seg_len)
-                        segment = cand_routes[best_p, r_b, start_pos:start_pos+seg_len].tolist()
-                        seg_set = set(segment)
+        # Op 2: Batch Relocate
+        src_rel = torch.randint(0, num_customers, (P, 1), device=device)
+        dst_rel = torch.randint(0, num_customers, (P, 1), device=device)
+        idx_case1 = torch.where(
+            k_grid == dst_rel,
+            src_rel,
+            torch.where((k_grid >= src_rel) & (k_grid < dst_rel), k_grid + 1, k_grid)
+        )
+        idx_case2 = torch.where(
+            k_grid == dst_rel,
+            src_rel,
+            torch.where((k_grid > dst_rel) & (k_grid <= src_rel), k_grid - 1, k_grid)
+        )
+        reloc_perm = torch.where(src_rel < dst_rel, idx_case1, idx_case2)
+        tours_reloc = torch.gather(giant_tours, 1, reloc_perm)
 
-                        # Remove segment from child p
-                        for r in range(curr_r_cnt):
-                            lr = int(cand_lengths[p_idx, r].item())
-                            if lr > 2:
-                                kept = [c for c in cand_routes[p_idx, r, 1:lr-1].tolist() if c not in seg_set]
-                                new_lr = len(kept) + 2
-                                if len(kept) > 0:
-                                    cand_routes[p_idx, r, 1:new_lr-1] = torch.tensor(kept, dtype=torch.long, device=device)
-                                cand_routes[p_idx, r, new_lr-1:] = depot
-                                cand_lengths[p_idx, r] = new_lr
+        mutated = torch.where(
+            (op_types == 0).unsqueeze(1),
+            tours_swap,
+            torch.where((op_types == 1).unsqueeze(1), tours_rev, tours_reloc)
+        )
+        final_tours = torch.where(explore_mask.unsqueeze(1), mutated, giant_tours)
+        flat.scatter_(1, cust_flat_idx, final_tours)
 
-                        # Insert segment customers into best detour positions
-                        for c in segment:
-                            best_r = -1
-                            best_pos = -1
-                            best_delta = float('inf')
-                            for r in range(curr_r_cnt):
-                                lr = int(cand_lengths[p_idx, r].item())
-                                if lr >= L - 1:
-                                    continue
-                                nodes = cand_routes[p_idx, r, :lr]
-                                prev = nodes[:-1]
-                                nxt = nodes[1:]
-                                deltas = dist_t[prev, c] + dist_t[c, nxt] - dist_t[prev, nxt]
-                                min_d, min_p = torch.min(deltas, dim=0)
-                                if min_d.item() < best_delta:
-                                    best_delta = min_d.item()
-                                    best_r = r
-                                    best_pos = int(min_p.item()) + 1
-                            if best_r != -1:
-                                lr = int(cand_lengths[p_idx, best_r].item())
-                                cand_routes[p_idx, best_r, best_pos+1:lr+1] = cand_routes[p_idx, best_r, best_pos:lr].clone()
-                                cand_routes[p_idx, best_r, best_pos] = c
-                                cand_lengths[p_idx, best_r] = lr + 1
-            else:
-                # Same individual or fallback: targeted 2-opt or relocate
-                move = random.randint(0, 1)
-                if move == 0:
-                    r = random.randint(0, curr_r_cnt - 1)
-                    lr = int(cand_lengths[p_idx, r].item())
-                    if lr >= 5:
-                        i1 = random.randint(1, lr - 3)
-                        i2 = random.randint(i1 + 1, lr - 2)
-                        cand_routes[p_idx, r, i1:i2+1] = torch.flip(cand_routes[p_idx, r, i1:i2+1].clone(), dims=[0])
-                else:
-                    if curr_r_cnt >= 2:
-                        r_src = random.randint(0, curr_r_cnt - 1)
-                        r_dst = random.randint(0, curr_r_cnt - 1)
-                        if r_src != r_dst:
-                            len_s = int(cand_lengths[p_idx, r_src].item())
-                            len_d = int(cand_lengths[p_idx, r_dst].item())
-                            if len_s >= 4 and len_d < L - 1:
-                                pos_s = random.randint(1, len_s - 2)
-                                cust = cand_routes[p_idx, r_src, pos_s].item()
-                                nodes = cand_routes[p_idx, r_dst, :len_d]
-                                deltas = dist_t[nodes[:-1], cust] + dist_t[cust, nodes[1:]] - dist_t[nodes[:-1], nodes[1:]]
-                                pos_d = int(torch.argmin(deltas).item()) + 1
-                                cand_routes[p_idx, r_dst, pos_d+1:len_d+1] = cand_routes[p_idx, r_dst, pos_d:len_d].clone()
-                                cand_routes[p_idx, r_dst, pos_d] = cust
-                                cand_lengths[p_idx, r_dst] = len_d + 1
-                                cand_routes[p_idx, r_src, pos_s:len_s-1] = cand_routes[p_idx, r_src, pos_s+1:len_s].clone()
-                                cand_routes[p_idx, r_src, len_s-1] = depot
-                                cand_lengths[p_idx, r_src] = len_s - 1
+    # -------------------------------------------------------------
+    # 2. EXPLOIT BRANCH (|A| < 1.0): Full-Batch Vectorized Remove & Insertion
+    # -------------------------------------------------------------
+    if exploit_mask.any():
+        # Pick elite route / segment from best_indices_t for each individual
+        best_cnts = cand_counts[best_indices_t].clamp(min=1)
+        r_b = (torch.rand(P, device=device) * best_cnts.float()).long().clamp(min=0)
+        l_b = cand_lengths[best_indices_t, r_b]
+        r_b = torch.where(l_b > 2, r_b, torch.zeros_like(r_b))
+        l_b = cand_lengths[best_indices_t, r_b]
 
-        else:
-            # -------------------------------------------------------------
-            # EXPLORE BRANCH (|A| >= 1.0): Li & Lim style Random Search
-            # -------------------------------------------------------------
-            all_custs = []
-            for r in range(curr_r_cnt):
-                lr = int(cand_lengths[p_idx, r].item())
-                if lr > 2:
-                    all_custs.extend(cand_routes[p_idx, r, 1:lr-1].tolist())
+        use_full = torch.rand(P, device=device) < 0.5
+        l_param = torch.rand(P, device=device) * 2.0 - 1.0
+        spiral_scale = torch.abs(torch.exp(l_param) * torch.cos(2.0 * math.pi * l_param))
+        c_cnt_b = (l_b - 2).clamp(min=1)
+        raw_seg = (1.0 + spiral_scale).round().long()
+        seg_len = torch.maximum(torch.ones_like(c_cnt_b), torch.minimum(c_cnt_b, raw_seg))
+        max_start = (c_cnt_b - seg_len).clamp(min=0)
+        start_i = 1 + (torch.rand(P, device=device) * (max_start.float() + 1.0)).long().clamp(min=0)
 
-            if len(all_custs) >= 4:
-                move_choice = random.randint(0, 2)
-                if move_choice == 0:
-                    # Multi-swap: swap 2 to 3 customer pairs across giant tour
-                    n_swaps = random.randint(2, min(4, len(all_custs) // 2))
-                    for _ in range(n_swaps):
-                        i, j = random.sample(range(len(all_custs)), 2)
-                        all_custs[i], all_custs[j] = all_custs[j], all_custs[i]
-                elif move_choice == 1:
-                    # Multi-relocate: shift 2 customers
-                    for _ in range(2):
-                        i, j = random.sample(range(len(all_custs)), 2)
-                        c = all_custs.pop(i)
-                        all_custs.insert(j, c)
-                else:
-                    # Giant tour 2-opt inversion (reverse slice)
-                    i, j = sorted(random.sample(range(len(all_custs)), 2))
-                    all_custs[i : j + 1] = reversed(all_custs[i : j + 1])
+        # Build is_elite_mask (P, num_customers + 1)
+        col_l = torch.arange(L, device=device).unsqueeze(0).expand(P, -1)
+        in_elite_seg = torch.where(
+            use_full.unsqueeze(1),
+            (col_l >= 1) & (col_l < (l_b - 1).unsqueeze(1)),
+            (col_l >= start_i.unsqueeze(1)) & (col_l < (start_i + seg_len).unsqueeze(1))
+        )
+        valid_exploit = exploit_mask & (best_indices_t != torch.arange(P, device=device)) & (l_b > 2)
+        in_elite_seg = in_elite_seg & valid_exploit.unsqueeze(1)
 
-                # Reconstruct routes preserving vehicle counts & structure
-                cust_t = torch.tensor(all_custs, dtype=torch.long, device=device)
-                idx = 0
-                for r in range(curr_r_cnt):
-                    lr = int(cand_lengths[p_idx, r].item())
-                    c_cnt = lr - 2
-                    if c_cnt > 0 and idx + c_cnt <= len(all_custs):
-                        cand_routes[p_idx, r, 1:1+c_cnt] = cust_t[idx:idx+c_cnt]
-                        idx += c_cnt
+        best_routes_sampled = cand_routes[best_indices_t, r_b]
+        elite_cust_nodes = torch.where(in_elite_seg, best_routes_sampled, torch.tensor(depot, device=device))
+
+        is_elite_mask = torch.zeros((P, num_customers + 1), dtype=torch.bool, device=device)
+        valid_c_mask = in_elite_seg & (elite_cust_nodes > 0) & (elite_cust_nodes <= num_customers)
+        if valid_c_mask.any():
+            p_coords = torch.arange(P, device=device).unsqueeze(1).expand(P, L)[valid_c_mask]
+            c_coords = elite_cust_nodes[valid_c_mask]
+            is_elite_mask[p_coords, c_coords] = True
+
+        # Technique 1: Full-batch remove via is_elite_mask
+        p_grid = torch.arange(P, device=device)[:, None, None].expand(P, R, L)
+        is_elite = is_elite_mask[p_grid, cand_routes]
+        remove_mask = is_elite & valid_exploit[:, None, None] & (cand_routes != depot)
+        cand_routes = torch.where(remove_mask, torch.tensor(depot, device=device), cand_routes)
+
+        # Technique 2: Route repacking & empty route compaction via argsort
+        c_mask = (cand_routes != depot) & (cand_routes > 0) & (cand_routes <= num_customers)
+        r_cust_cnts = c_mask.sum(dim=-1)
+        sort_idx = torch.argsort((~c_mask).long(), dim=-1, stable=True)
+        sorted_nodes = torch.gather(cand_routes, -1, sort_idx)
+
+        col_grid = torch.arange(L, device=device)[None, None, :].expand(P, R, -1)
+        in_range = (col_grid >= 1) & (col_grid <= r_cust_cnts.unsqueeze(-1))
+        src_col = (col_grid - 1).clamp(min=0)
+        packed_routes = torch.where(in_range, torch.gather(sorted_nodes, -1, src_col), torch.tensor(depot, device=device))
+
+        is_empty = (r_cust_cnts == 0)
+        empty_sort = torch.argsort(is_empty.long(), dim=1, stable=True)
+        empty_sort_3d = empty_sort.unsqueeze(-1).expand(-1, -1, L)
+
+        comp_routes = torch.gather(packed_routes, 1, empty_sort_3d)
+        comp_cust_cnts = torch.gather(r_cust_cnts, 1, empty_sort)
+        comp_lengths = torch.where(comp_cust_cnts > 0, comp_cust_cnts + 2, torch.tensor(2, device=device))
+        comp_counts = (~is_empty).sum(dim=1).clamp(min=1)
+
+        cand_routes = torch.where(valid_exploit[:, None, None], comp_routes, cand_routes)
+        cand_lengths = torch.where(valid_exploit[:, None], comp_lengths, cand_lengths)
+        cand_counts = torch.where(valid_exploit, comp_counts, cand_counts)
+
+        # Fast direct route injection for individuals with free vehicle slot
+        can_insert_whole = valid_exploit & use_full & (cand_counts < R)
+        for p in torch.nonzero(can_insert_whole, as_tuple=True)[0]:
+            p_idx = int(p.item())
+            b_idx = int(best_indices_t[p_idx].item())
+            rb_idx = int(r_b[p_idx].item())
+            lb_val = int(l_b[p_idx].item())
+            slot = int(cand_counts[p_idx].item())
+            cand_routes[p_idx, slot, :lb_val] = cand_routes[b_idx, rb_idx, :lb_val]
+            cand_lengths[p_idx, slot] = lb_val
+            cand_counts[p_idx] = slot + 1
+            is_elite_mask[p_idx] = False
+
+        # Technique 3: 4D Batched Masked Tensor insertion for remaining elite customers
+        unrouted = is_elite_mask.clone()
+        if unrouted.any():
+            pos_grid = torch.arange(L - 1, device=device)[None, None, None, :]
+            routes_grid = torch.arange(R, device=device)[None, None, :, None]
+            inf_val = torch.tensor(float('inf'), device=device)
+
+            while unrouted.any():
+                K = min(16, num_customers)
+                rand_keys = torch.rand((P, num_customers + 1), device=device)
+                rand_keys = torch.where(unrouted, rand_keys, torch.tensor(-1.0, device=device))
+                _, cands = torch.topk(rand_keys, k=K, dim=-1)
+                cand_valid = torch.gather(unrouted, dim=1, index=cands)
+
+                if not cand_valid.any():
+                    break
+
+                prev = cand_routes[:, None, :, :-1]
+                nxt  = cand_routes[:, None, :, 1:]
+                c    = cands[:, :, None, None]
+
+                d_prev_c = dist_t[prev, c]
+                d_c_nxt  = dist_t[c, nxt]
+                d_prev_nxt = dist_t[prev, nxt]
+                delta_td = torch.clamp(d_prev_c + d_c_nxt - d_prev_nxt, min=0.0)
+
+                dx_prev = dist_t[depot, prev]
+                dx_c = dist_t[depot, c]
+                rs_pen = torch.abs(dx_prev + d_prev_c - dx_c)
+
+                pos_scores = delta_td + 0.3 * rs_pen
+
+                route_lens = cand_lengths[:, None, :, None]
+                valid_pos = (pos_grid < route_lens - 1) & (route_lens < L - 1)
+                valid_routes = (routes_grid < cand_counts[:, None, None, None])
+                valid_mask = valid_pos & valid_routes & cand_valid[:, :, None, None]
+
+                pos_scores = torch.where(valid_mask, pos_scores, inf_val)
+
+                best_pos_score, best_pos_rel = torch.min(pos_scores, dim=-1)
+                best_pos = best_pos_rel + 1
+
+                best_r_score, best_r_idx = torch.min(best_pos_score, dim=-1)
+                best_cand_score, best_k_idx = torch.min(best_r_score, dim=-1)
+
+                c_chosen = torch.gather(cands, 1, best_k_idx.unsqueeze(1)).squeeze(1)
+                r_chosen = torch.gather(best_r_idx, 1, best_k_idx.unsqueeze(1)).squeeze(1)
+                pos_chosen = torch.gather(
+                    torch.gather(best_pos, 1, best_k_idx.unsqueeze(1).unsqueeze(2).expand(-1, -1, R)).squeeze(1),
+                    1,
+                    r_chosen.unsqueeze(1)
+                ).squeeze(1)
+
+                act_p = torch.nonzero(cand_valid.any(dim=-1), as_tuple=True)[0]
+                for p in act_p:
+                    p_idx = int(p.item())
+                    c_val = int(c_chosen[p_idx].item())
+                    if best_cand_score[p_idx].item() < 1e8:
+                        r_val = int(r_chosen[p_idx].item())
+                        pos_val = int(pos_chosen[p_idx].item())
+                        cur_l = int(cand_lengths[p_idx, r_val].item())
+                        if cur_l < L - 1:
+                            cand_routes[p_idx, r_val, pos_val+1:cur_l+1] = cand_routes[p_idx, r_val, pos_val:cur_l].clone()
+                            cand_routes[p_idx, r_val, pos_val] = c_val
+                            cand_lengths[p_idx, r_val] = cur_l + 1
+                            unrouted[p_idx, c_val] = False
+                            continue
+
+                    cur_cnt = int(cand_counts[p_idx].item())
+                    if cur_cnt < R:
+                        cand_routes[p_idx, cur_cnt].fill_(depot)
+                        cand_routes[p_idx, cur_cnt, 1] = c_val
+                        cand_lengths[p_idx, cur_cnt] = 3
+                        cand_counts[p_idx] = cur_cnt + 1
+                        unrouted[p_idx, c_val] = False
+                    else:
+                        min_r = int(torch.argmin(cand_lengths[p_idx, :cur_cnt]).item())
+                        cur_l = int(cand_lengths[p_idx, min_r].item())
+                        if cur_l < L - 1:
+                            cand_routes[p_idx, min_r, cur_l - 1] = c_val
+                            cand_routes[p_idx, min_r, cur_l] = depot
+                            cand_lengths[p_idx, min_r] = cur_l + 1
+                        unrouted[p_idx, c_val] = False
 
     return cand_routes, cand_lengths, cand_counts
 
