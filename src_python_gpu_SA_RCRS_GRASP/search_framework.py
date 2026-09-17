@@ -66,9 +66,25 @@ class AgentUpdateTask:
 
 
 def update_best_solution(s, best_s, used, run, gen, data):
-    if s.cost - best_s.cost < -PRECISION:
+    is_better = False
+    if best_s.len() == 0 or best_s.cost == float("inf") or len(best_s.route_list) == 0:
+        is_better = True
+    else:
+        objective = getattr(data, "objective", "lexicographic")
+        if objective == "lexicographic":
+            if s.len() < best_s.len():
+                is_better = True
+            elif s.len() == best_s.len():
+                if s.cost < best_s.cost - PRECISION:
+                    is_better = True
+        else:
+            if s.cost - best_s.cost < -PRECISION:
+                is_better = True
+
+    if is_better:
         best_s.copy_from(s)
-        print("Best solution update: %.4f" % best_s.cost)
+        td = best_s.cost - 2000.0 * best_s.len()
+        print("Best solution update: %.4f (NV=%d, TD=%.4f)" % (best_s.cost, best_s.len(), td))
         state.find_best_time = used
         state.find_best_run = run
         state.find_best_gen = gen
@@ -1466,6 +1482,31 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     target_mask, backend, data, max_rounds=5
                 )
 
+                # Intensify global best solution with exact paper operators & re-inject if improved
+                try:
+                    cand_s = best_s.clone()
+                    _deep_local_search_best(cand_s, data)
+                    cand_s.update(data)
+                    cand_s.cal_cost(data)
+                    cand_nv = cand_s.len()
+                    curr_nv = best_s.len()
+                    if (cand_nv < curr_nv) or (cand_nv == curr_nv and cand_s.cost < best_s.cost - 1e-4):
+                        used = int(time.perf_counter() - stime)
+                        update_best_solution(cand_s, best_s, used, run, gen, data)
+                        b_idx = int(best_idx.item())
+                        solution_to_tensor(best_s, pop_routes, pop_lengths, pop_route_counts, b_idx)
+                        f_b, c_b, v_b, d_b = backend.evaluate_population_tensor(
+                            pop_routes[b_idx:b_idx+1],
+                            pop_lengths[b_idx:b_idx+1],
+                            pop_route_counts[b_idx:b_idx+1]
+                        )
+                        feas[b_idx] = f_b[0]
+                        costs[b_idx] = c_b[0]
+                        v_counts[b_idx] = v_b[0]
+                        total_dists[b_idx] = d_b[0]
+                except Exception:
+                    pass
+
             # 6. Pure GPU Stagnation-Triggered Ruin & Recreate (40% Non-Elite Diversification)
             stag_interval = getattr(data, "stagnation_interval", 50)
             if gen % stag_interval == 0 and (gen - last_improvement_gen >= stag_interval):
@@ -1564,9 +1605,20 @@ def gpu_pure_tensor_search_framework(data, best_s):
         lex_scores = compute_lex_scores(feas, v_counts, total_dists)
         curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
         sol_best = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, curr_best_idx.item())
-        if sol_best.cost < best_s.cost - 1e-4:
+        if (sol_best.len() < best_s.len()) or (sol_best.len() == best_s.len() and sol_best.cost < best_s.cost - 1e-4):
             used = int(time.perf_counter() - stime)
             update_best_solution(sol_best, best_s, used, run, data.max_iter, data)
+
+        try:
+            cand_s = best_s.clone()
+            _deep_local_search_best(cand_s, data)
+            cand_s.update(data)
+            cand_s.cal_cost(data)
+            if (cand_s.len() < best_s.len()) or (cand_s.len() == best_s.len() and cand_s.cost < best_s.cost - 1e-4):
+                used = int(time.perf_counter() - stime)
+                update_best_solution(cand_s, best_s, used, run, data.max_iter, data)
+        except Exception:
+            pass
 
         completed_runs += 1
         if time_exhausted:

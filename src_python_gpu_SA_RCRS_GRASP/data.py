@@ -392,10 +392,7 @@ class Data:
             raise SystemExit(-1)
         print("Compute backend: %s" % self.compute_backend)
 
-        if not chk_p_square(self.p_size):
-            print("Expect popsize to be perfect squrare number")
-            raise SystemExit(-1)
-        sr = int(math.sqrt(float(self.p_size)))
+        sr = max(1, int(math.sqrt(float(self.p_size))))
         if sr == 1:
             self.latin.append((0.5, 0.5))
         else:
@@ -547,10 +544,28 @@ class Data:
             self.bks = float(parser.retrieve("bks"))
 
         self.paper_flags = False
-        if parser.exists("paper_flags"):
-            print("Paper flags: enabled (SA initialization & Targeted Feasibility-Repair)")
+        self.objective = "lexicographic"
+        if parser.exists("objective"):
+            self.objective = parser.retrieve("objective")
+
+        is_sa_rcrs_grasp = getattr(self, "init", "") in {"sa_rcrs_grasp", "rcrs_grasp", "rcg"}
+        if parser.exists("paper_flags") or is_sa_rcrs_grasp:
+            print("Paper flags: enabled (2opt, 2opt*, oropt_single, 2exchange, related_removal, regret_insertion, lexicographic)")
             self.paper_flags = True
-            self.init = "sa"
+            self.pruning = True
+            self.O_1_evl = True
+            self.two_opt = True
+            self.two_opt_star = True
+            self.or_opt = True
+            self.or_opt_len = 2
+            self.small_opts = ["2opt", "2opt*", "oropt_single", "2exchange"]
+            self.two_exchange = True
+            self.ex_len = 2
+            self.related_removal = True
+            self.regret_insertion = True
+            self.objective = "lexicographic"
+            if not parser.exists("init") and not is_sa_rcrs_grasp:
+                self.init = "sa"
 
 
         c_num = self.customer_num

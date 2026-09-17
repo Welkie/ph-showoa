@@ -81,6 +81,7 @@ def main(argv=None):
     parser.add_argument("--bks", 1)
     parser.add_argument("--random_seed", 1)
     parser.add_argument("--paper_flags")
+    parser.add_argument("--objective", 1)
 
 
     parser.parse(argv)

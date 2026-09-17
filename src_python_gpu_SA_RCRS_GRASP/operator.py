@@ -337,6 +337,156 @@ def new_route_insertion(s: Solution, data, backend=None, rng=None, initial_node=
 # Pure PyTorch GPU Tensorized Population Initialization & SA Warmup
 # =============================================================================
 
+def _route_max_load(r_nl: List[int], data) -> float:
+    load = 0.0
+    for node in r_nl[1:-1]:
+        load += data.node[node].delivery
+    max_load = load
+    for node in r_nl[1:]:
+        load = load - data.node[node].delivery + data.node[node].pickup
+        if load > max_load:
+            max_load = load
+    return max_load
+
+
+def rcrs_score_exact(r_nl: List[int], data, c: int, pos: int, r_max_load: float, w_td: float = 1.0, w_rc: float = 0.5, w_rs: float = 0.3, rc_thr: float = 0.70) -> float:
+    prev = r_nl[pos - 1]
+    next_node = r_nl[pos]
+
+    delta_td = max(0.0, data.dist[prev][c] + data.dist[c][next_node] - data.dist[prev][next_node])
+
+    c_h_new = r_max_load + max(data.node[c].delivery, data.node[c].pickup)
+    capacity = data.vehicle.capacity
+    rc_penalty = max(0.0, c_h_new - capacity * rc_thr)
+
+    dx_prev = data.dist[data.DC][prev]
+    dx_c = data.dist[data.DC][c]
+    rs_penalty = abs(dx_prev + data.dist[prev][c] - dx_c)
+
+    return w_td * delta_td + w_rc * rc_penalty + w_rs * rs_penalty
+
+
+def _generate_rcrs_grasp_routes(data, alpha: float, rng: random.Random) -> List[List[int]]:
+    depot = data.DC
+    num_customers = data.customer_num
+    unrouted = [i for i in range(1, num_customers + 1) if i != depot]
+    rng.shuffle(unrouted)
+
+    routes: List[List[int]] = []
+
+    while unrouted:
+        best_per_customer = []
+        global_best_score = float('inf')
+        max_score = float('-inf')
+
+        # Best-insertion-across-all-routes: evaluate ALL unrouted customers across ALL currently open routes
+        pm = getattr(data, 'pm', None)
+        pruning = getattr(data, 'pruning', False) and pm is not None
+        r_max_loads = [_route_max_load(r, data) for r in routes]
+
+        for c in unrouted:
+            best_c = {'customer': c, 'r_idx': -1, 'pos': -1, 'score': float('inf')}
+            for r_idx, r in enumerate(routes):
+                for pos in range(1, len(r)):
+                    prev, nxt = r[pos - 1], r[pos]
+                    if pruning and (not pm[prev][c] or not pm[c][nxt]):
+                        continue
+                    cand_nl = r[:pos] + [c] + r[pos:]
+                    flag, _ = _chk_route_list(cand_nl, data)
+                    if not flag:
+                        continue
+                    score = rcrs_score_exact(r, data, c, pos, r_max_loads[r_idx])
+                    if score < best_c['score']:
+                        best_c['score'] = score
+                        best_c['r_idx'] = r_idx
+                        best_c['pos'] = pos
+
+            if best_c['r_idx'] != -1:
+                if best_c['score'] < global_best_score:
+                    global_best_score = best_c['score']
+                if best_c['score'] > max_score:
+                    max_score = best_c['score']
+            best_per_customer.append(best_c)
+
+        thresh = float('inf') if (global_best_score == float('inf') or max_score == float('-inf')) else global_best_score + alpha * (max_score - global_best_score)
+        rcl = []
+        forced = []
+        for item in best_per_customer:
+            if item['r_idx'] == -1:
+                forced.append(item)
+            elif item['score'] <= thresh + 1e-9:
+                rcl.append(item)
+
+        if not rcl:
+            if not forced:
+                break
+            pick_forced = rng.choice(forced)
+            c = pick_forced['customer']
+            routes.append([depot, c, depot])
+            unrouted.remove(c)
+        else:
+            chosen = rng.choice(rcl)
+            routes[chosen['r_idx']].insert(chosen['pos'], chosen['customer'])
+            unrouted.remove(chosen['customer'])
+
+    # Dedicated vehicle elimination pass: absorb shortest routes with 2-opt untangling
+    if len(routes) > 1:
+        improved = True
+        while improved and len(routes) > 1:
+            improved = False
+            routes.sort(key=lambda r: len(r))
+            for victim_idx in range(min(3, len(routes))):
+                victim = routes[victim_idx]
+                victim_custs = victim[1:-1]
+                others = [list(r) for i, r in enumerate(routes) if i != victim_idx]
+                victim_custs.sort(key=lambda c: (data.node[c].end - data.node[c].start, -(data.node[c].delivery + data.node[c].pickup)))
+                temp_others = [list(r) for r in others]
+                success = True
+                for c in victim_custs:
+                    best_r, best_cand, best_d = -1, None, float('inf')
+                    # 1. Try direct feasible insertion first
+                    for r_i, r in enumerate(temp_others):
+                        for pos in range(1, len(r)):
+                            prev, nxt = r[pos - 1], r[pos]
+                            if pruning and (not pm[prev][c] or not pm[c][nxt]):
+                                continue
+                            cand = r[:pos] + [c] + r[pos:]
+                            flag, _ = _chk_route_list(cand, data)
+                            if flag:
+                                d = _route_distance(cand, data)
+                                if d < best_d:
+                                    best_d, best_r, best_cand = d, r_i, cand
+                    # 2. If no direct insertion feasible, try 2-opt untangling fallback
+                    if best_r == -1:
+                        for r_i, r in enumerate(temp_others):
+                            for pos in range(1, len(r)):
+                                prev, nxt = r[pos - 1], r[pos]
+                                if pruning and (not pm[prev][c] or not pm[c][nxt]):
+                                    continue
+                                cand = r[:pos] + [c] + r[pos:]
+                                cand_opt = optimize_route_nodes_2opt(cand, data)
+                                flag, _ = _chk_route_list(cand_opt, data)
+                                if flag:
+                                    d = _route_distance(cand_opt, data)
+                                    if d < best_d:
+                                        best_d, best_r, best_cand = d, r_i, cand_opt
+                    if best_r != -1:
+                        temp_others[best_r] = best_cand
+                    else:
+                        success = False
+                        break
+                if success:
+                    routes = temp_others
+                    improved = True
+                    break
+
+    # Intra-route 2-opt distance trimming
+    for r_i in range(len(routes)):
+        routes[r_i] = optimize_route_nodes_2opt(routes[r_i], data)
+
+    return routes
+
+
 def tensor_rcrs_grasp_init(
     P: int,
     data,
@@ -347,10 +497,13 @@ def tensor_rcrs_grasp_init(
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     100% Pure GPU Tensorized SA-RCRS-GRASP Initialization.
-    Packs routes tightly to strictly minimize Number of Vehicles (NV).
-    Evaluates candidate insertions in batches using backend.evaluate_routes_gpu.
-    Zero CPU-GPU array transfers (.cpu().numpy() completely eliminated).
+    Packs routes tightly across all open routes to strictly minimize Number of Vehicles (NV).
+    Generates population concurrently with ThreadPoolExecutor across CPU threads,
+    then packs into CUDA VRAM tensor and runs vectorized GPU SA warm-up.
     """
+    import concurrent.futures
+    import os
+
     device = backend.device
     num_customers = data.customer_num
     depot = data.DC
@@ -362,117 +515,25 @@ def tensor_rcrs_grasp_init(
     pop_lengths = torch.full((P, max_routes), 2, dtype=torch.long, device=device)
     pop_route_counts = torch.zeros(P, dtype=torch.long, device=device)
 
+    # Multi-threaded generation of P individuals in parallel
+    workers = min(P, max(1, os.cpu_count() or 4))
+    tasks = []
+    base_seed = getattr(data, "seed", 42)
     for p in range(P):
-        unrouted = set(range(1, num_customers + 1))
-        routes = []
+        alpha = alpha_lo + (alpha_hi - alpha_lo) * (p / max(1, P - 1))
+        p_rng = random.Random(base_seed + p * 1009)
+        tasks.append((alpha, p_rng))
 
-        while unrouted:
-            seed = random.choice(list(unrouted))
-            curr_route = [depot, seed, depot]
-            unrouted.remove(seed)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(_generate_rcrs_grasp_routes, data, a, r) for a, r in tasks]
+        all_routes = [f.result() for f in futures]
 
-            while unrouted:
-                cands = list(unrouted)
-                if len(cands) > 24:
-                    cands = random.sample(cands, 24)
-
-                cand_list = []
-                cand_info = []
-                r_len = len(curr_route)
-
-                for c in cands:
-                    for pos in range(1, r_len):
-                        cand_list.append(curr_route[:pos] + [c] + curr_route[pos:])
-                        cand_info.append((c, pos))
-
-                if not cand_list:
-                    break
-
-                routes_t = torch.tensor(cand_list, dtype=torch.long, device=device)
-                lens_t = torch.full((len(cand_list),), r_len + 1, dtype=torch.long, device=device)
-                feas, dists = backend.evaluate_routes_gpu(routes_t, lens_t)
-
-                if not feas.any():
-                    remaining = list(unrouted - set(cands))
-                    if remaining:
-                        cand_list2, cand_info2 = [], []
-                        for c in remaining:
-                            for pos in range(1, r_len):
-                                cand_list2.append(curr_route[:pos] + [c] + curr_route[pos:])
-                                cand_info2.append((c, pos))
-                        r2_t = torch.tensor(cand_list2, dtype=torch.long, device=device)
-                        l2_t = torch.full((len(cand_list2),), r_len + 1, dtype=torch.long, device=device)
-                        feas2, dists2 = backend.evaluate_routes_gpu(r2_t, l2_t)
-                        if feas2.any():
-                            feas, dists, cand_info = feas2, dists2, cand_info2
-                        else:
-                            break
-                    else:
-                        break
-
-                valid_idx = torch.nonzero(feas, as_tuple=True)[0]
-                valid_dists = dists[valid_idx]
-
-                min_d, _ = torch.min(valid_dists, dim=0)
-                max_d, _ = torch.max(valid_dists, dim=0)
-                alpha = random.uniform(alpha_lo, alpha_hi)
-                thresh = min_d + alpha * (max_d - min_d)
-                rcl = valid_idx[valid_dists <= thresh + 1e-4]
-                chosen_rel = random.randint(0, len(rcl) - 1)
-                chosen_idx = rcl[chosen_rel].item()
-
-                chosen_c, chosen_pos = cand_info[chosen_idx]
-                curr_route.insert(chosen_pos, chosen_c)
-                unrouted.remove(chosen_c)
-
-            routes.append(curr_route)
-
-        # Vehicle elimination: attempt to absorb smallest routes into the others
-        if len(routes) > 1:
-            improved = True
-            while improved and len(routes) > 1:
-                improved = False
-                routes.sort(key=lambda r: len(r))
-                for victim_idx in range(min(2, len(routes))):
-                    victim = routes[victim_idx]
-                    victim_custs = victim[1:-1]
-                    if len(victim_custs) > 10:
-                        continue
-                    other_routes = [list(r) for i, r in enumerate(routes) if i != victim_idx]
-                    success = True
-                    temp_others = [list(r) for r in other_routes]
-                    for c in victim_custs:
-                        best_r_i = -1
-                        best_pos = -1
-                        best_d = float('inf')
-                        for r_i, r in enumerate(temp_others):
-                            cands_v = [r[:pos] + [c] + r[pos:] for pos in range(1, len(r))]
-                            if not cands_v:
-                                continue
-                            r_t = torch.tensor(cands_v, dtype=torch.long, device=device)
-                            l_t = torch.full((len(cands_v),), len(r) + 1, dtype=torch.long, device=device)
-                            f_v, d_v = backend.evaluate_routes_gpu(r_t, l_t)
-                            if f_v.any():
-                                v_idx = torch.nonzero(f_v, as_tuple=True)[0]
-                                min_v, argmin_v = torch.min(d_v[v_idx], dim=0)
-                                if min_v.item() < best_d:
-                                    best_d = min_v.item()
-                                    best_r_i = r_i
-                                    best_pos = v_idx[argmin_v].item() + 1
-                        if best_r_i != -1:
-                            temp_others[best_r_i].insert(best_pos, c)
-                        else:
-                            success = False
-                            break
-                    if success:
-                        routes = temp_others
-                        improved = True
-                        break
-
-        num_r = min(len(routes), max_routes)
+    for p in range(P):
+        sol_routes = all_routes[p]
+        num_r = min(len(sol_routes), max_routes)
         pop_route_counts[p] = num_r
         for r_i in range(num_r):
-            r_nodes = routes[r_i]
+            r_nodes = sol_routes[r_i]
             r_len = min(len(r_nodes), max_nodes)
             pop_lengths[p, r_i] = r_len
             pop_routes[p, r_i, :r_len] = torch.tensor(r_nodes[:r_len], dtype=torch.long, device=device)
@@ -575,8 +636,24 @@ def tensor_sa_warmup(
                     if len1 >= 3 and len2 < L - 1:
                         i1 = random.randint(1, len1 - 2)
                         cust = cand_routes[p, r1, i1].clone()
-                        i2 = random.randint(1, len2 - 1)
+                        cust_val = int(cust.item())
 
+                        r2_nodes = cand_routes[p, r2, :len2].tolist()
+                        best_i2 = -1
+                        best_delta = float('inf')
+                        for p2 in range(1, len2):
+                            cand2 = r2_nodes[:p2] + [cust_val] + r2_nodes[p2:]
+                            flag2, _ = _chk_route_list(cand2, data)
+                            if flag2:
+                                prev_n, nxt_n = r2_nodes[p2 - 1], r2_nodes[p2]
+                                delta = data.dist[prev_n][cust_val] + data.dist[cust_val][nxt_n] - data.dist[prev_n][nxt_n]
+                                if delta < best_delta:
+                                    best_delta = delta
+                                    best_i2 = p2
+                        if best_i2 == -1:
+                            continue
+
+                        i2 = best_i2
                         # Remove from r1 on GPU
                         cand_routes[p, r1, i1:len1-1] = cand_routes[p, r1, i1+1:len1].clone()
                         cand_routes[p, r1, len1-1] = depot
@@ -793,7 +870,7 @@ def tensor_gpu_elite_crossover(
                 child_routes.append(pop_routes[p_idx, r_c, :l_c].tolist())
                 covered.update(r_custs)
 
-        # 3. For any remaining unrouted customers, insert into best feasible position on GPU
+        # 3. For any remaining unrouted customers, insert into best feasible position
         missing = [c for c in range(1, num_customers + 1) if c not in covered]
         if missing:
             # Most-constrained-first heuristic: tightest time window width, then largest total demand
@@ -801,28 +878,34 @@ def tensor_gpu_elite_crossover(
             crossover_success = True
             for c in missing:
                 best_r = -1
-                best_pos = -1
-                min_cost = float('inf')
+                best_cand = None
+                min_d = float('inf')
 
                 for r_i, r_nodes in enumerate(child_routes):
                     len_r = len(r_nodes)
                     if len_r >= L - 1:
                         continue
-                    N_cand = len_r - 1
-                    batch_cand = [r_nodes[:pos] + [c] + r_nodes[pos:] for pos in range(1, len_r)]
-                    r_t = torch.tensor(batch_cand, dtype=torch.long, device=device)
-                    l_t = torch.full((N_cand,), len_r + 1, dtype=torch.long, device=device)
-                    feas, dists = backend.evaluate_routes_gpu(r_t, l_t)
-                    if feas.any():
-                        valid_idx = torch.nonzero(feas, as_tuple=True)[0]
-                        min_d, argmin_d = torch.min(dists[valid_idx], dim=0)
-                        if min_d.item() < min_cost:
-                            min_cost = min_d.item()
-                            best_r = r_i
-                            best_pos = valid_idx[argmin_d].item() + 1
+                    for pos in range(1, len_r):
+                        prev, nxt = r_nodes[pos - 1], r_nodes[pos]
+                        if getattr(data, 'pruning', False) and getattr(data, 'pm', None) is not None:
+                            if not data.pm[prev][c] or not data.pm[c][nxt]:
+                                continue
+                        cand = r_nodes[:pos] + [c] + r_nodes[pos:]
+                        flag, _ = _chk_route_list(cand, data)
+                        if not flag:
+                            cand_opt = optimize_route_nodes_2opt(cand, data)
+                            flag, _ = _chk_route_list(cand_opt, data)
+                            if flag:
+                                cand = cand_opt
+                        if flag:
+                            d = _route_distance(cand, data)
+                            if d < min_d:
+                                min_d = d
+                                best_r = r_i
+                                best_cand = cand
 
                 if best_r != -1:
-                    child_routes[best_r].insert(best_pos, c)
+                    child_routes[best_r] = best_cand
                 else:
                     # If cannot be feasibly placed within current routes without inflating NV, abort offspring
                     crossover_success = False
@@ -959,18 +1042,20 @@ def tensor_gpu_vehicle_elimination(
     active_mask: torch.Tensor,
     backend,
     data,
-    max_customers_in_route: int = 12
+    max_customers_in_route: int = 100
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
-    Dedicated Pure-GPU Vehicle Elimination Routine.
+    Dedicated Pure-GPU Vehicle Elimination Routine with 2-Opt Untangling.
     Targets shortest routes in each active individual.
-    Attempts to absorb ALL customers of the target route into the remaining routes
-    using GPU-verified feasible insertions. If successful, the route is deleted,
+    Attempts to absorb ALL customers of the victim route into the remaining routes
+    using feasible insertions and 2-opt untangling. If successful, the route is deleted,
     reducing vehicle count (NV -> NV - 1) and cutting dispatching cost by 2000!
     """
     P, R, L = pop_routes.shape
     device = backend.device
     depot = data.DC
+    pm = getattr(data, 'pm', None)
+    pruning = getattr(data, 'pruning', False) and pm is not None
 
     active_indices = torch.nonzero(active_mask, as_tuple=True)[0]
     if len(active_indices) == 0:
@@ -978,90 +1063,74 @@ def tensor_gpu_vehicle_elimination(
 
     for p in active_indices:
         p_idx = int(p.item())
+        r_cnt = int(pop_route_counts[p_idx].item())
+        if r_cnt <= 1:
+            continue
+
+        routes = []
+        for r in range(r_cnt):
+            l = int(pop_lengths[p_idx, r].item())
+            if l > 2:
+                routes.append(pop_routes[p_idx, r, :l].tolist())
 
         elim_improved = True
-        while elim_improved:
+        while elim_improved and len(routes) > 1:
             elim_improved = False
-            r_cnt = int(pop_route_counts[p_idx].item())
-            if r_cnt <= 1:
-                break
-
-            short_routes = []
-            for r in range(r_cnt):
-                l = int(pop_lengths[p_idx, r].item())
-                if 3 <= l <= max_customers_in_route + 2:
-                    short_routes.append((l - 2, r))
-
-            if not short_routes:
-                break
-
-            short_routes.sort()
-            for num_c, r_victim in short_routes:
-                len_victim = int(pop_lengths[p_idx, r_victim].item())
-                if len_victim <= 2:
-                    continue
-
-                victim_custs = pop_routes[p_idx, r_victim, 1:len_victim-1].tolist()
+            routes.sort(key=lambda r: len(r))
+            for victim_idx in range(min(3, len(routes))):
+                victim = routes[victim_idx]
+                victim_custs = victim[1:-1]
+                others = [list(r) for i, r in enumerate(routes) if i != victim_idx]
                 victim_custs.sort(key=lambda c: (data.node[c].end - data.node[c].start, -(data.node[c].delivery + data.node[c].pickup)))
-                cand_routes = pop_routes[p_idx].clone()
-                cand_lengths = pop_lengths[p_idx].clone()
-
-                all_absorbed = True
+                temp_others = [list(r) for r in others]
+                success = True
                 for c in victim_custs:
-                    best_dst_r = -1
-                    best_dst_pos = -1
-                    min_cost = float('inf')
-
-                    for r_dst in range(r_cnt):
-                        if r_dst == r_victim:
-                            continue
-                        len_dst = int(cand_lengths[r_dst].item())
-                        if len_dst >= L - 1 or len_dst <= 2:
-                            continue
-
-                        N_cand = len_dst - 1
-                        r_nodes = cand_routes[r_dst, :len_dst]
-                        batch_cand = torch.full((N_cand, len_dst + 1), depot, dtype=torch.long, device=device)
-                        for pos_i in range(1, len_dst):
-                            batch_cand[pos_i - 1, :pos_i] = r_nodes[:pos_i]
-                            batch_cand[pos_i - 1, pos_i] = c
-                            batch_cand[pos_i - 1, pos_i+1:] = r_nodes[pos_i:]
-                        cand_lens = torch.full((N_cand,), len_dst + 1, dtype=torch.long, device=device)
-
-                        cand_feas, cand_dists = backend.evaluate_routes_gpu(batch_cand, cand_lens)
-                        if cand_feas.any():
-                            valid_dists = torch.where(cand_feas, cand_dists, torch.tensor(float('inf'), device=device))
-                            min_d, min_idx = torch.min(valid_dists, dim=0)
-                            if min_d.item() < min_cost:
-                                min_cost = min_d.item()
-                                best_dst_r = r_dst
-                                best_dst_pos = min_idx.item() + 1
-
-                    if best_dst_r != -1:
-                        cur_len = int(cand_lengths[best_dst_r].item())
-                        cand_routes[best_dst_r, best_dst_pos+1:cur_len+1] = cand_routes[best_dst_r, best_dst_pos:cur_len].clone()
-                        cand_routes[best_dst_r, best_dst_pos] = c
-                        cand_lengths[best_dst_r] = cur_len + 1
+                    best_r, best_cand, best_d = -1, None, float('inf')
+                    # 1. Try direct feasible insertion first
+                    for r_i, r in enumerate(temp_others):
+                        for pos in range(1, len(r)):
+                            prev, nxt = r[pos - 1], r[pos]
+                            if pruning and (not pm[prev][c] or not pm[c][nxt]):
+                                continue
+                            cand = r[:pos] + [c] + r[pos:]
+                            flag, _ = _chk_route_list(cand, data)
+                            if flag:
+                                d = _route_distance(cand, data)
+                                if d < best_d:
+                                    best_d, best_r, best_cand = d, r_i, cand
+                    # 2. If no direct insertion feasible, try 2-opt untangling fallback
+                    if best_r == -1:
+                        for r_i, r in enumerate(temp_others):
+                            for pos in range(1, len(r)):
+                                prev, nxt = r[pos - 1], r[pos]
+                                if pruning and (not pm[prev][c] or not pm[c][nxt]):
+                                    continue
+                                cand = r[:pos] + [c] + r[pos:]
+                                cand_opt = optimize_route_nodes_2opt(cand, data)
+                                flag, _ = _chk_route_list(cand_opt, data)
+                                if flag:
+                                    d = _route_distance(cand_opt, data)
+                                    if d < best_d:
+                                        best_d, best_r, best_cand = d, r_i, cand_opt
+                    if best_r != -1:
+                        temp_others[best_r] = best_cand
                     else:
-                        all_absorbed = False
+                        success = False
                         break
-
-                if all_absorbed:
-                    cand_routes[r_victim].fill_(depot)
-                    cand_lengths[r_victim] = 2
-
-                    write_idx = 0
-                    for r in range(r_cnt):
-                        if cand_lengths[r] > 2:
-                            pop_routes[p_idx, write_idx] = cand_routes[r].clone()
-                            pop_lengths[p_idx, write_idx] = cand_lengths[r]
-                            write_idx += 1
-                    for r in range(write_idx, R):
-                        pop_routes[p_idx, r].fill_(depot)
-                        pop_lengths[p_idx, r] = 2
-                    pop_route_counts[p_idx] = write_idx
+                if success:
+                    routes = temp_others
                     elim_improved = True
                     break
+
+        new_cnt = min(len(routes), R)
+        pop_route_counts[p_idx] = new_cnt
+        pop_routes[p_idx].fill_(depot)
+        pop_lengths[p_idx].fill_(2)
+        for r_i in range(new_cnt):
+            r_nodes = optimize_route_nodes_2opt(routes[r_i], data)
+            r_l = min(len(r_nodes), L)
+            pop_lengths[p_idx, r_i] = r_l
+            pop_routes[p_idx, r_i, :r_l] = torch.tensor(r_nodes[:r_l], dtype=torch.long, device=device)
 
     c_feas, c_costs, c_v_cnts, c_dists = backend.evaluate_population_tensor(
         pop_routes, pop_lengths, pop_route_counts
@@ -1074,6 +1143,7 @@ def tensor_gpu_vehicle_elimination(
     total_dists[pop_mask] = c_dists[pop_mask]
 
     return pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists
+
 
 
 def tensor_gpu_inter_2opt_star(
@@ -1136,8 +1206,8 @@ def tensor_gpu_inter_2opt_star(
                 nodes1 = pop_routes[p_idx, r1, :len1]
                 nodes2 = pop_routes[p_idx, r2, :len2]
 
-                i_vals = torch.arange(1, len1 - 2, device=device)
-                j_vals = torch.arange(1, len2 - 2, device=device)
+                i_vals = torch.arange(0, len1 - 1, device=device)
+                j_vals = torch.arange(0, len2 - 1, device=device)
                 if len(i_vals) == 0 or len(j_vals) == 0:
                     continue
 
@@ -1153,7 +1223,7 @@ def tensor_gpu_inter_2opt_star(
                 new_len1_mat = len2 + i_vals.unsqueeze(1) - j_vals.unsqueeze(0)
                 new_len2_mat = len1 + j_vals.unsqueeze(0) - i_vals.unsqueeze(1)
 
-                neg_mask = (delta_mat < -1e-4) & (new_len1_mat < L) & (new_len2_mat < L)
+                neg_mask = (delta_mat < -1e-4) & (new_len1_mat < L) & (new_len2_mat < L) & (new_len1_mat >= 2) & (new_len2_mat >= 2)
                 if not neg_mask.any():
                     continue
 
@@ -1197,6 +1267,21 @@ def tensor_gpu_inter_2opt_star(
                     pop_lengths[p_idx, r1] = cand_lens_batch[2 * best_m]
                     pop_routes[p_idx, r2] = cand_routes_batch[2 * best_m + 1]
                     pop_lengths[p_idx, r2] = cand_lens_batch[2 * best_m + 1]
+
+                    if cand_lens_batch[2 * best_m] <= 2 or cand_lens_batch[2 * best_m + 1] <= 2:
+                        write_idx = 0
+                        temp_routes = pop_routes[p_idx].clone()
+                        temp_lens = pop_lengths[p_idx].clone()
+                        for r_chk in range(r_cnt):
+                            if temp_lens[r_chk] > 2:
+                                pop_routes[p_idx, write_idx] = temp_routes[r_chk].clone()
+                                pop_lengths[p_idx, write_idx] = temp_lens[r_chk]
+                                write_idx += 1
+                        for r_chk in range(write_idx, R):
+                            pop_routes[p_idx, r_chk].fill_(depot)
+                            pop_lengths[p_idx, r_chk] = 2
+                        pop_route_counts[p_idx] = write_idx
+                        r_cnt = write_idx
 
     c_feas, c_costs, c_v_cnts, c_dists = backend.evaluate_population_tensor(
         pop_routes, pop_lengths, pop_route_counts
@@ -1824,6 +1909,7 @@ def tensor_gpu_woa_intensification(
                 best_pos = -1
                 min_cost = float('inf')
 
+                best_cand = None
                 # Only insert into non-elite routes to keep the injected elite route intact
                 for r_i, r_nodes in enumerate(routes_p):
                     if r_nodes == elite_nodes:
@@ -1831,21 +1917,27 @@ def tensor_gpu_woa_intensification(
                     len_r = len(r_nodes)
                     if len_r >= L - 1:
                         continue
-                    N_cand = len_r - 1
-                    batch_cand = [r_nodes[:pos] + [c] + r_nodes[pos:] for pos in range(1, len_r)]
-                    r_t = torch.tensor(batch_cand, dtype=torch.long, device=device)
-                    l_t = torch.full((N_cand,), len_r + 1, dtype=torch.long, device=device)
-                    feas, dists = backend.evaluate_routes_gpu(r_t, l_t)
-                    if feas.any():
-                        valid_idx = torch.nonzero(feas, as_tuple=True)[0]
-                        min_d, argmin_d = torch.min(dists[valid_idx], dim=0)
-                        if min_d.item() < min_cost:
-                            min_cost = min_d.item()
-                            best_r = r_i
-                            best_pos = valid_idx[argmin_d].item() + 1
+                    for pos in range(1, len_r):
+                        prev, nxt = r_nodes[pos - 1], r_nodes[pos]
+                        if getattr(data, 'pruning', False) and getattr(data, 'pm', None) is not None:
+                            if not data.pm[prev][c] or not data.pm[c][nxt]:
+                                continue
+                        cand = r_nodes[:pos] + [c] + r_nodes[pos:]
+                        flag, _ = _chk_route_list(cand, data)
+                        if not flag:
+                            cand_opt = optimize_route_nodes_2opt(cand, data)
+                            flag, _ = _chk_route_list(cand_opt, data)
+                            if flag:
+                                cand = cand_opt
+                        if flag:
+                            d = _route_distance(cand, data)
+                            if d < min_cost:
+                                min_cost = d
+                                best_r = r_i
+                                best_cand = cand
 
                 if best_r != -1:
-                    routes_p[best_r].insert(best_pos, c)
+                    routes_p[best_r] = best_cand
                 else:
                     exploit_success = False
                     break
