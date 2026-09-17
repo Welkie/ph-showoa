@@ -28,8 +28,6 @@ from .operator import (
     do_local_search,
     new_route_insertion,
     optimize_route_nodes_2opt,
-    _insert_customer_best_position_routes,
-    feasible_or_repair_algorithm_10_routes,
     tensor_rcrs_grasp_init,
     tensor_sa_warmup,
     tensor_guided_crossover,
@@ -1482,30 +1480,6 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     target_mask, backend, data, max_rounds=5
                 )
 
-                # Intensify global best solution with exact paper operators & re-inject if improved
-                try:
-                    cand_s = best_s.clone()
-                    _deep_local_search_best(cand_s, data)
-                    cand_s.update(data)
-                    cand_s.cal_cost(data)
-                    cand_nv = cand_s.len()
-                    curr_nv = best_s.len()
-                    if (cand_nv < curr_nv) or (cand_nv == curr_nv and cand_s.cost < best_s.cost - 1e-4):
-                        used = int(time.perf_counter() - stime)
-                        update_best_solution(cand_s, best_s, used, run, gen, data)
-                        b_idx = int(best_idx.item())
-                        solution_to_tensor(best_s, pop_routes, pop_lengths, pop_route_counts, b_idx)
-                        f_b, c_b, v_b, d_b = backend.evaluate_population_tensor(
-                            pop_routes[b_idx:b_idx+1],
-                            pop_lengths[b_idx:b_idx+1],
-                            pop_route_counts[b_idx:b_idx+1]
-                        )
-                        feas[b_idx] = f_b[0]
-                        costs[b_idx] = c_b[0]
-                        v_counts[b_idx] = v_b[0]
-                        total_dists[b_idx] = d_b[0]
-                except Exception:
-                    pass
 
             # 6. Pure GPU Stagnation-Triggered Ruin & Recreate (40% Non-Elite Diversification)
             stag_interval = getattr(data, "stagnation_interval", 50)
@@ -1609,16 +1583,6 @@ def gpu_pure_tensor_search_framework(data, best_s):
             used = int(time.perf_counter() - stime)
             update_best_solution(sol_best, best_s, used, run, data.max_iter, data)
 
-        try:
-            cand_s = best_s.clone()
-            _deep_local_search_best(cand_s, data)
-            cand_s.update(data)
-            cand_s.cal_cost(data)
-            if (cand_s.len() < best_s.len()) or (cand_s.len() == best_s.len() and cand_s.cost < best_s.cost - 1e-4):
-                used = int(time.perf_counter() - stime)
-                update_best_solution(cand_s, best_s, used, run, data.max_iter, data)
-        except Exception:
-            pass
 
         completed_runs += 1
         if time_exhausted:
