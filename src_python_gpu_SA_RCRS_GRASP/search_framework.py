@@ -1545,7 +1545,8 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     flush=True
                 )
 
-            if data.tmax != -1 and used > int(data.tmax):
+            elapsed_now = int(time.perf_counter() - stime)
+            if data.tmax != -1 and elapsed_now > int(data.tmax):
                 time_exhausted = True
                 break
 
