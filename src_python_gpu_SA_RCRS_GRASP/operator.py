@@ -133,189 +133,6 @@ def rcrs_score_exact(r_nl: List[int], data, c: int, pos: int, r_max_load: float,
     return w_td * delta_td + w_rc * rc_penalty + w_rs * rs_penalty
 
 
-def _generate_rcrs_grasp_routes_gpu(data, backend, alpha: float = 0.20, rng: random.Random = None) -> List[List[int]]:
-    """
-    100% Pure GPU Tensorized RCRS-GRASP Route Generation.
-    Evaluates all candidate insertions across all open routes in batched GPU tensor calls.
-    Uses exact RCRS criteria: delta_td + w_rc * rc_penalty + w_rs * rs_penalty.
-    """
-    if rng is None:
-        rng = random.Random(42)
-    depot = data.DC
-    num_customers = data.customer_num
-    unrouted = [i for i in range(1, num_customers + 1) if i != depot]
-    rng.shuffle(unrouted)
-
-    routes: List[List[int]] = []
-    pm = getattr(data, 'pm', None)
-    pruning = getattr(data, 'pruning', False) and pm is not None
-
-    w_td, w_rc, w_rs, rc_thr = 1.0, 0.5, 0.3, 0.70
-    capacity = data.vehicle.capacity
-
-    while unrouted:
-        if not routes:
-            c = unrouted.pop(0)
-            routes.append([depot, c, depot])
-            continue
-
-        # 1. GPU evaluation of current route distances
-        _, dists_curr = _evaluate_candidate_routes_gpu(routes, backend)
-        r_max_loads = [_route_max_load(r, data) for r in routes]
-
-        # 2. Build candidate insertions for ALL unrouted customers across ALL open routes
-        cands_meta = []
-        cand_routes_list = []
-
-        for c in unrouted:
-            c_del = data.node[c].delivery
-            c_pick = data.node[c].pickup
-            c_demand_max = max(c_del, c_pick)
-            dx_c = data.dist[depot][c]
-
-            for r_idx, r in enumerate(routes):
-                r_max_l = r_max_loads[r_idx]
-                r_dist = dists_curr[r_idx]
-
-                for pos in range(1, len(r)):
-                    prev, nxt = r[pos - 1], r[pos]
-                    if pruning and (not pm[prev][c] or not pm[c][nxt]):
-                        continue
-                    cand = r[:pos] + [c] + r[pos:]
-                    cands_meta.append((c, r_idx, pos, r_dist, r_max_l, c_demand_max, prev, nxt, dx_c))
-                    cand_routes_list.append(cand)
-
-        if not cand_routes_list:
-            c = unrouted.pop(0)
-            routes.append([depot, c, depot])
-            continue
-
-        # 3. Pure GPU Tensor Batch Evaluation of ALL candidate positions
-        feas_list, dists_list = _evaluate_candidate_routes_gpu(cand_routes_list, backend)
-
-        # 4. Exact RCRS Scoring for Feasible Candidates
-        best_per_customer = {c: {'r_idx': -1, 'pos': -1, 'score': float('inf')} for c in unrouted}
-        global_best_score = float('inf')
-        max_score = float('-inf')
-
-        for k, (is_feas, cand_dist) in enumerate(zip(feas_list, dists_list)):
-            if not is_feas:
-                continue
-            c, r_idx, pos, r_dist, r_max_l, c_demand_max, prev, nxt, dx_c = cands_meta[k]
-            delta_td = max(0.0, cand_dist - r_dist)
-            c_h_new = r_max_l + c_demand_max
-            rc_pen = max(0.0, c_h_new - capacity * rc_thr)
-            dx_prev = data.dist[depot][prev]
-            rs_pen = abs(dx_prev + data.dist[prev][c] - dx_c)
-
-            score = w_td * delta_td + w_rc * rc_pen + w_rs * rs_pen
-            if score < best_per_customer[c]['score']:
-                best_per_customer[c] = {'r_idx': r_idx, 'pos': pos, 'score': score}
-
-        for c, item in best_per_customer.items():
-            if item['r_idx'] != -1:
-                if item['score'] < global_best_score:
-                    global_best_score = item['score']
-                if item['score'] > max_score:
-                    max_score = item['score']
-
-        thresh = float('inf') if (global_best_score == float('inf') or max_score == float('-inf')) else global_best_score + alpha * (max_score - global_best_score)
-
-        rcl = []
-        forced = []
-        for c, item in best_per_customer.items():
-            if item['r_idx'] == -1:
-                forced.append(c)
-            elif item['score'] <= thresh + 1e-9:
-                rcl.append((c, item['r_idx'], item['pos']))
-
-        if not rcl:
-            c = rng.choice(forced) if forced else unrouted[0]
-            routes.append([depot, c, depot])
-            unrouted.remove(c)
-        else:
-            chosen_c, chosen_r, chosen_pos = rng.choice(rcl)
-            routes[chosen_r].insert(chosen_pos, chosen_c)
-            unrouted.remove(chosen_c)
-
-    # 5. Dedicated vehicle elimination pass on GPU
-    if len(routes) > 1:
-        elim_improved = True
-        while elim_improved and len(routes) > 1:
-            elim_improved = False
-            routes.sort(key=lambda r: len(r))
-            for victim_idx in range(min(3, len(routes))):
-                victim = routes[victim_idx]
-                victim_custs = victim[1:-1]
-                others = [list(r) for i, r in enumerate(routes) if i != victim_idx]
-                victim_custs.sort(key=lambda c: (data.node[c].end - data.node[c].start, -(data.node[c].delivery + data.node[c].pickup)))
-                temp_others = [list(r) for r in others]
-                success = True
-
-                for c in victim_custs:
-                    c_cands = []
-                    c_meta = []
-                    for r_i, r in enumerate(temp_others):
-                        for pos in range(1, len(r)):
-                            prev, nxt = r[pos - 1], r[pos]
-                            if pruning and (not pm[prev][c] or not pm[c][nxt]):
-                                continue
-                            c_cands.append(r[:pos] + [c] + r[pos:])
-                            c_meta.append((r_i, pos))
-                    if not c_cands:
-                        success = False
-                        break
-                    feas_sub, dists_sub = _evaluate_candidate_routes_gpu(c_cands, backend)
-                    best_k, best_d = -1, float('inf')
-                    for k, (f, d) in enumerate(zip(feas_sub, dists_sub)):
-                        if f and d < best_d:
-                            best_d = d
-                            best_k = k
-                    if best_k != -1:
-                        r_i, pos = c_meta[best_k]
-                        temp_others[r_i] = c_cands[best_k]
-                    else:
-                        if c_cands:
-                            # 2-opt untangling fallback on GPU
-                            untangle_cands = []
-                            untangle_meta = []
-                            c_approx_dists = [_route_distance(cand, data) for cand in c_cands]
-                            top_cand_indices = sorted(range(len(c_cands)), key=lambda idx: c_approx_dists[idx])[:6]
-                            for idx_try in top_cand_indices:
-                                cand = c_cands[idx_try]
-                                r_i, _ = c_meta[idx_try]
-                                l_cand = len(cand)
-                                for i_opt in range(1, l_cand - 2):
-                                    for j_opt in range(i_opt + 1, l_cand - 1):
-                                        untangle_cands.append(cand[:i_opt] + list(reversed(cand[i_opt:j_opt+1])) + cand[j_opt+1:])
-                                        untangle_meta.append(r_i)
-                            if untangle_cands:
-                                u_feas, u_dists = _evaluate_candidate_routes_gpu(untangle_cands, backend)
-                                u_best_k, u_best_d = -1, float('inf')
-                                for k, (f, d) in enumerate(zip(u_feas, u_dists)):
-                                    if f and d < u_best_d:
-                                        u_best_d = d
-                                        u_best_k = k
-                                if u_best_k != -1:
-                                    r_i = untangle_meta[u_best_k]
-                                    temp_others[r_i] = untangle_cands[u_best_k]
-                                    best_k = u_best_k
-                        if best_k == -1:
-                            success = False
-                            break
-
-                if success:
-                    routes = temp_others
-                    elim_improved = True
-                    break
-
-    # Intra-route 2-opt distance trimming on GPU
-    for r_i in range(len(routes)):
-        routes[r_i] = optimize_route_nodes_2opt(routes[r_i], data, backend)
-
-    return routes
-
-
 def _generate_rcrs_grasp_population_gpu(
     P: int,
     data,
@@ -346,8 +163,14 @@ def _generate_rcrs_grasp_population_gpu(
     for p in range(P):
         rngs[p].shuffle(unrouted[p])
 
+    # Seed the very first route [depot, c1, depot] for ALL individuals BEFORE entering the batch loop
     pop_routes: List[List[List[int]]] = [[] for _ in range(P)]
-    active = list(range(P))
+    for p in range(P):
+        if unrouted[p]:
+            c = unrouted[p].pop(0)
+            pop_routes[p].append([depot, c, depot])
+
+    active = [p for p in range(P) if unrouted[p]]
 
     while active:
         batch_cands = []
@@ -357,14 +180,6 @@ def _generate_rcrs_grasp_population_gpu(
 
         for p in active:
             if not unrouted[p]:
-                continue
-
-            if not pop_routes[p]:
-                # Open initial route for individual p without needing GPU call
-                c = unrouted[p].pop(0)
-                pop_routes[p].append([depot, c, depot])
-                if unrouted[p]:
-                    still_active.append(p)
                 continue
 
             r_dists = [_route_distance(r, data) for r in pop_routes[p]]
@@ -392,8 +207,9 @@ def _generate_rcrs_grasp_population_gpu(
             still_active.append(p)
 
         if not batch_cands:
+            # Fallback only when all still_active individuals genuinely have no feasible insertion
             for p in still_active:
-                if p not in per_p_slice and unrouted[p]:
+                if unrouted[p]:
                     c = unrouted[p].pop(0)
                     pop_routes[p].append([depot, c, depot])
             active = [p for p in still_active if unrouted[p]]
