@@ -316,6 +316,234 @@ def _generate_rcrs_grasp_routes_gpu(data, backend, alpha: float = 0.20, rng: ran
     return routes
 
 
+def _generate_rcrs_grasp_population_gpu(
+    P: int,
+    data,
+    backend,
+    alpha_lo: float = 0.10,
+    alpha_hi: float = 0.40,
+    base_seed: int = 42
+) -> List[List[List[int]]]:
+    """
+    Tier 1: Population-Batched GPU Tensorized RCRS-GRASP Construction.
+    Batches candidate route evaluations across ALL active individuals in population P,
+    reducing GPU kernel invocations from O(P * n) to O(n) (a P-fold reduction).
+    Evaluates 100% on CUDA VRAM with backend.evaluate_routes_gpu.
+    Preserves exact RCRS criteria: delta_td + w_rc * rc_penalty + w_rs * rs_penalty.
+    """
+    depot = data.DC
+    num_customers = data.customer_num
+    capacity = data.vehicle.capacity
+    w_td, w_rc, w_rs, rc_thr = 1.0, 0.5, 0.3, 0.70
+
+    pm = getattr(data, 'pm', None)
+    pruning = getattr(data, 'pruning', False) and pm is not None
+
+    rngs = [random.Random(base_seed + p * 1009) for p in range(P)]
+    alphas = [alpha_lo + (alpha_hi - alpha_lo) * (p / max(1, P - 1)) for p in range(P)]
+
+    unrouted = [[i for i in range(1, num_customers + 1) if i != depot] for _ in range(P)]
+    for p in range(P):
+        rngs[p].shuffle(unrouted[p])
+
+    pop_routes: List[List[List[int]]] = [[] for _ in range(P)]
+    active = list(range(P))
+
+    while active:
+        batch_cands = []
+        batch_meta = []
+        per_p_slice = {}
+        still_active = []
+
+        for p in active:
+            if not unrouted[p]:
+                continue
+
+            if not pop_routes[p]:
+                # Open initial route for individual p without needing GPU call
+                c = unrouted[p].pop(0)
+                pop_routes[p].append([depot, c, depot])
+                if unrouted[p]:
+                    still_active.append(p)
+                continue
+
+            r_dists = [_route_distance(r, data) for r in pop_routes[p]]
+            r_max_loads = [_route_max_load(r, data) for r in pop_routes[p]]
+            start_slice = len(batch_cands)
+
+            for c in unrouted[p]:
+                c_del = data.node[c].delivery
+                c_pick = data.node[c].pickup
+                c_demand_max = max(c_del, c_pick)
+                dx_c = data.dist[depot][c]
+
+                for r_idx, r in enumerate(pop_routes[p]):
+                    r_max_l = r_max_loads[r_idx]
+                    r_dist = r_dists[r_idx]
+
+                    for pos in range(1, len(r)):
+                        prev, nxt = r[pos - 1], r[pos]
+                        if pruning and (not pm[prev][c] or not pm[c][nxt]):
+                            continue
+                        batch_cands.append(r[:pos] + [c] + r[pos:])
+                        batch_meta.append((p, c, r_idx, pos, r_dist, r_max_l, c_demand_max, prev, nxt, dx_c))
+
+            per_p_slice[p] = (start_slice, len(batch_cands))
+            still_active.append(p)
+
+        if not batch_cands:
+            for p in still_active:
+                if p not in per_p_slice and unrouted[p]:
+                    c = unrouted[p].pop(0)
+                    pop_routes[p].append([depot, c, depot])
+            active = [p for p in still_active if unrouted[p]]
+            continue
+
+        # Single GPU call for ALL P individuals simultaneously
+        feas_list, dists_list = _evaluate_candidate_routes_gpu(batch_cands, backend)
+
+        new_active = []
+        for p in still_active:
+            if p not in per_p_slice:
+                if unrouted[p]:
+                    new_active.append(p)
+                continue
+
+            s_idx, e_idx = per_p_slice[p]
+            p_unrouted = unrouted[p]
+            p_alpha = alphas[p]
+            p_rng = rngs[p]
+
+            best_per_cust = {c: {'r_idx': -1, 'pos': -1, 'score': float('inf')} for c in p_unrouted}
+            g_best_score = float('inf')
+            max_score = float('-inf')
+
+            for k in range(s_idx, e_idx):
+                if not feas_list[k]:
+                    continue
+                _, c, r_idx, pos, r_dist, r_max_l, c_demand_max, prev, nxt, dx_c = batch_meta[k]
+                delta_td = max(0.0, dists_list[k] - r_dist)
+                c_h_new = r_max_l + c_demand_max
+                rc_pen = max(0.0, c_h_new - capacity * rc_thr)
+                dx_prev = data.dist[depot][prev]
+                rs_pen = abs(dx_prev + data.dist[prev][c] - dx_c)
+
+                score = w_td * delta_td + w_rc * rc_pen + w_rs * rs_pen
+                if score < best_per_cust[c]['score']:
+                    best_per_cust[c] = {'r_idx': r_idx, 'pos': pos, 'score': score}
+
+            for c, item in best_per_cust.items():
+                if item['r_idx'] != -1:
+                    if item['score'] < g_best_score:
+                        g_best_score = item['score']
+                    if item['score'] > max_score:
+                        max_score = item['score']
+
+            thresh = float('inf') if (g_best_score == float('inf') or max_score == float('-inf')) else g_best_score + p_alpha * (max_score - g_best_score)
+
+            rcl = []
+            forced = []
+            for c, item in best_per_cust.items():
+                if item['r_idx'] == -1:
+                    forced.append(c)
+                elif item['score'] <= thresh + 1e-9:
+                    rcl.append((c, item['r_idx'], item['pos']))
+
+            if not rcl:
+                c = p_rng.choice(forced) if forced else p_unrouted[0]
+                pop_routes[p].append([depot, c, depot])
+                p_unrouted.remove(c)
+            else:
+                chosen_c, chosen_r, chosen_pos = p_rng.choice(rcl)
+                pop_routes[p][chosen_r].insert(chosen_pos, chosen_c)
+                p_unrouted.remove(chosen_c)
+
+            if unrouted[p]:
+                new_active.append(p)
+
+        active = new_active
+
+    # Post-construction: Vehicle Elimination with GPU 2-Opt Untangling Fallback
+    for p in range(P):
+        routes = pop_routes[p]
+        if len(routes) > 1:
+            elim_improved = True
+            while elim_improved and len(routes) > 1:
+                elim_improved = False
+                routes.sort(key=lambda r: len(r))
+                for victim_idx in range(min(3, len(routes))):
+                    victim = routes[victim_idx]
+                    victim_custs = victim[1:-1]
+                    others = [list(r) for i, r in enumerate(routes) if i != victim_idx]
+                    victim_custs.sort(key=lambda c: (data.node[c].end - data.node[c].start, -(data.node[c].delivery + data.node[c].pickup)))
+                    temp_others = [list(r) for r in others]
+                    success = True
+
+                    for c in victim_custs:
+                        c_cands = []
+                        c_meta = []
+                        for r_i, r in enumerate(temp_others):
+                            for pos in range(1, len(r)):
+                                prev, nxt = r[pos - 1], r[pos]
+                                if pruning and (not pm[prev][c] or not pm[c][nxt]):
+                                    continue
+                                c_cands.append(r[:pos] + [c] + r[pos:])
+                                c_meta.append((r_i, pos))
+                        if not c_cands:
+                            success = False
+                            break
+                        feas_sub, dists_sub = _evaluate_candidate_routes_gpu(c_cands, backend)
+                        best_k, best_d = -1, float('inf')
+                        for k, (f, d) in enumerate(zip(feas_sub, dists_sub)):
+                            if f and d < best_d:
+                                best_d = d
+                                best_k = k
+                        if best_k != -1:
+                            r_i, pos = c_meta[best_k]
+                            temp_others[r_i] = c_cands[best_k]
+                        else:
+                            if c_cands:
+                                untangle_cands = []
+                                untangle_meta = []
+                                c_approx_dists = [_route_distance(cand, data) for cand in c_cands]
+                                top_cand_indices = sorted(range(len(c_cands)), key=lambda idx: c_approx_dists[idx])[:6]
+                                for idx_try in top_cand_indices:
+                                    cand = c_cands[idx_try]
+                                    r_i, _ = c_meta[idx_try]
+                                    l_cand = len(cand)
+                                    for i_opt in range(1, l_cand - 2):
+                                        for j_opt in range(i_opt + 1, l_cand - 1):
+                                            untangle_cands.append(cand[:i_opt] + list(reversed(cand[i_opt:j_opt+1])) + cand[j_opt+1:])
+                                            untangle_meta.append(r_i)
+                                if untangle_cands:
+                                    u_feas, u_dists = _evaluate_candidate_routes_gpu(untangle_cands, backend)
+                                    u_best_k, u_best_d = -1, float('inf')
+                                    for k, (f, d) in enumerate(zip(u_feas, u_dists)):
+                                        if f and d < u_best_d:
+                                            u_best_d = d
+                                            u_best_k = k
+                                    if u_best_k != -1:
+                                        r_i = untangle_meta[u_best_k]
+                                        temp_others[r_i] = untangle_cands[u_best_k]
+                                        best_k = u_best_k
+                            if best_k == -1:
+                                success = False
+                                break
+
+                    if success:
+                        routes = temp_others
+                        elim_improved = True
+                        break
+            pop_routes[p] = routes
+
+    # Intra-route 2-opt distance trimming on GPU
+    for p in range(P):
+        for r_i in range(len(pop_routes[p])):
+            pop_routes[p][r_i] = optimize_route_nodes_2opt(pop_routes[p][r_i], data, backend)
+
+    return pop_routes
+
+
 def tensor_rcrs_grasp_init(
     P: int,
     data,
@@ -342,10 +570,14 @@ def tensor_rcrs_grasp_init(
     pop_route_counts = torch.zeros(P, dtype=torch.long, device=device)
 
     base_seed = getattr(data, "seed", 42)
+
+    # Population-batched RCRS-GRASP construction (1 GPU call per step for all P individuals)
+    all_sol_routes = _generate_rcrs_grasp_population_gpu(
+        P, data, backend, alpha_lo=alpha_lo, alpha_hi=alpha_hi, base_seed=base_seed
+    )
+
     for p in range(P):
-        alpha = alpha_lo + (alpha_hi - alpha_lo) * (p / max(1, P - 1))
-        p_rng = random.Random(base_seed + p * 1009)
-        sol_routes = _generate_rcrs_grasp_routes_gpu(data, backend, alpha=alpha, rng=p_rng)
+        sol_routes = all_sol_routes[p]
         num_r = min(len(sol_routes), max_routes)
         pop_route_counts[p] = num_r
         for r_i in range(num_r):
