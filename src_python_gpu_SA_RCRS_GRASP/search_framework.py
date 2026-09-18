@@ -1726,7 +1726,7 @@ def search_framework(data, best_s):
                     return
                 raise RuntimeError("Native CUDA solver returned without a solution")
         except Exception as e:
-            raise RuntimeError("Native CUDA full_gpu execution failed") from e
+            raise RuntimeError(f"Native CUDA full_gpu execution failed: {e}") from e
 
     raise RuntimeError(
         "architecture=full_gpu requires the native CUDA solver; Python tensor fallback is disabled"
