@@ -880,6 +880,191 @@ def tensor_generate_offspring_batch(
     offspring[indices, route_two, pos_two] = second_new
     return offspring, offspring_lengths, offspring_counts
 
+
+def tensor_local_search_batch(
+    pop_routes: torch.Tensor,
+    pop_lengths: torch.Tensor,
+    pop_route_counts: torch.Tensor,
+    backend,
+    generator: torch.Generator,
+    passes: int = 4,
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Apply GPU-only improving 2-opt passes to a population batch."""
+    import torch
+
+    population, route_slots, max_nodes = pop_routes.shape
+    device = pop_routes.device
+    indices = torch.arange(population, device=device)
+    current_routes = pop_routes
+    current_lengths = pop_lengths
+    current_counts = pop_route_counts
+    feasible, _, vehicle_counts, total_distances = backend.evaluate_population_tensor(
+        current_routes, current_lengths, current_counts
+    )
+
+    for _ in range(max(1, passes)):
+        route_ids = torch.randint(
+            route_slots, (population,), device=device, generator=generator
+        )
+        selected_lengths = current_lengths[indices, route_ids]
+        left = torch.randint(
+            1, max(2, max_nodes - 1), (population,), device=device, generator=generator
+        )
+        right = torch.randint(
+            1, max(2, max_nodes - 1), (population,), device=device, generator=generator
+        )
+        lo = torch.minimum(left, right)
+        hi = torch.maximum(left, right)
+        valid_move = (
+            (route_ids < current_counts)
+            & (selected_lengths > 3)
+            & (lo < hi)
+            & (hi < (selected_lengths - 1))
+        )
+
+        selected_routes = current_routes[indices, route_ids]
+        offsets = torch.arange(max_nodes, device=device).view(1, -1)
+        reverse_mask = (offsets >= lo.view(-1, 1)) & (offsets <= hi.view(-1, 1))
+        reverse_indices = torch.where(
+            reverse_mask,
+            lo.view(-1, 1) + hi.view(-1, 1) - offsets,
+            offsets,
+        )
+        candidate_routes = torch.gather(selected_routes, 1, reverse_indices)
+        candidate_population = current_routes.clone()
+        candidate_population[indices, route_ids] = torch.where(
+            valid_move.view(-1, 1), candidate_routes, selected_routes
+        )
+
+        candidate_feasible, _, candidate_counts, candidate_distances = (
+            backend.evaluate_population_tensor(
+                candidate_population, current_lengths, current_counts
+            )
+        )
+        improves = candidate_feasible & (
+            (candidate_counts < vehicle_counts)
+            | (
+                (candidate_counts == vehicle_counts)
+                & (candidate_distances < total_distances - 1e-4)
+            )
+        )
+        improves &= valid_move
+        current_routes = torch.where(
+            improves.view(population, 1, 1), candidate_population, current_routes
+        )
+        feasible = torch.where(improves, candidate_feasible, feasible)
+        vehicle_counts = torch.where(improves, candidate_counts, vehicle_counts)
+        total_distances = torch.where(improves, candidate_distances, total_distances)
+
+    return current_routes, current_lengths, current_counts
+
+
+def tensor_relocate_batch(
+    pop_routes: torch.Tensor,
+    pop_lengths: torch.Tensor,
+    pop_route_counts: torch.Tensor,
+    backend,
+    generator: torch.Generator,
+    passes: int = 2,
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Try improving inter-route customer relocations on CUDA tensors."""
+    import torch
+
+    population, route_slots, max_nodes = pop_routes.shape
+    device = pop_routes.device
+    indices = torch.arange(population, device=device)
+    current_routes = pop_routes
+    current_lengths = pop_lengths
+    current_counts = pop_route_counts
+    feasible, _, vehicle_counts, total_distances = backend.evaluate_population_tensor(
+        current_routes, current_lengths, current_counts
+    )
+
+    for _ in range(max(1, passes)):
+        source_ids = torch.randint(
+            route_slots, (population,), device=device, generator=generator
+        )
+        target_ids = torch.randint(
+            route_slots, (population,), device=device, generator=generator
+        )
+        source_lengths = current_lengths[indices, source_ids]
+        target_lengths = current_lengths[indices, target_ids]
+        source_pos = torch.randint(
+            1, max(2, max_nodes - 1), (population,), device=device, generator=generator
+        )
+        target_pos = torch.randint(
+            1, max(2, max_nodes - 1), (population,), device=device, generator=generator
+        )
+        valid_move = (
+            (source_ids != target_ids)
+            & (source_ids < current_counts)
+            & (target_ids < current_counts)
+            & (source_lengths > 3)
+            & (source_pos < (source_lengths - 1))
+            & (target_pos < target_lengths)
+            & (target_lengths + 1 < max_nodes)
+        )
+
+        source_route = current_routes[indices, source_ids]
+        target_route = current_routes[indices, target_ids]
+        source_offsets = torch.arange(max_nodes, device=device).view(1, -1)
+        source_indices = torch.where(
+            source_offsets < source_pos.view(-1, 1),
+            source_offsets,
+            source_offsets + 1,
+        ).clamp_max(max_nodes - 1)
+        source_candidate = torch.gather(source_route, 1, source_indices)
+        moved_node = source_route.gather(1, source_pos.view(-1, 1)).squeeze(1)
+
+        target_output = torch.arange(max_nodes, device=device).view(1, -1)
+        target_indices = torch.where(
+            target_output < target_pos.view(-1, 1),
+            target_output,
+            target_output - 1,
+        ).clamp_min(0)
+        target_candidate = torch.gather(target_route, 1, target_indices)
+        target_candidate.scatter_(1, target_pos.view(-1, 1), moved_node.view(-1, 1))
+
+        candidate_population = current_routes.clone()
+        candidate_population[indices, source_ids] = torch.where(
+            valid_move.view(-1, 1), source_candidate, source_route
+        )
+        candidate_population[indices, target_ids] = torch.where(
+            valid_move.view(-1, 1), target_candidate, target_route
+        )
+        candidate_lengths = current_lengths.clone()
+        candidate_lengths[indices, source_ids] = torch.where(
+            valid_move, source_lengths - 1, source_lengths
+        )
+        candidate_lengths[indices, target_ids] = torch.where(
+            valid_move, target_lengths + 1, target_lengths
+        )
+
+        candidate_feasible, _, candidate_counts, candidate_distances = (
+            backend.evaluate_population_tensor(
+                candidate_population, candidate_lengths, current_counts
+            )
+        )
+        improves = candidate_feasible & (
+            (candidate_counts < vehicle_counts)
+            | (
+                (candidate_counts == vehicle_counts)
+                & (candidate_distances < total_distances - 1e-4)
+            )
+        )
+        improves &= valid_move
+        current_routes = torch.where(
+            improves.view(population, 1, 1), candidate_population, current_routes
+        )
+        current_lengths = torch.where(
+            improves.view(population, 1), candidate_lengths, current_lengths
+        )
+        feasible = torch.where(improves, candidate_feasible, feasible)
+        vehicle_counts = torch.where(improves, candidate_counts, vehicle_counts)
+        total_distances = torch.where(improves, candidate_distances, total_distances)
+
+    return current_routes, current_lengths, current_counts
+
 def batched_insert_customer_gpu(
     routes: List[List[int]],
     node: int,

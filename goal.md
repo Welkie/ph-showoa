@@ -32,3 +32,5 @@ CPU_DECODE sau khi hoàn tất toàn bộ runs
 đảm bảo đúng flow này cho tui
 
 File code tui chạy trên kaggle: kaggle_gpu_sa_rcrs_grasp
+
+Tham khảo bài báo GPU acceleration hoặc các bài khác liên quan phù hợp

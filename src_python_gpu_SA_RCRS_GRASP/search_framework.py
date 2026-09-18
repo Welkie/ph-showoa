@@ -31,6 +31,8 @@ from .operator import (
     tensor_rcrs_grasp_init,
     tensor_sa_warmup,
     tensor_generate_offspring_batch,
+    tensor_local_search_batch,
+    tensor_relocate_batch,
     tensor_sho_crossover_single,
     tensor_woa_intensification_single,
     tensor_route_elimination_single,
@@ -695,7 +697,12 @@ def _tensor_route_elimination_population(pop_routes, pop_lengths, pop_route_coun
         return pop_routes, pop_lengths, pop_route_counts
 
     batch = torch.arange(population, device=device)
-    source_index = (pop_route_counts - 1).clamp_min(0).clamp_max(route_slots - 1)
+    route_indices = torch.arange(route_slots, device=device).view(1, -1)
+    active_routes = (route_indices < pop_route_counts.view(-1, 1)) & (pop_lengths > 2)
+    source_lengths_for_min = torch.where(
+        active_routes, pop_lengths, torch.full_like(pop_lengths, max_nodes)
+    )
+    source_index = torch.argmin(source_lengths_for_min, dim=1)
     source_routes = pop_routes[batch, source_index]
     source_lengths = pop_lengths[batch, source_index]
     target_routes = pop_routes
@@ -713,56 +720,127 @@ def _tensor_route_elimination_population(pop_routes, pop_lengths, pop_route_coun
     )
     target_indices = positions.expand(population, route_slots, max_nodes).clamp_max(max_nodes - 1)
     target_values = torch.gather(target_routes, 2, target_indices)
-    source_indices = (positions - target_lengths.unsqueeze(-1) + 2).clamp(0, max_nodes - 1)
+    append_source_indices = (positions - target_lengths.unsqueeze(-1) + 2).clamp(0, max_nodes - 1)
     source_values = torch.gather(
         source_routes.unsqueeze(1).expand(-1, route_slots, -1),
         2,
-        source_indices.expand(population, route_slots, max_nodes),
+        append_source_indices.expand(population, route_slots, max_nodes),
     )
-    candidates = torch.full_like(target_routes, backend.depot)
-    candidates = torch.where(target_mask, target_values, candidates)
-    candidates = torch.where(source_mask, source_values, candidates)
+    append_candidates = torch.full_like(target_routes, backend.depot)
+    append_candidates = torch.where(target_mask, target_values, append_candidates)
+    append_candidates = torch.where(source_mask, source_values, append_candidates)
+
+    prepend_source_mask = (
+        (positions > 0)
+        & (positions < (source_lengths.view(-1, 1, 1) - 1))
+    )
+    prepend_target_mask = (
+        (positions >= (source_lengths.view(-1, 1, 1) - 1))
+        & (positions < (merged_lengths.unsqueeze(-1) - 1))
+    )
+    prepend_source_indices = positions.clamp(0, max_nodes - 1)
+    prepend_target_indices = (
+        positions - source_lengths.view(-1, 1, 1) + 2
+    ).clamp(0, max_nodes - 1)
+    prepend_source_values = torch.gather(
+        source_routes.unsqueeze(1).expand(-1, route_slots, -1),
+        2,
+        prepend_source_indices.expand(population, route_slots, max_nodes),
+    )
+    prepend_target_values = torch.gather(
+        target_routes,
+        2,
+        prepend_target_indices.expand(population, route_slots, max_nodes),
+    )
+    prepend_candidates = torch.full_like(target_routes, backend.depot)
+    prepend_candidates = torch.where(
+        prepend_source_mask, prepend_source_values, prepend_candidates
+    )
+    prepend_candidates = torch.where(
+        prepend_target_mask, prepend_target_values, prepend_candidates
+    )
     candidate_lengths = merged_lengths.clamp_min(2).clamp_max(max_nodes)
 
     active_targets = (
-        (torch.arange(route_slots, device=device).view(1, -1) != source_index.view(-1, 1))
-        & (torch.arange(route_slots, device=device).view(1, -1) < pop_route_counts.view(-1, 1))
+        (route_indices != source_index.view(-1, 1))
+        & (route_indices < pop_route_counts.view(-1, 1))
         & (pop_route_counts.view(-1, 1) > 1)
         & (target_lengths > 2)
         & (source_lengths.view(-1, 1) > 2)
     )
+    candidate_batch = torch.stack(
+        (append_candidates, prepend_candidates), dim=1
+    ).reshape(population * 2 * route_slots, max_nodes)
+    candidate_lengths_batch = torch.stack(
+        (candidate_lengths, candidate_lengths), dim=1
+    ).reshape(-1)
     flat_feasible, flat_distances = backend.evaluate_routes_gpu(
-        candidates.reshape(population * route_slots, max_nodes),
-        candidate_lengths.reshape(population * route_slots),
+        candidate_batch,
+        candidate_lengths_batch,
     )
     flat_current_feasible, flat_current_distances = backend.evaluate_routes_gpu(
         target_routes.reshape(population * route_slots, max_nodes),
         target_lengths.reshape(population * route_slots),
     )
-    feasible = flat_feasible.view(population, route_slots) & active_targets
-    deltas = flat_distances.view(population, route_slots) - flat_current_distances.view(population, route_slots)
+    candidate_feasible = flat_feasible.view(population, 2, route_slots)
+    candidate_distances = flat_distances.view(population, 2, route_slots)
+    candidate_choice = torch.argmin(
+        torch.where(
+            candidate_feasible,
+            candidate_distances,
+            torch.full((), float("inf"), device=device),
+        ),
+        dim=1,
+    )
+    feasible = candidate_feasible.any(dim=1) & active_targets
+    selected_distances = candidate_distances.gather(
+        1, candidate_choice.unsqueeze(1)
+    ).squeeze(1)
+    deltas = selected_distances - flat_current_distances.view(population, route_slots)
     deltas = torch.where(feasible, deltas, torch.full((), float("inf"), device=device))
     best_delta, best_target = torch.min(deltas, dim=1)
     accepted = torch.isfinite(best_delta)
 
-    winner_routes = candidates[batch, best_target]
+    winner_orientation = candidate_choice[batch, best_target]
+    winner_routes = torch.where(
+        winner_orientation.view(-1, 1) == 0,
+        append_candidates[batch, best_target],
+        prepend_candidates[batch, best_target],
+    )
     updated_routes = pop_routes.clone()
     updated_lengths = pop_lengths.clone()
     updated_routes[batch, best_target] = torch.where(
         accepted.view(-1, 1), winner_routes, updated_routes[batch, best_target]
+    )
+    updated_lengths[batch, best_target] = torch.where(
+        accepted, candidate_lengths[batch, best_target], updated_lengths[batch, best_target]
     )
     updated_routes[batch, source_index] = torch.where(
         accepted.view(-1, 1),
         torch.full((population, max_nodes), backend.depot, dtype=pop_routes.dtype, device=device),
         updated_routes[batch, source_index],
     )
-    updated_lengths[batch, best_target] = torch.where(
-        accepted, candidate_lengths[batch, best_target], updated_lengths[batch, best_target]
-    )
     updated_lengths[batch, source_index] = torch.where(
         accepted, torch.full_like(source_index, 2), updated_lengths[batch, source_index]
     )
+
+    compact_positions = torch.arange(route_slots, device=device).view(1, -1)
+    compact_sources = torch.where(
+        compact_positions < source_index.view(-1, 1),
+        compact_positions,
+        compact_positions + 1,
+    ).clamp_max(route_slots - 1)
+    compact_routes = torch.gather(
+        updated_routes,
+        1,
+        compact_sources.unsqueeze(-1).expand(-1, -1, max_nodes),
+    )
+    compact_lengths = torch.gather(updated_lengths, 1, compact_sources)
+    compact_routes[:, -1] = backend.depot
+    compact_lengths[:, -1] = 2
     updated_counts = torch.where(accepted, pop_route_counts - 1, pop_route_counts)
+    updated_routes = torch.where(accepted.view(-1, 1, 1), compact_routes, updated_routes)
+    updated_lengths = torch.where(accepted.view(-1, 1), compact_lengths, updated_lengths)
     return updated_routes, updated_lengths, updated_counts
 
 
@@ -1460,12 +1538,13 @@ def gpu_pure_tensor_search_framework(data, best_s):
         pop_routes, pop_lengths, pop_route_counts = tensor_rcrs_grasp_init(
             P, data, backend, alpha_lo=alpha_lo, alpha_hi=alpha_hi, sa_iters=sa_iters, run=run
         )
-        pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
-            pop_routes, pop_lengths, pop_route_counts, backend
-        )
         if sa_iters > 0:
             pop_routes, pop_lengths, pop_route_counts = tensor_sa_warmup(
                 pop_routes, pop_lengths, pop_route_counts, backend, data, sa_iters=sa_iters
+            )
+        for _ in range(3):
+            pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
+                pop_routes, pop_lengths, pop_route_counts, backend
             )
 
         feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
@@ -1557,9 +1636,10 @@ def gpu_pure_tensor_search_framework(data, best_s):
             costs = torch.where(accept, c_costs, costs)
 
             if gen % max(1, getattr(data, "local_search_interval", 25)) == 0:
-                pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
-                    pop_routes, pop_lengths, pop_route_counts, backend
-                )
+                for _ in range(3):
+                    pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
+                        pop_routes, pop_lengths, pop_route_counts, backend
+                    )
                 feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
                     pop_routes, pop_lengths, pop_route_counts
                 )
@@ -1597,8 +1677,21 @@ def gpu_pure_tensor_search_framework(data, best_s):
             # 6. Periodic Deep Local Search on Global Best
             ls_interval = getattr(data, "local_search_interval", 25)
             if gen % ls_interval == 0:
-                ls_routes, ls_lengths, ls_counts = tensor_generate_offspring_batch(
-                    pop_routes, pop_lengths, pop_route_counts, backend, gpu_rng
+                ls_routes, ls_lengths, ls_counts = tensor_local_search_batch(
+                    pop_routes,
+                    pop_lengths,
+                    pop_route_counts,
+                    backend,
+                    gpu_rng,
+                    passes=4,
+                )
+                ls_routes, ls_lengths, ls_counts = tensor_relocate_batch(
+                    ls_routes,
+                    ls_lengths,
+                    ls_counts,
+                    backend,
+                    gpu_rng,
+                    passes=2,
                 )
                 ls_feas, ls_costs, ls_nv, ls_dist = backend.evaluate_population_tensor(
                     ls_routes, ls_lengths, ls_counts
@@ -1734,8 +1827,15 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     flush=True
                 )
 
-        completed_runs += 1
         print(f"RUN_GPU_END run={run}", flush=True)
+        run_best_idx = torch.argmin(scores)
+        run_best_solution = decode_tensor_solution(
+            pop_routes[run_best_idx],
+            pop_lengths[run_best_idx],
+            pop_route_counts[run_best_idx],
+        )
+        run_best_solution.check(data, False)
+        completed_runs += 1
 
     used = int(time.perf_counter() - stime)
 
@@ -1756,6 +1856,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
         flush=True
     )
     print("Time to surpass BKS: %d." % int(state.find_bks_time), flush=True)
+    best_s.check(data)
     sys.stdout.flush()
 
 
