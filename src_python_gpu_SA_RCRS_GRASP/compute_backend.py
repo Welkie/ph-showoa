@@ -678,7 +678,12 @@ class TorchComputeBackend(BaseComputeBackend):
         if strict_full_gpu and (not cuda_avail or device_str != "cuda"):
             raise RuntimeError("strict full_gpu requires a CUDA device")
         super().__init__(snapshot)
-        self.device = torch.device(device_str)
+        if device_str == "cuda":
+            # Use an indexed device so strict tensor/device comparisons match
+            # tensors created by PyTorch as cuda:0, cuda:1, and so on.
+            self.device = torch.device("cuda", torch.cuda.current_device())
+        else:
+            self.device = torch.device(device_str)
         self.is_cuda = (self.device.type == "cuda")
         self.strict_full_gpu = strict_full_gpu
         self.name = "torch_cuda" if self.is_cuda else "torch_cpu"
