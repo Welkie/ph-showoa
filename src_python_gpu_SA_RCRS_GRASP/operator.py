@@ -703,7 +703,7 @@ def tensor_rcrs_grasp_init(
         radial_penalty = (
             backend.dist_t[backend.depot, prev_nodes]
             + backend.dist_t[prev_nodes, candidate_nodes]
-            - backend.dist_t[backend.depot, candidate_nodes].view(P, 1, 1)
+            - backend.dist_t[backend.depot, customer].view(P, 1, 1)
         ).abs()
         rcrs_scores = delta_td + 0.5 * rc_penalty + 0.3 * radial_penalty
         invalid_score = torch.full((), float("inf"), device=device)
