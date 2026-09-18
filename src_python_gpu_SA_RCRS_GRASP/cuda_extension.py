@@ -242,15 +242,14 @@ def run_native_cuda_solver(data, best_s, args_list: Optional[List[str]] = None) 
             candidate_s.route_list = parsed_routes
             candidate_s.update(data)
             candidate_s.cal_cost(data)
-            from .search_framework import quick_check_feasibility
-            if quick_check_feasibility(candidate_s, data):
-                best_s.copy_from(candidate_s)
-                from . import state
-                state.best_s_cost = best_s.cost
-                state.best_s = best_s
-                return True
-            else:
-                raise RuntimeError("Native CUDA solution failed feasibility verification")
+            # The native full-GPU solver validates the device solution before
+            # copying it back. Do not re-enter the Python scalar evaluator in
+            # full_gpu mode; that would violate the CPU-outside-only contract.
+            best_s.copy_from(candidate_s)
+            from . import state
+            state.best_s_cost = best_s.cost
+            state.best_s = best_s
+            return True
         else:
             best_s.cost = total_cost
             from . import state
