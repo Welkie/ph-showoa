@@ -1707,30 +1707,13 @@ def gpu_pure_tensor_search_framework(data, best_s):
 
 
 def search_framework(data, best_s):
-    if getattr(data, "architecture", None) != "full_gpu":
-        raise RuntimeError("src_python_gpu_SA_RCRS_GRASP requires architecture=full_gpu")
+    if getattr(data, "architecture", None) != "python_cuda":
+        raise RuntimeError("src_python_gpu_SA_RCRS_GRASP requires architecture=python_cuda")
     if not getattr(data.backend, "is_cuda", False):
-        raise RuntimeError("architecture=full_gpu requires a CUDA backend; CPU fallback is disabled")
+        raise RuntimeError("architecture=python_cuda requires a CUDA PyTorch backend")
 
-    # Full-GPU mode is deliberately strict: the native CUDA solver owns the
-    # population, operators, objective, and acceptance loop.  The Python
-    # tensor prototype still exists for development, but its host-side list
-    # construction is not allowed in production full_gpu runs.
-    if data.compute_backend in {"cuda", "auto"} and getattr(data, "architecture", "full_gpu") == "full_gpu":
-        try:
-            from .cuda_extension import is_native_cuda_available, run_native_cuda_solver
-            if is_native_cuda_available():
-                print("[Search Framework] Launching 100% Native CUDA Hardware Solver Engine...", flush=True)
-                if run_native_cuda_solver(data, best_s):
-                    state.best_s_cost = best_s.cost
-                    return
-                raise RuntimeError("Native CUDA solver returned without a solution")
-        except Exception as e:
-            raise RuntimeError(f"Native CUDA full_gpu execution failed: {e}") from e
-
-    raise RuntimeError(
-        "architecture=full_gpu requires the native CUDA solver; Python tensor fallback is disabled"
-    )
+    print("[Search Framework] Running Python/PyTorch CUDA tensor engine.", flush=True)
+    return gpu_pure_tensor_search_framework(data, best_s)
 
     pop = [Solution(data) for _ in range(data.p_size)]
     pop_fit = [0.0 for _ in range(data.p_size)]

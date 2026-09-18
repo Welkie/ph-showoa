@@ -977,9 +977,9 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
 
     snapshot = BackendSnapshot.from_data(data)
     
-    strict_full_gpu = getattr(data, "architecture", "legacy") == "full_gpu"
+    strict_full_gpu = getattr(data, "architecture", "legacy") in {"full_gpu", "python_cuda"}
     if strict_full_gpu and requested == "cpu":
-        raise RuntimeError("architecture=full_gpu requires compute_backend=cuda or auto")
+        raise RuntimeError("architecture=python_cuda requires compute_backend=cuda or auto")
 
     # Avoid even initializing the CPU JIT path during a strict GPU run.
     if not strict_full_gpu:
@@ -1016,7 +1016,7 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
                 print("Failed to initialize TorchComputeBackend: %s" % e)
 
         if strict_full_gpu:
-            raise RuntimeError("architecture=full_gpu requires a working PyTorch CUDA runtime")
+            raise RuntimeError("architecture=python_cuda requires a working PyTorch CUDA runtime")
 
         cuda_available = False
         if cuda is not None:
@@ -1042,7 +1042,7 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
                     print("CUDA backend requested but unavailable. Falling back to CPU backend.")
 
     if strict_full_gpu:
-        raise RuntimeError("No CUDA backend is available for architecture=full_gpu")
+        raise RuntimeError("No CUDA backend is available for architecture=python_cuda")
     return BaseComputeBackend(snapshot)
 
 

@@ -557,13 +557,13 @@ class Data:
             self.objective = parser.retrieve("objective")
         print("Objective mode: %s" % self.objective)
 
-        # The GPU package is strict by default; opt into the legacy solver explicitly.
-        self.architecture = "full_gpu"
+        # This package is the Python/PyTorch CUDA implementation.
+        self.architecture = "python_cuda"
         if parser.exists("architecture"):
             self.architecture = parser.retrieve("architecture")
-        if self.architecture != "full_gpu":
+        if self.architecture != "python_cuda":
             raise ValueError(
-                "src_python_gpu_SA_RCRS_GRASP only supports architecture=full_gpu"
+                "src_python_gpu_SA_RCRS_GRASP only supports architecture=python_cuda"
             )
         print("Architecture: %s" % self.architecture)
 

@@ -51,7 +51,7 @@ def _chk_route_list_cpu(nl, data):
 
 def _chk_route_list(nl, data):
     backend = getattr(data, "backend", None)
-    if getattr(data, "architecture", None) == "full_gpu":
+    if getattr(data, "architecture", None) == "python_cuda":
         raise RuntimeError(
             "full_gpu forbids scalar route evaluation; use tensor population APIs"
         )
@@ -62,7 +62,7 @@ def _chk_route_list(nl, data):
 
 def evaluate_route_batch(routes, data):
     backend = getattr(data, "backend", None)
-    if getattr(data, "architecture", None) == "full_gpu":
+    if getattr(data, "architecture", None) == "python_cuda":
         raise RuntimeError(
             "full_gpu forbids host route batches; use tensor population APIs"
         )
