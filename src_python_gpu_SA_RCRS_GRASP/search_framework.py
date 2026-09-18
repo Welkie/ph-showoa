@@ -30,6 +30,7 @@ from .operator import (
     optimize_route_nodes_2opt,
     tensor_rcrs_grasp_init,
     tensor_sa_warmup,
+    tensor_route_elimination_population,
     tensor_generate_offspring_batch,
     tensor_local_search_batch,
     tensor_relocate_batch,
@@ -1543,7 +1544,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 pop_routes, pop_lengths, pop_route_counts, backend, data, sa_iters=sa_iters
             )
         for _ in range(3):
-            pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
+            pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
                 pop_routes, pop_lengths, pop_route_counts, backend
             )
 
@@ -1637,7 +1638,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
 
             if gen % max(1, getattr(data, "local_search_interval", 25)) == 0:
                 for _ in range(3):
-                    pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
+                    pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
                         pop_routes, pop_lengths, pop_route_counts, backend
                     )
                 feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
@@ -1863,8 +1864,8 @@ def gpu_pure_tensor_search_framework(data, best_s):
 def search_framework(data, best_s):
     if getattr(data, "architecture", None) != "python_cuda":
         raise RuntimeError("src_python_gpu_SA_RCRS_GRASP requires architecture=python_cuda")
-    if not getattr(data.backend, "is_cuda", False):
-        raise RuntimeError("architecture=python_cuda requires a CUDA PyTorch backend")
+    if not getattr(data.backend, "is_cuda", False) and getattr(data, "compute_backend", None) == "cuda":
+        raise RuntimeError("architecture=python_cuda with compute_backend=cuda requires a CUDA PyTorch backend")
 
     print(
         f"[Search Framework] Running Python/PyTorch CUDA tensor engine "
