@@ -3231,6 +3231,7 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
 
         for (int run = 1; run <= data.runs; ++run) {
             std::printf("---------------------------------Run %d---------------------------\n", run);
+            std::fflush(stdout);
             std::vector<DeviceConstructionConfig> configs(solution_count);
             std::vector<LegacyMt19937> rng_states;
             rng_states.reserve(solution_count);
@@ -3579,6 +3580,7 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
                 }
             }
             std::printf("Run %d finishes\n", run);
+            std::fflush(stdout);
         }
 
         auto elapsed_wall = std::chrono::high_resolution_clock::now() - start_wall_time;
