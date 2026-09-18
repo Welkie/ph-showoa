@@ -798,9 +798,9 @@ def tensor_rcrs_grasp_init(
     pop_route_counts = torch.zeros(P, dtype=torch.long, device=device)
     
     for p in range(P):
-        alpha = alpha_lo + (alpha_hi - alpha_lo) * float(torch.rand(1, generator=generator).item())
+        alpha = alpha_lo + (alpha_hi - alpha_lo) * float(torch.rand(1, device=device, generator=generator).item())
         unassigned = [i for i in range(1, N + 1)]
-        perm = torch.randperm(N, generator=generator).tolist()
+        perm = torch.randperm(N, device=device, generator=generator).tolist()
         unassigned = [unassigned[i] for i in perm]
         
         routes = torch.full((max_routes, max_len), depot, dtype=torch.long, device=device)
@@ -958,7 +958,7 @@ def tensor_generate_offspring_batch(
     cand_counts = torch.zeros_like(pop_route_counts)
     
     for p in range(P):
-        is_sho = float(torch.rand(1, generator=generator).item()) < hybrid_probability
+        is_sho = float(torch.rand(1, device=device, generator=generator).item()) < hybrid_probability
         elite_idx = int(elite_indices[p].item())
         peer_idx = int(peer_indices[p].item())
         
@@ -980,7 +980,7 @@ def tensor_generate_offspring_batch(
                         continue
                     route_custs = pop_routes[src_p, src_r, 1 : src_l - 1].tolist()
                     if not any(c in assigned for c in route_custs):
-                        if float(torch.rand(1, generator=generator).item()) <= keep_prob:
+                        if float(torch.rand(1, device=device, generator=generator).item()) <= keep_prob:
                             child_routes_p[child_r, :src_l] = pop_routes[src_p, src_r, :src_l]
                             child_lens_p[child_r] = src_l
                             child_r += 1
@@ -994,7 +994,7 @@ def tensor_generate_offspring_batch(
                     continue
                 route_custs = pop_routes[elite_idx, src_r, 1 : src_l - 1].tolist()
                 # Keep most routes, perturb 1-2
-                if float(torch.rand(1, generator=generator).item()) < 0.80 and not any(c in assigned for c in route_custs):
+                if float(torch.rand(1, device=device, generator=generator).item()) < 0.80 and not any(c in assigned for c in route_custs):
                     child_routes_p[child_r, :src_l] = pop_routes[elite_idx, src_r, :src_l]
                     child_lens_p[child_r] = src_l
                     child_r += 1
