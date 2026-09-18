@@ -710,7 +710,9 @@ def tensor_rcrs_grasp_init(
         scored = torch.where(feasible, rcrs_scores, invalid_score)
         best_score = scored.amin(dim=(1, 2))
         worst_score = torch.where(feasible, rcrs_scores, torch.zeros_like(rcrs_scores)).amax(dim=(1, 2))
-        alpha = alpha_lo + (alpha_hi - alpha_lo) * (torch.arange(P, device=device).float() / max(1, P - 1))
+        alpha = alpha_lo + (alpha_hi - alpha_lo) * torch.rand(
+            P, device=device, generator=generator
+        )
         threshold = best_score + alpha * (worst_score - best_score)
         rcl = feasible & (rcrs_scores <= threshold.view(P, 1, 1))
         random_rank = torch.rand((P, R_count, position_count), device=device, generator=generator)
@@ -782,8 +784,12 @@ def tensor_sa_warmup(
         offsets = torch.arange(L, device=device).view(1, -1)
         selected_route = pop_routes[torch.arange(P, device=device), route_ids]
         reverse_mask = (offsets >= lo.view(-1, 1)) & (offsets <= hi.view(-1, 1))
-        reversed_route = torch.flip(selected_route, dims=(1,))
-        candidate_route = torch.where(reverse_mask, reversed_route, selected_route)
+        reverse_indices = torch.where(
+            reverse_mask,
+            lo.view(-1, 1) + hi.view(-1, 1) - offsets,
+            offsets,
+        )
+        candidate_route = torch.gather(selected_route, 1, reverse_indices)
         candidate_pop = pop_routes.clone()
         candidate_pop[torch.arange(P, device=device), route_ids] = torch.where(
             valid_move.view(-1, 1), candidate_route, selected_route

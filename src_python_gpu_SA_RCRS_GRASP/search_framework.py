@@ -1612,9 +1612,71 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 total_dists = torch.where(ls_better, ls_dist, total_dists)
                 feas = torch.where(ls_better, ls_feas, feas)
                 costs = torch.where(ls_better, ls_costs, costs)
+                ls_scores = backend.compute_lexicographic_scores(ls_feas, ls_nv, ls_dist)
+                ls_best_score, ls_best_idx = torch.min(ls_scores, dim=0)
+                ls_improves_global = ls_best_score < global_best_score_t
+                global_best_routes_t = torch.where(
+                    ls_improves_global,
+                    ls_routes[ls_best_idx],
+                    global_best_routes_t,
+                )
+                global_best_lengths_t = torch.where(
+                    ls_improves_global,
+                    ls_lengths[ls_best_idx],
+                    global_best_lengths_t,
+                )
+                global_best_count_t = torch.where(
+                    ls_improves_global,
+                    ls_counts[ls_best_idx],
+                    global_best_count_t,
+                )
+                global_best_score_t = torch.minimum(global_best_score_t, ls_best_score)
+
+                worst_idx = torch.argmax(scores)
+                replace_elite = global_best_score_t < scores[worst_idx]
+                pop_routes[worst_idx] = torch.where(
+                    replace_elite,
+                    global_best_routes_t,
+                    pop_routes[worst_idx],
+                )
+                pop_lengths[worst_idx] = torch.where(
+                    replace_elite,
+                    global_best_lengths_t,
+                    pop_lengths[worst_idx],
+                )
+                pop_route_counts[worst_idx] = torch.where(
+                    replace_elite,
+                    global_best_count_t,
+                    pop_route_counts[worst_idx],
+                )
+                scores[worst_idx] = torch.where(
+                    replace_elite,
+                    global_best_score_t,
+                    scores[worst_idx],
+                )
+                v_counts[worst_idx] = torch.where(
+                    replace_elite,
+                    global_best_count_t,
+                    v_counts[worst_idx],
+                )
+                total_dists[worst_idx] = torch.where(
+                    replace_elite,
+                    (global_best_score_t - global_best_count_t.to(torch.float64) * 1_000_000_000.0).to(total_dists.dtype),
+                    total_dists[worst_idx],
+                )
+                feas[worst_idx] = torch.where(
+                    replace_elite,
+                    torch.isfinite(global_best_score_t),
+                    feas[worst_idx],
+                )
+                costs[worst_idx] = torch.where(
+                    replace_elite,
+                    global_best_count_t.to(costs.dtype) * backend.dispatch_cost + total_dists[worst_idx] * backend.unit_cost,
+                    costs[worst_idx],
+                )
                 gen_t = torch.tensor(gen, dtype=torch.long, device=device)
                 last_improvement_gen_t = torch.where(
-                    ls_better.any(), gen_t, last_improvement_gen_t
+                    (ls_better.any() | ls_improves_global), gen_t, last_improvement_gen_t
                 )
 
             # 7. Island Ring Migration (Pure GPU tensor transfer)
