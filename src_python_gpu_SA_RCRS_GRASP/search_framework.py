@@ -1712,7 +1712,11 @@ def search_framework(data, best_s):
     if not getattr(data.backend, "is_cuda", False):
         raise RuntimeError("architecture=python_cuda requires a CUDA PyTorch backend")
 
-    print("[Search Framework] Running Python/PyTorch CUDA tensor engine.", flush=True)
+    print(
+        f"[Search Framework] Running Python/PyTorch CUDA tensor engine "
+        f"(backend={data.backend.name}, device={data.backend.device}).",
+        flush=True,
+    )
     return gpu_pure_tensor_search_framework(data, best_s)
 
     pop = [Solution(data) for _ in range(data.p_size)]

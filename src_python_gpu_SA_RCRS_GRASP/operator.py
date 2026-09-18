@@ -659,7 +659,13 @@ def tensor_rcrs_grasp_init(
             positions.view(1, 1, -1, 1).expand(P_count, R_count, -1, 1),
             customer.view(P_count, 1, 1, 1).expand(P_count, R_count, position_count, 1),
         )
-        candidate_lengths = pop_lengths.unsqueeze(2) + 1
+        # Keep every route tensor explicitly on the selected CUDA device at
+        # the evaluator boundary. These are no-op device checks for CUDA
+        # tensors and prevent accidental host tensors from entering strict mode.
+        candidates = candidates.to(device=device, dtype=torch.long)
+        current = current.to(device=device, dtype=torch.long)
+        candidate_lengths = (pop_lengths.unsqueeze(2) + 1).to(device=device, dtype=torch.long)
+        current_lengths = pop_lengths.to(device=device, dtype=torch.long)
         valid_positions = positions.view(1, 1, -1) < pop_lengths.unsqueeze(-1)
         active_routes = torch.arange(R_count, device=device).view(1, -1, 1) < route_count.view(-1, 1, 1)
         valid_candidates = valid_positions & active_routes
@@ -670,7 +676,7 @@ def tensor_rcrs_grasp_init(
         feasible = feasible.view(P_count, R_count, position_count) & valid_candidates
         distances = distances.view(P_count, R_count, position_count)
         current_feasible, current_distances = backend.evaluate_routes_gpu(
-            current.reshape(-1, L_count), pop_lengths.reshape(-1)
+            current.reshape(-1, L_count), current_lengths.reshape(-1)
         )
         current_distances = current_distances.view(P_count, R_count)
         deltas = distances - current_distances.unsqueeze(-1)

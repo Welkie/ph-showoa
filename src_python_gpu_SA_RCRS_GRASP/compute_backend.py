@@ -716,7 +716,11 @@ class TorchComputeBackend(BaseComputeBackend):
         """
         if self.strict_full_gpu:
             if routes_t.device != self.device or lengths_t.device != self.device:
-                raise RuntimeError("strict full_gpu received a host or foreign-device tensor")
+                raise RuntimeError(
+                    "python_cuda received a host/foreign tensor: "
+                    f"routes={routes_t.device}, lengths={lengths_t.device}, "
+                    f"backend={self.device}"
+                )
             if routes_t.dtype != torch.long or lengths_t.dtype != torch.long:
                 raise RuntimeError("strict full_gpu route tensors must use torch.long")
         N, L = routes_t.shape
