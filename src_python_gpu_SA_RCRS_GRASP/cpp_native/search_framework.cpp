@@ -873,7 +873,7 @@ void search_framework(Data& data, Solution& best_s) {
                 }
 
                 std::vector<std::exception_ptr> initialization_errors(K * P);
-                if (data.init == "rcrs_grasp" || data.init == "rcg") {
+                if (data.init == "rcrs_grasp" || data.init == "rcg" || data.init == "sa_rcrs_grasp") {
                     #pragma omp parallel for
                     for (int ip = 0; ip < K * P; ++ip) {
                         const int k = ip / P;
@@ -1223,7 +1223,7 @@ void search_framework(Data& data, Solution& best_s) {
             try {
                 ScopedProfileTimer init_timer(data.profile, profile_registry().initialization, p_size);
                 std::vector<std::exception_ptr> initialization_errors(p_size);
-                if (data.init == "rcrs_grasp" || data.init == "rcg") {
+                if (data.init == "rcrs_grasp" || data.init == "rcg" || data.init == "sa_rcrs_grasp") {
                     #pragma omp parallel for
                     for (int i = 0; i < p_size; ++i) {
                         try {

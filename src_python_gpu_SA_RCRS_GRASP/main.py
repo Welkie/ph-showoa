@@ -56,6 +56,8 @@ def main(argv=None):
     parser.add_argument("--grasp_alpha_lo", 1)
     parser.add_argument("--grasp_alpha_hi", 1)
     parser.add_argument("--sa_iterations", 1)
+    parser.add_argument("--num_islands", 1)
+    parser.add_argument("--migration_interval", 1)
     parser.add_argument("--k_init", 1)
     parser.add_argument("--no_crossover")
     parser.add_argument("--cross_repair", 1)
@@ -82,6 +84,7 @@ def main(argv=None):
     parser.add_argument("--random_seed", 1)
     parser.add_argument("--paper_flags")
     parser.add_argument("--objective", 1)
+    parser.add_argument("--architecture", 1)
 
 
     parser.parse(argv)

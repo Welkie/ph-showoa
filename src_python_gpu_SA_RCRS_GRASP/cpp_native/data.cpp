@@ -281,6 +281,8 @@ void Data::parse_args(int argc, char* argv[]) {
             grasp_alpha_lo = std::clamp(std::stod(argv[++i]), 0.0, 1.0);
         } else if (arg == "--grasp_alpha_hi" && i + 1 < argc) {
             grasp_alpha_hi = std::clamp(std::stod(argv[++i]), 0.0, 1.0);
+        } else if (arg == "--sa_iterations" && i + 1 < argc) {
+            sa_iterations = std::max(0, std::stoi(argv[++i]));
         } else if (arg == "--paper_flags") {
             paper_flags = true;
             pruning = true;

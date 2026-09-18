@@ -51,20 +51,22 @@ def _chk_route_list_cpu(nl, data):
 
 def _chk_route_list(nl, data):
     backend = getattr(data, "backend", None)
+    if getattr(data, "architecture", None) == "full_gpu":
+        raise RuntimeError(
+            "full_gpu forbids scalar route evaluation; use tensor population APIs"
+        )
     if backend is not None:
-        if backend.name == "GpuProxyBackend":
-            from .compute_backend import _evaluate_route_cpu
-            return _evaluate_route_cpu(nl, backend.snapshot)
         return backend.evaluate_route(nl)
     return _chk_route_list_cpu(nl, data)
 
 
 def evaluate_route_batch(routes, data):
     backend = getattr(data, "backend", None)
+    if getattr(data, "architecture", None) == "full_gpu":
+        raise RuntimeError(
+            "full_gpu forbids host route batches; use tensor population APIs"
+        )
     if backend is not None:
-        if getattr(data, "in_initialization", False) and backend.name == "GpuProxyBackend":
-            from .compute_backend import _evaluate_route_cpu
-            return [_evaluate_route_cpu(route, backend.snapshot) for route in routes]
         return backend.evaluate_routes(routes)
     return [_chk_route_list_cpu(route, data) for route in routes]
 

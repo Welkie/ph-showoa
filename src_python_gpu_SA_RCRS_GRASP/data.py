@@ -1,3 +1,4 @@
+import os
 import math
 import random
 from dataclasses import dataclass
@@ -137,6 +138,8 @@ class Data:
         self.grasp_alpha_lo = DEFAULT_GRASP_ALPHA_LO
         self.grasp_alpha_hi = DEFAULT_GRASP_ALPHA_HI
         self.sa_iterations = DEFAULT_SA_ITERATIONS
+        self.num_islands = 6
+        self.migration_interval = 20
         self.cross_repair = DEFAULT_CROSSOVER
         self.lambda_gamma = (0.0, 0.0)
         self.latin = []
@@ -179,6 +182,7 @@ class Data:
         self.repair_opts = []
 
         pro_file = parser.retrieve("problem")
+        self.filepath = os.path.abspath(pro_file)
         with open(pro_file, "r", encoding="utf-8") as fp:
             lines = fp.readlines()
 
@@ -413,6 +417,10 @@ class Data:
             self.grasp_alpha_hi = float(parser.retrieve("grasp_alpha_hi"))
         if parser.exists("sa_iterations"):
             self.sa_iterations = int(parser.retrieve("sa_iterations"))
+        if parser.exists("num_islands"):
+            self.num_islands = int(parser.retrieve("num_islands"))
+        if parser.exists("migration_interval"):
+            self.migration_interval = int(parser.retrieve("migration_interval"))
         if parser.exists("k_init"):
             self.k_init = int(parser.retrieve("k_init"))
         if self.k_init == K:
@@ -547,6 +555,17 @@ class Data:
         self.objective = "lexicographic"
         if parser.exists("objective"):
             self.objective = parser.retrieve("objective")
+        print("Objective mode: %s" % self.objective)
+
+        # The GPU package is strict by default; opt into the legacy solver explicitly.
+        self.architecture = "full_gpu"
+        if parser.exists("architecture"):
+            self.architecture = parser.retrieve("architecture")
+        if self.architecture != "full_gpu":
+            raise ValueError(
+                "src_python_gpu_SA_RCRS_GRASP only supports architecture=full_gpu"
+            )
+        print("Architecture: %s" % self.architecture)
 
         is_sa_rcrs_grasp = getattr(self, "init", "") in {"sa_rcrs_grasp", "rcrs_grasp", "rcg"}
         if parser.exists("paper_flags") or is_sa_rcrs_grasp:
@@ -566,6 +585,13 @@ class Data:
             self.objective = "lexicographic"
             if not parser.exists("init") and not is_sa_rcrs_grasp:
                 self.init = "sa"
+
+        for opt in self.small_opts:
+            if opt not in self.mem:
+                if opt in ("2opt", "oropt_single"):
+                    self.mem[opt] = [Move() for _ in range(self.vehicle.max_num)]
+                else:
+                    self.mem[opt] = [Move() for _ in range(self.vehicle.max_num * self.vehicle.max_num)]
 
 
         c_num = self.customer_num

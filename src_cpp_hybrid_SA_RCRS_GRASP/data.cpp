@@ -297,7 +297,9 @@ void Data::parse_args(int argc, char* argv[]) {
             small_opts.push_back("2exchange");
             related_removal = true;
             regret_insertion = true;
-            init = "sa";
+            if (init.empty() || init == "rcrs") {
+                init = "sa";
+            }
         } else if (arg == "--profile") {
             profile = true;
         } else if (arg == "--architecture" && i + 1 < argc) {

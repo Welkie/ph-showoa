@@ -3288,7 +3288,7 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
             cuda_check(cudaEventRecord(start_event), "cudaEventRecord(full_gpu start)");
             const int threads = 128;
             const int blocks = solution_count; // 1 block per solution
-            const bool is_rcrs_grasp = (data.init == "rcrs_grasp" || data.init == "rcg");
+            const bool is_rcrs_grasp = (data.init == "rcrs_grasp" || data.init == "rcg" || data.init == "sa_rcrs_grasp");
             cuda_check(cudaMemset(
                 d_status.get(), 0, static_cast<std::size_t>(solution_count) * sizeof(int)
             ), "cudaMemset(initialization status)");
@@ -3299,7 +3299,7 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
             );
             cuda_check(cudaGetLastError(), "initialize_population_kernel launch");
             if (data.init == "sa" || data.init == "sa_random" || is_rcrs_grasp) {
-                const int sa_iterations = is_rcrs_grasp ? 25 : 100;
+                const int sa_iterations = is_rcrs_grasp ? (data.sa_iterations > 0 ? data.sa_iterations : 25) : 100;
                 simulated_annealing_initialization_kernel<<<blocks, threads>>>(
                     population.view, branch.view, best_initialization.view, scratch, problem,
                     d_rng_states.get(), d_status.get(), sa_iterations

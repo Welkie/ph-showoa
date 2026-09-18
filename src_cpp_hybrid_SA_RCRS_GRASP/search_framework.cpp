@@ -97,11 +97,20 @@ static bool use_batched_population_construction(
 using ObjectiveKey = ObjectiveValue;
 
 static inline ObjectiveKey obj_key_full(const Solution& s, const Data& data) {
+    int total_customers = 0;
     double dist = 0.0;
     for (int i = 0; i < s.len(); ++i) {
         dist += s.get(i).self.dist;
+        total_customers += s.get(i).self.num_cus;
     }
-    return ObjectiveKey{true, s.len(), dist, s.cost};
+    bool feasible = (total_customers == data.customer_num);
+    if (feasible && s.len() > 0) {
+        feasible = s.check(data, false);
+    }
+    if (!feasible) {
+        return ObjectiveKey{false, s.len(), dist, std::numeric_limits<double>::infinity(), 1};
+    }
+    return ObjectiveKey{true, s.len(), dist, s.cost, 0};
 }
 
 // Returns true if candidate is strictly better than incumbent under the

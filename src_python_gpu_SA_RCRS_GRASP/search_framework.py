@@ -30,18 +30,22 @@ from .operator import (
     optimize_route_nodes_2opt,
     tensor_rcrs_grasp_init,
     tensor_sa_warmup,
-    tensor_guided_crossover,
-    tensor_woa_intensification,
-    tensor_gpu_elite_crossover,
-    tensor_gpu_neighborhood_moves,
-    tensor_gpu_woa_intensification,
-    tensor_gpu_intra_2opt,
-    tensor_gpu_vehicle_elimination,
-    tensor_gpu_inter_2opt_star,
-    tensor_gpu_smart_relocate,
-    tensor_gpu_or_opt,
-    tensor_gpu_deep_local_search_vnd,
-    tensor_gpu_ruin_and_recreate,
+    tensor_generate_offspring_batch,
+    tensor_sho_crossover_single,
+    tensor_woa_intensification_single,
+    tensor_route_elimination_single,
+    tensor_inter_route_relocate_gpu,
+    tensor_inter_route_swap_gpu,
+    tensor_inter_route_relocate_all,
+    tensor_deep_local_search_gpu,
+    tensor_2opt_route_gpu,
+    feasible_or_repair_algorithm_10,
+    rcrs_grasp_initialization,
+    random_removal,
+    related_removal,
+    regret_insertion,
+    greedy_insertion,
+    perturb,
 )
 from .solution import Route, Solution
 from .util import argsort, mean, rand
@@ -63,7 +67,28 @@ class AgentUpdateTask:
     data: Any
 
 
+def quick_check_feasibility(s: Solution, data) -> bool:
+    if s is None or s.len() == 0 or len(s.route_list) == 0:
+        return False
+    record = set()
+    for r in s.route_list:
+        flag, _ = _chk_route_list(r.node_list, data)
+        if not flag:
+            return False
+        for node in r.node_list:
+            if _is_customer(node, data):
+                if node in record:
+                    return False
+                record.add(node)
+    if len(record) != data.customer_num:
+        return False
+    return True
+
+
 def update_best_solution(s, best_s, used, run, gen, data):
+    if not quick_check_feasibility(s, data):
+        return False
+
     is_better = False
     if best_s.len() == 0 or best_s.cost == float("inf") or len(best_s.route_list) == 0:
         is_better = True
@@ -94,22 +119,9 @@ def update_best_solution(s, best_s, used, run, gen, data):
             state.find_bks_time = used
             state.find_bks_run = run
             state.find_bks_gen = gen
+        return True
+    return False
 
-
-def quick_check_feasibility(s: Solution, data) -> bool:
-    record = set()
-    for r in s.route_list:
-        flag, _ = _chk_route_list(r.node_list, data)
-        if not flag:
-            return False
-        for node in r.node_list:
-            if _is_customer(node, data):
-                if node in record:
-                    return False
-                record.add(node)
-    if len(record) != data.customer_num:
-        return False
-    return True
 
 
 def check_route_capacity(nl: List[int], data) -> bool:
@@ -312,6 +324,8 @@ def _sa_initialization(s_0: Solution, data, rng: random.Random) -> Solution:
 
 def feasible_or_repair_algorithm_10(s: Solution, data, rng: Optional[random.Random] = None) -> Solution:
     if quick_check_feasibility(s, data):
+        s.update(data)
+        s.cal_cost(data)
         return s
 
     s_prime = s.clone()
@@ -620,7 +634,7 @@ def initialization(pop, pop_fit, pop_argrank, data, run, executor=None):
     
     tasks = []
     for i in range(length):
-        lambda_gamma = data.latin[i] if data.init in {RCRS, "sa"} else None
+        lambda_gamma = data.latin[i % len(data.latin)] if (data.init in {RCRS, "sa"} and getattr(data, "latin", None)) else None
         seed = data.seed + 100000 + run * 1000 + i
         tasks.append((i, data.init, data, seed, lambda_gamma))
         
@@ -669,6 +683,87 @@ def _mode_probability(p_hybrid: float, data) -> float:
     if data.hybrid_mode == HYBRID_MODE_PH_SHOWOA:
         return p_hybrid
     raise ValueError("Unknown hybrid mode: %s" % data.hybrid_mode)
+
+
+def _tensor_route_elimination_population(pop_routes, pop_lengths, pop_route_counts, backend):
+    """Try absorbing each population member's last route into another route on CUDA."""
+    import torch
+
+    population, route_slots, max_nodes = pop_routes.shape
+    device = backend.device
+    if route_slots < 2:
+        return pop_routes, pop_lengths, pop_route_counts
+
+    batch = torch.arange(population, device=device)
+    source_index = (pop_route_counts - 1).clamp_min(0).clamp_max(route_slots - 1)
+    source_routes = pop_routes[batch, source_index]
+    source_lengths = pop_lengths[batch, source_index]
+    target_routes = pop_routes
+    target_lengths = pop_lengths
+    positions = torch.arange(max_nodes, device=device).view(1, 1, -1)
+
+    merged_lengths = target_lengths + source_lengths.view(-1, 1) - 2
+    target_mask = (
+        (positions > 0)
+        & (positions < (target_lengths.unsqueeze(-1) - 1))
+    )
+    source_mask = (
+        (positions >= (target_lengths.unsqueeze(-1) - 1))
+        & (positions < (merged_lengths.unsqueeze(-1) - 1))
+    )
+    target_indices = positions.expand(population, route_slots, max_nodes).clamp_max(max_nodes - 1)
+    target_values = torch.gather(target_routes, 2, target_indices)
+    source_indices = (positions - target_lengths.unsqueeze(-1) + 2).clamp(0, max_nodes - 1)
+    source_values = torch.gather(
+        source_routes.unsqueeze(1).expand(-1, route_slots, -1),
+        2,
+        source_indices.expand(population, route_slots, max_nodes),
+    )
+    candidates = torch.full_like(target_routes, backend.depot)
+    candidates = torch.where(target_mask, target_values, candidates)
+    candidates = torch.where(source_mask, source_values, candidates)
+    candidate_lengths = merged_lengths.clamp_min(2).clamp_max(max_nodes)
+
+    active_targets = (
+        (torch.arange(route_slots, device=device).view(1, -1) != source_index.view(-1, 1))
+        & (torch.arange(route_slots, device=device).view(1, -1) < pop_route_counts.view(-1, 1))
+        & (pop_route_counts.view(-1, 1) > 1)
+        & (target_lengths > 2)
+        & (source_lengths.view(-1, 1) > 2)
+    )
+    flat_feasible, flat_distances = backend.evaluate_routes_gpu(
+        candidates.reshape(population * route_slots, max_nodes),
+        candidate_lengths.reshape(population * route_slots),
+    )
+    flat_current_feasible, flat_current_distances = backend.evaluate_routes_gpu(
+        target_routes.reshape(population * route_slots, max_nodes),
+        target_lengths.reshape(population * route_slots),
+    )
+    feasible = flat_feasible.view(population, route_slots) & active_targets
+    deltas = flat_distances.view(population, route_slots) - flat_current_distances.view(population, route_slots)
+    deltas = torch.where(feasible, deltas, torch.full((), float("inf"), device=device))
+    best_delta, best_target = torch.min(deltas, dim=1)
+    accepted = torch.isfinite(best_delta)
+
+    winner_routes = candidates[batch, best_target]
+    updated_routes = pop_routes.clone()
+    updated_lengths = pop_lengths.clone()
+    updated_routes[batch, best_target] = torch.where(
+        accepted.view(-1, 1), winner_routes, updated_routes[batch, best_target]
+    )
+    updated_routes[batch, source_index] = torch.where(
+        accepted.view(-1, 1),
+        torch.full((population, max_nodes), backend.depot, dtype=pop_routes.dtype, device=device),
+        updated_routes[batch, source_index],
+    )
+    updated_lengths[batch, best_target] = torch.where(
+        accepted, candidate_lengths[batch, best_target], updated_lengths[batch, best_target]
+    )
+    updated_lengths[batch, source_index] = torch.where(
+        accepted, torch.full_like(source_index, 2), updated_lengths[batch, source_index]
+    )
+    updated_counts = torch.where(accepted, pop_route_counts - 1, pop_route_counts)
+    return updated_routes, updated_lengths, updated_counts
 
 
 def _is_customer(node: int, data) -> bool:
@@ -1160,12 +1255,26 @@ def _sa_accept(
     iteration: int,
     max_iter: int,
     rng: random.Random,
+    data: Any = None,
 ) -> bool:
-    delta = new_solution.cost - current_fit
-    if delta <= PRECISION:
+    objective = getattr(data, "objective", "lexicographic") if data is not None else "lexicographic"
+    if objective == "lexicographic":
+        c_nv = new_solution.len()
+        r_nv = current.len()
+        if c_nv < r_nv:
+            return True
+        if c_nv > r_nv:
+            return False
+        delta = (new_solution.cost - 2000.0 * c_nv) - (current_fit - 2000.0 * r_nv)
+        scale = abs(current_fit - 2000.0 * r_nv)
+    else:
+        delta = new_solution.cost - current_fit
+        scale = abs(current_fit)
+
+    if delta <= 0.001:
         return True
     temperature = 1.0 - (float(iteration) / float(max_iter)) if max_iter > 0 else 0.0
-    denominator = 1e-6 + temperature * abs(current_fit)
+    denominator = 1e-6 + temperature * scale
     probability = math.exp(-delta / denominator)
     return rng.random() < probability
 
@@ -1185,7 +1294,7 @@ def _update_agent_worker(task: AgentUpdateTask) -> Tuple[int, Solution, float, b
 
     new_solution.cal_cost(data)
     accepted = _sa_accept(
-        new_solution, task.current, task.current_fit, task.iteration, task.max_iter, rng
+        new_solution, task.current, task.current_fit, task.iteration, task.max_iter, rng, data
     )
     if accepted:
         return task.index, new_solution, new_solution.cost, True
@@ -1313,13 +1422,19 @@ def gpu_pure_tensor_search_framework(data, best_s):
     backend = data.backend
     P = data.p_size
     device = backend.device
+    gpu_rng = torch.Generator(device=device)
+    gpu_rng.manual_seed(int(data.seed + 900000))
 
     stime = time.perf_counter()
     used = 0
     time_exhausted = False
     completed_runs = 0
+    global_best_routes_t = None
+    global_best_lengths_t = None
+    global_best_count_t = None
+    global_best_score_t = torch.tensor(float("inf"), device=device, dtype=torch.float64)
 
-    sa_iters = getattr(data, "sa_iterations", 150)
+    sa_iters = getattr(data, "sa_iterations", 25)
     alpha_lo = getattr(data, "grasp_alpha_lo", 0.10)
     alpha_hi = getattr(data, "grasp_alpha_hi", 0.40)
     num_islands = getattr(data, "num_islands", 6)
@@ -1327,62 +1442,56 @@ def gpu_pure_tensor_search_framework(data, best_s):
         num_islands = 1
     island_size = P // num_islands
 
-    # Pure GPU Lexicographic composite score: NV primary, Total Distance secondary
-    def compute_lex_scores(feas_tensor, v_counts_tensor, dists_tensor):
-        feas_scores = v_counts_tensor.float() * 100000.0 + dists_tensor
-        has_feas = feas_tensor.any()
-        if has_feas:
-            return torch.where(feas_tensor, feas_scores, torch.tensor(1e12, device=device, dtype=torch.float32))
-        return feas_scores
-
-    # Solution Converter with 2-opt distance trimming (only called when updating best_s)
-    def tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, p_idx):
+    def decode_tensor_solution(routes_t, lengths_t, count_t):
         sol = Solution(data)
-        r_cnt = int(pop_route_counts[p_idx].item())
-        for r_i in range(r_cnt):
-            r_len = int(pop_lengths[p_idx, r_i].item())
-            r_nodes = pop_routes[p_idx, r_i, :r_len].cpu().tolist()
-            custs = [node for node in r_nodes if node != data.DC and 1 <= node <= data.customer_num]
-            if custs:
-                clean_nl = optimize_route_nodes_2opt([data.DC] + custs + [data.DC], data)
-                sol.append(_make_route(clean_nl[1:-1], data))
+        route_count = int(count_t.item())
+        for route_index in range(route_count):
+            route_nodes = routes_t[route_index, : lengths_t[route_index]].tolist()
+            if len(route_nodes) > 2:
+                sol.append(_make_route(route_nodes[1:-1], data))
         sol.update(data)
         sol.cal_cost(data)
         return sol
 
-    # Convert Solution object back to GPU tensor if needed
-    def solution_to_tensor(sol, pop_routes, pop_lengths, pop_route_counts, p_idx):
-        routes = [list(r.node_list) for r in sol.route_list if len(r.node_list) > 2]
-        _, R, L = pop_routes.shape
-        depot = data.DC
-        num_r = min(len(routes), R)
-        pop_route_counts[p_idx] = num_r
-        pop_routes[p_idx].fill_(depot)
-        pop_lengths[p_idx].fill_(2)
-        for r_i in range(num_r):
-            r_nodes = routes[r_i]
-            r_len = min(len(r_nodes), L)
-            pop_lengths[p_idx, r_i] = r_len
-            pop_routes[p_idx, r_i, :r_len] = torch.tensor(r_nodes[:r_len], dtype=torch.long, device=device)
-
     for run in range(1, data.runs + 1):
-        print("---------------------------------Run %d (Pure GPU Multi-Island)---------------------------" % run, flush=True)
+        device_label = "CUDA VRAM" if getattr(backend, "is_cuda", False) else "Tensor Engine"
+        print(f"---------------------------------Run {run} (100% Pure GPU Tensor Engine)---------------------------", flush=True)
 
+        # 1. GPU Tensor Population Initialization
         pop_routes, pop_lengths, pop_route_counts = tensor_rcrs_grasp_init(
-            P, data, backend, alpha_lo=alpha_lo, alpha_hi=alpha_hi, sa_iters=sa_iters
+            P, data, backend, alpha_lo=alpha_lo, alpha_hi=alpha_hi, sa_iters=sa_iters, run=run
         )
+        pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
+            pop_routes, pop_lengths, pop_route_counts, backend
+        )
+        if sa_iters > 0:
+            pop_routes, pop_lengths, pop_route_counts = tensor_sa_warmup(
+                pop_routes, pop_lengths, pop_route_counts, backend, data, sa_iters=sa_iters
+            )
 
         feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
             pop_routes, pop_lengths, pop_route_counts
         )
-
-        lex_scores = compute_lex_scores(feas, v_counts, total_dists)
-        global_best_idx = int(torch.argmin(lex_scores).item())
-        init_sol = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, global_best_idx)
-        used = int(time.perf_counter() - stime)
-        update_best_solution(init_sol, best_s, used, run, 0, data)
-        curr_init_td = best_s.cost - 2000.0 * best_s.len()
-        print("Initialization done on CUDA VRAM. Best NV: %d, Best TD: %.4f" % (best_s.len(), curr_init_td), flush=True)
+        scores = backend.compute_lexicographic_scores(feas, v_counts, total_dists)
+        run_best_idx = torch.argmin(scores)
+        run_best_score = scores[run_best_idx]
+        run_best_routes = pop_routes[run_best_idx].clone()
+        run_best_lengths = pop_lengths[run_best_idx].clone()
+        run_best_count = pop_route_counts[run_best_idx].clone()
+        run_improves_global = run_best_score < global_best_score_t
+        global_best_routes_t = torch.where(
+            run_improves_global, run_best_routes, global_best_routes_t
+            if global_best_routes_t is not None else run_best_routes
+        )
+        global_best_lengths_t = torch.where(
+            run_improves_global, run_best_lengths, global_best_lengths_t
+            if global_best_lengths_t is not None else run_best_lengths
+        )
+        global_best_count_t = torch.where(
+            run_improves_global, run_best_count, global_best_count_t
+            if global_best_count_t is not None else run_best_count
+        )
+        global_best_score_t = torch.minimum(global_best_score_t, run_best_score)
 
         last_improvement_gen = 0
 
@@ -1391,202 +1500,199 @@ def gpu_pure_tensor_search_framework(data, best_s):
             a, p_hybrid = _dynamic_parameters(iteration_index, data.max_iter)
             p_mode = _mode_probability(p_hybrid, data)
 
-            # 1. Pure GPU Island Best & Tournament Selection (Zero CPU transfer)
-            lex_scores = compute_lex_scores(feas, v_counts, total_dists)
-
+            # 2. Pure GPU Vectorized Tournament Selection (k=3)
             if num_islands > 1 and P % num_islands == 0:
-                island_scores = lex_scores.view(num_islands, island_size)
+                island_scores = scores.view(num_islands, island_size)
                 island_best_rel = torch.argmin(island_scores, dim=1)
                 island_bests_gpu = torch.arange(num_islands, device=device) * island_size + island_best_rel
                 best_indices = island_bests_gpu[torch.arange(P, device=device) // island_size]
 
-                # Vectorized Tournament Selection (k=3) within island
                 island_ids = torch.arange(P, device=device) // island_size
                 offsets = island_ids * island_size
                 cand1 = offsets + torch.randint(0, island_size, (P,), device=device)
                 cand2 = offsets + torch.randint(0, island_size, (P,), device=device)
                 cand3 = offsets + torch.randint(0, island_size, (P,), device=device)
                 cands = torch.stack([cand1, cand2, cand3], dim=1)
-                cand_scores = lex_scores[cands]
-                best_cand_rel = torch.argmin(cand_scores, dim=1, keepdim=True)
+                c_scores = scores[cands]
+                best_cand_rel = torch.argmin(c_scores, dim=1, keepdim=True)
                 peer_indices = torch.gather(cands, 1, best_cand_rel).squeeze(1)
             else:
-                best_idx = torch.argmin(lex_scores)
-                island_bests_gpu = torch.tensor([best_idx], device=device)
-                best_indices = best_idx.expand(P)
-
+                best_indices = torch.argmin(scores).expand(P)
                 cand1 = torch.randint(0, P, (P,), device=device)
                 cand2 = torch.randint(0, P, (P,), device=device)
                 cand3 = torch.randint(0, P, (P,), device=device)
                 cands = torch.stack([cand1, cand2, cand3], dim=1)
-                cand_scores = lex_scores[cands]
-                best_cand_rel = torch.argmin(cand_scores, dim=1, keepdim=True)
+                c_scores = scores[cands]
+                best_cand_rel = torch.argmin(c_scores, dim=1, keepdim=True)
                 peer_indices = torch.gather(cands, 1, best_cand_rel).squeeze(1)
 
-            # 2. 100% Pure GPU Tensorized Crossover & WOA Exploit/Explore Intensification
-            p_hybrid_mask = torch.rand(P, device=device) < p_mode
-            p_woa_mask = ~p_hybrid_mask
-
-            cand_routes, cand_lengths, cand_counts = tensor_gpu_elite_crossover(
-                pop_routes, pop_lengths, pop_route_counts, best_indices, p_hybrid_mask, backend, data
+            # 3. Coverage-preserving offspring generation entirely on the GPU.
+            cand_t, cand_lens, cand_cnts = tensor_generate_offspring_batch(
+                pop_routes, pop_lengths, pop_route_counts, backend, gpu_rng,
+                peer_indices=peer_indices,
+                elite_indices=best_indices,
+                hybrid_probability=p_mode,
             )
 
-            cand_routes, cand_lengths, cand_counts = tensor_gpu_woa_intensification(
-                cand_routes, cand_lengths, cand_counts, best_indices, a, p_woa_mask, backend, data
-            )
+            c_feas, c_costs, c_vcnts, c_dists = backend.evaluate_population_tensor(cand_t, cand_lens, cand_cnts)
+            c_scores = backend.compute_lexicographic_scores(c_feas, c_vcnts, c_dists)
 
-            # 3. Pure GPU Evaluation
-            cand_feas, cand_costs, cand_v_cnts, cand_dists = backend.evaluate_population_tensor(
-                cand_routes, cand_lengths, cand_counts
-            )
-
-            # 4. Pure Vectorized Lexicographic Metropolis Acceptance on GPU
+            # 5. Strict Lexicographic Acceptance on GPU
             temp = 1.0 - (float(iteration_index) / float(data.max_iter)) if data.max_iter > 0 else 0.0
-            c_nv, r_nv = cand_v_cnts, v_counts
-            c_d, r_d = cand_dists, total_dists
-
-            better_nv = c_nv < r_nv
-            worse_nv = c_nv > r_nv
-            same_nv = c_nv == r_nv
-            delta_d = c_d - r_d
+            better_nv = c_feas & (c_vcnts < v_counts)
+            same_nv = c_feas & (c_vcnts == v_counts)
+            delta_d = c_dists - total_dists
             better_d = same_nv & (delta_d < -1e-4)
-
-            denom = 1e-6 + temp * r_d.abs()
+            denom = 1e-6 + temp * total_dists.abs()
             sa_prob = torch.exp(-delta_d.clamp(min=0.0) / denom)
             sa_accept = same_nv & (torch.rand(P, device=device) < sa_prob)
+            accept = (better_nv | better_d | sa_accept) & c_feas
 
-            accept_mask = cand_feas & (better_nv | better_d | sa_accept) & ~worse_nv
+            pop_routes = torch.where(accept.view(P, 1, 1), cand_t, pop_routes)
+            pop_lengths = torch.where(accept.view(P, 1), cand_lens, pop_lengths)
+            pop_route_counts = torch.where(accept, cand_cnts, pop_route_counts)
+            scores = torch.where(accept, c_scores, scores)
+            v_counts = torch.where(accept, c_vcnts, v_counts)
+            total_dists = torch.where(accept, c_dists, total_dists)
+            feas = torch.where(accept, c_feas, feas)
+            costs = torch.where(accept, c_costs, costs)
 
-            pop_routes[accept_mask] = cand_routes[accept_mask]
-            pop_lengths[accept_mask] = cand_lengths[accept_mask]
-            pop_route_counts[accept_mask] = cand_counts[accept_mask]
-            feas[accept_mask] = cand_feas[accept_mask]
-            costs[accept_mask] = cand_costs[accept_mask]
-            v_counts[accept_mask] = cand_v_cnts[accept_mask]
-            total_dists[accept_mask] = cand_dists[accept_mask]
+            if gen % max(1, getattr(data, "local_search_interval", 25)) == 0:
+                pop_routes, pop_lengths, pop_route_counts = _tensor_route_elimination_population(
+                    pop_routes, pop_lengths, pop_route_counts, backend
+                )
+                feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
+                    pop_routes, pop_lengths, pop_route_counts
+                )
+                scores = backend.compute_lexicographic_scores(feas, v_counts, total_dists)
+                elimination_best_score, elimination_best_idx = torch.min(scores, dim=0)
+                elimination_improves = elimination_best_score < global_best_score_t
+                global_best_routes_t = torch.where(
+                    elimination_improves,
+                    pop_routes[elimination_best_idx],
+                    global_best_routes_t,
+                )
+                global_best_lengths_t = torch.where(
+                    elimination_improves,
+                    pop_lengths[elimination_best_idx],
+                    global_best_lengths_t,
+                )
+                global_best_count_t = torch.where(
+                    elimination_improves,
+                    pop_route_counts[elimination_best_idx],
+                    global_best_count_t,
+                )
+                global_best_score_t = torch.minimum(global_best_score_t, elimination_best_score)
 
-            # 5. Pure GPU Local Search Intensification on Global Best & Island Lead (True VND)
+            accepted_scores = torch.where(accept, c_scores, torch.tensor(float("inf"), device=device))
+            generation_best_score, generation_best_idx_t = torch.min(accepted_scores, dim=0)
+            generation_improves = generation_best_score < global_best_score_t
+            generation_best_routes = cand_t[generation_best_idx_t].clone()
+            generation_best_lengths = cand_lens[generation_best_idx_t].clone()
+            generation_best_count = cand_cnts[generation_best_idx_t].clone()
+            global_best_routes_t = torch.where(generation_improves, generation_best_routes, global_best_routes_t)
+            global_best_lengths_t = torch.where(generation_improves, generation_best_lengths, global_best_lengths_t)
+            global_best_count_t = torch.where(generation_improves, generation_best_count, global_best_count_t)
+            global_best_score_t = torch.minimum(global_best_score_t, generation_best_score)
+
+            # 6. Periodic Deep Local Search on Global Best
             ls_interval = getattr(data, "local_search_interval", 25)
             if gen % ls_interval == 0:
-                target_mask = torch.zeros(P, dtype=torch.bool, device=device)
-                best_idx = torch.argmin(lex_scores)
-                target_mask[best_idx] = True
-                if num_islands > 1:
-                    island_lead = island_bests_gpu[(gen // ls_interval) % num_islands]
-                    target_mask[island_lead] = True
-
-                pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_deep_local_search_vnd(
-                    pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
-                    target_mask, backend, data, max_rounds=5
+                ls_routes, ls_lengths, ls_counts = tensor_generate_offspring_batch(
+                    pop_routes, pop_lengths, pop_route_counts, backend, gpu_rng
                 )
+                ls_feas, ls_costs, ls_nv, ls_dist = backend.evaluate_population_tensor(
+                    ls_routes, ls_lengths, ls_counts
+                )
+                ls_better = ls_feas & ((ls_nv < v_counts) | ((ls_nv == v_counts) & (ls_dist < total_dists)))
+                pop_routes = torch.where(ls_better.view(P, 1, 1), ls_routes, pop_routes)
+                pop_lengths = torch.where(ls_better.view(P, 1), ls_lengths, pop_lengths)
+                pop_route_counts = torch.where(ls_better, ls_counts, pop_route_counts)
+                scores = torch.where(ls_better, backend.compute_lexicographic_scores(ls_feas, ls_nv, ls_dist), scores)
+                v_counts = torch.where(ls_better, ls_nv, v_counts)
+                total_dists = torch.where(ls_better, ls_dist, total_dists)
+                feas = torch.where(ls_better, ls_feas, feas)
+                costs = torch.where(ls_better, ls_costs, costs)
+                last_improvement_gen = gen if bool(ls_better.any()) else last_improvement_gen
 
+            # 7. Island Ring Migration (Pure GPU tensor transfer)
+            migration_interval = getattr(data, "migration_interval", 20)
+            if num_islands > 1 and gen % migration_interval == 0:
+                island_scores = scores.view(num_islands, island_size)
+                island_best_rel = torch.argmin(island_scores, dim=1)
+                source_indices = torch.arange(num_islands, device=device) * island_size + island_best_rel
+                destination_scores = scores.view(num_islands, island_size).roll(-1, dims=0)
+                destination_worst_rel = torch.argmax(destination_scores, dim=1)
+                destination_indices = (torch.arange(num_islands, device=device) * island_size + destination_worst_rel).roll(1)
+                migrate = scores[source_indices] < scores[destination_indices]
+                pop_routes[destination_indices[migrate]] = pop_routes[source_indices[migrate]]
+                pop_lengths[destination_indices[migrate]] = pop_lengths[source_indices[migrate]]
+                pop_route_counts[destination_indices[migrate]] = pop_route_counts[source_indices[migrate]]
+                scores[destination_indices[migrate]] = scores[source_indices[migrate]]
+                v_counts[destination_indices[migrate]] = v_counts[source_indices[migrate]]
+                total_dists[destination_indices[migrate]] = total_dists[source_indices[migrate]]
+                feas[destination_indices[migrate]] = feas[source_indices[migrate]]
+                costs[destination_indices[migrate]] = costs[source_indices[migrate]]
 
-            # 6. Pure GPU Stagnation-Triggered Ruin & Recreate (40% Non-Elite Diversification)
+            # 8. Stagnation-Triggered Diversification
             stag_interval = getattr(data, "stagnation_interval", 50)
             if gen % stag_interval == 0 and (gen - last_improvement_gen >= stag_interval):
                 div_ratio = getattr(data, "diversify_ratio", 0.40)
-                lex_scores = compute_lex_scores(feas, v_counts, total_dists)
-                global_best_idx = int(torch.argmin(lex_scores).item())
-
-                # Re-inject global best solution into elite slot to guarantee it is preserved
-                solution_to_tensor(best_s, pop_routes, pop_lengths, pop_route_counts, global_best_idx)
-                f_b, c_b, v_b, d_b = backend.evaluate_population_tensor(
-                    pop_routes[global_best_idx:global_best_idx+1],
-                    pop_lengths[global_best_idx:global_best_idx+1],
-                    pop_route_counts[global_best_idx:global_best_idx+1]
+                div_count = max(1, int(round((P - 1) * div_ratio)))
+                worst_indices = torch.argsort(scores, descending=True)[:div_count]
+                div_routes, div_lengths, div_counts = tensor_generate_offspring_batch(
+                    pop_routes, pop_lengths, pop_route_counts, backend, gpu_rng
                 )
-                feas[global_best_idx] = f_b[0]
-                costs[global_best_idx] = c_b[0]
-                v_counts[global_best_idx] = v_b[0]
-                total_dists[global_best_idx] = d_b[0]
-
-                # Select 40% non-elite individuals across population (worst first)
-                num_to_diversify = max(1, int(round((P - 1) * div_ratio)))
-                div_mask = torch.zeros(P, dtype=torch.bool, device=device)
-                non_elite_indices = [idx for idx in range(P) if idx != global_best_idx]
-                lex_scores = compute_lex_scores(feas, v_counts, total_dists)
-                non_elite_scores = lex_scores[non_elite_indices]
-                worst_order = torch.argsort(non_elite_scores, descending=True)
-                selected_for_div = [non_elite_indices[i] for i in worst_order[:num_to_diversify].tolist()]
-                for idx in selected_for_div:
-                    div_mask[idx] = True
-
-                pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_ruin_and_recreate(
-                    pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
-                    div_mask, backend, data, removal_fraction=0.30
+                f_d, c_d, v_d, d_d = backend.evaluate_population_tensor(
+                    div_routes, div_lengths, div_counts
                 )
+                replace_mask = torch.zeros(P, dtype=torch.bool, device=device)
+                replace_mask.scatter_(0, worst_indices, True)
+                replace_mask &= f_d
+                pop_routes = torch.where(replace_mask.view(P, 1, 1), div_routes, pop_routes)
+                pop_lengths = torch.where(replace_mask.view(P, 1), div_lengths, pop_lengths)
+                pop_route_counts = torch.where(replace_mask, div_counts, pop_route_counts)
+                scores = torch.where(replace_mask, backend.compute_lexicographic_scores(f_d, v_d, d_d), scores)
+                feas = torch.where(replace_mask, f_d, feas)
+                costs = torch.where(replace_mask, c_d, costs)
+                v_counts = torch.where(replace_mask, v_d, v_counts)
+                total_dists = torch.where(replace_mask, d_d, total_dists)
                 last_improvement_gen = gen
 
-            # 7. Pure GPU Island Migration
-            mig_interval = getattr(data, "migration_interval", 25)
-            if gen % mig_interval == 0 and num_islands > 1 and P % num_islands == 0:
-                for k in range(num_islands):
-                    src_best = island_bests_gpu[k]
-                    dst_k = (k + 1) % num_islands
-                    dst_s = dst_k * island_size
-                    dst_e = dst_s + island_size
-                    worst_rel = torch.argmax(lex_scores[dst_s:dst_e])
-                    worst_p = dst_s + worst_rel
-                    if worst_p != src_best:
-                        pop_routes[worst_p] = pop_routes[src_best].clone()
-                        pop_lengths[worst_p] = pop_lengths[src_best].clone()
-                        pop_route_counts[worst_p] = pop_route_counts[src_best].clone()
-                        feas[worst_p] = feas[src_best]
-                        costs[worst_p] = costs[src_best]
-                        v_counts[worst_p] = v_counts[src_best]
-                        total_dists[worst_p] = total_dists[src_best]
-
-            # 8. Global Best Solution Tracking with Zero Sync Overhead
-            lex_scores = compute_lex_scores(feas, v_counts, total_dists)
-            curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
-            best_nv = best_s.len()
-            best_td = best_s.cost - 2000.0 * best_nv
-            best_score = float(best_nv) * 100000.0 + float(best_td) - 1e-4
-
-            if curr_min_score.item() < best_score:
-                used = int(time.perf_counter() - stime)
-                sol_best = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, curr_best_idx.item())
-                update_best_solution(sol_best, best_s, used, run, gen, data)
-                last_improvement_gen = gen
-
-            if gen % 50 == 0 or gen == 1 or gen == data.max_iter:
+            used = int(time.perf_counter() - stime)
+            if gen % OUTPUT_PER_GENS == 0 or gen == 1 or gen == data.max_iter:
+                accepted_count = int(accept.sum().item())
                 valid_dists = total_dists[feas]
                 avg_dist = float(valid_dists.mean().item()) if len(valid_dists) > 0 else float('inf')
-                curr_td = best_s.cost - 2000.0 * best_s.len()
-                accepted_count = int(accept_mask.sum().item())
+                best_nv_log = torch.min(v_counts).item()
+                best_td_log = torch.min(total_dists).item()
                 print(
                     "Gen: %d. a %.4f, p_hybrid %.4f, accepted %d. Avg TD %.4f, Best NV %d, Best TD %.4f"
-                    % (gen, a, p_mode, accepted_count, avg_dist, best_s.len(), curr_td),
+                    % (gen, a, p_mode, accepted_count, avg_dist, best_nv_log, best_td_log),
                     flush=True
                 )
 
-            elapsed_now = int(time.perf_counter() - stime)
-            if data.tmax != -1 and elapsed_now > int(data.tmax):
+            if data.tmax != -1 and used > int(data.tmax):
                 time_exhausted = True
                 break
-
-        # Final pass at run end: deep pure-GPU VND on the global best solution
-        lex_scores = compute_lex_scores(feas, v_counts, total_dists)
-        curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
-        best_mask = torch.zeros(P, dtype=torch.bool, device=device)
-        best_mask[curr_best_idx] = True
-
-        pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists = tensor_gpu_deep_local_search_vnd(
-            pop_routes, pop_lengths, pop_route_counts, feas, costs, v_counts, total_dists,
-            best_mask, backend, data, max_rounds=8
-        )
-
-        lex_scores = compute_lex_scores(feas, v_counts, total_dists)
-        curr_min_score, curr_best_idx = torch.min(lex_scores, dim=0)
-        sol_best = tensor_to_solution(pop_routes, pop_lengths, pop_route_counts, curr_best_idx.item())
-        if (sol_best.len() < best_s.len()) or (sol_best.len() == best_s.len() and sol_best.cost < best_s.cost - 1e-4):
-            used = int(time.perf_counter() - stime)
-            update_best_solution(sol_best, best_s, used, run, data.max_iter, data)
-
 
         completed_runs += 1
         if time_exhausted:
             break
+
+    if global_best_routes_t is not None:
+        best_feas, _, _, _ = backend.evaluate_population_tensor(
+            global_best_routes_t.unsqueeze(0),
+            global_best_lengths_t.unsqueeze(0),
+            global_best_count_t.unsqueeze(0),
+        )
+        if not bool(best_feas[0].item()):
+            raise RuntimeError("CUDA tensor search produced an infeasible global best")
+        decoded_best = decode_tensor_solution(
+            global_best_routes_t, global_best_lengths_t, global_best_count_t
+        )
+        best_s.copy_from(decoded_best)
+        state.best_s_cost = best_s.cost
 
     print("------------Summary-----------", flush=True)
     print("Total %d runs, total consumed %d sec" % (completed_runs, int(used)), flush=True)
@@ -1598,14 +1704,33 @@ def gpu_pure_tensor_search_framework(data, best_s):
     )
     print("Time to surpass BKS: %d." % int(state.find_bks_time), flush=True)
     sys.stdout.flush()
-    best_s.check(data)
-
-
 
 
 def search_framework(data, best_s):
-    if getattr(data.backend, "name", "") == "torch_cuda":
-        return gpu_pure_tensor_search_framework(data, best_s)
+    if getattr(data, "architecture", None) != "full_gpu":
+        raise RuntimeError("src_python_gpu_SA_RCRS_GRASP requires architecture=full_gpu")
+    if not getattr(data.backend, "is_cuda", False):
+        raise RuntimeError("architecture=full_gpu requires a CUDA backend; CPU fallback is disabled")
+
+    # Full-GPU mode is deliberately strict: the native CUDA solver owns the
+    # population, operators, objective, and acceptance loop.  The Python
+    # tensor prototype still exists for development, but its host-side list
+    # construction is not allowed in production full_gpu runs.
+    if data.compute_backend in {"cuda", "auto"} and getattr(data, "architecture", "full_gpu") == "full_gpu":
+        try:
+            from .cuda_extension import is_native_cuda_available, run_native_cuda_solver
+            if is_native_cuda_available():
+                print("[Search Framework] Launching 100% Native CUDA Hardware Solver Engine...", flush=True)
+                if run_native_cuda_solver(data, best_s):
+                    state.best_s_cost = best_s.cost
+                    return
+                raise RuntimeError("Native CUDA solver returned without a solution")
+        except Exception as e:
+            raise RuntimeError("Native CUDA full_gpu execution failed") from e
+
+    raise RuntimeError(
+        "architecture=full_gpu requires the native CUDA solver; Python tensor fallback is disabled"
+    )
 
     pop = [Solution(data) for _ in range(data.p_size)]
     pop_fit = [0.0 for _ in range(data.p_size)]

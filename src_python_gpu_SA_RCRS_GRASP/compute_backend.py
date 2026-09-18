@@ -662,15 +662,26 @@ class TorchComputeBackend(BaseComputeBackend):
     is_cuda = True
     multi_process_safe = False
 
-    def __init__(self, snapshot: BackendSnapshot, device_str: str = "auto") -> None:
+    def __init__(
+        self,
+        snapshot: BackendSnapshot,
+        device_str: str = "auto",
+        strict_full_gpu: bool = False,
+    ) -> None:
         if torch is None:
             raise RuntimeError("PyTorch is not available")
+        cuda_avail = torch.cuda.is_available()
         if device_str == "auto":
-            device_str = "cuda" if torch.cuda.is_available() else "cpu"
-        elif device_str == "cuda" and not torch.cuda.is_available():
-            device_str = "cpu"
+            device_str = "cuda" if cuda_avail else "cpu"
+        elif device_str == "cuda" and not cuda_avail:
+            raise RuntimeError("CUDA backend requested but CUDA is not available")
+        if strict_full_gpu and (not cuda_avail or device_str != "cuda"):
+            raise RuntimeError("strict full_gpu requires a CUDA device")
         super().__init__(snapshot)
         self.device = torch.device(device_str)
+        self.is_cuda = (self.device.type == "cuda")
+        self.strict_full_gpu = strict_full_gpu
+        self.name = "torch_cuda" if self.is_cuda else "torch_cpu"
         self.depot = int(snapshot.depot)
         self.customer_num = int(snapshot.customer_num)
         self.capacity = float(snapshot.capacity)
@@ -686,6 +697,16 @@ class TorchComputeBackend(BaseComputeBackend):
         self.dist_t = torch.as_tensor(snapshot.dist, dtype=torch.float32, device=self.device)
         self.time_t = torch.as_tensor(snapshot.time, dtype=torch.float32, device=self.device)
 
+    def evaluate_route(self, route: Sequence[int]) -> RouteEval:
+        if self.strict_full_gpu:
+            raise RuntimeError("strict full_gpu requires tensor evaluation APIs")
+        route_tensor = torch.as_tensor(route, dtype=torch.long, device=self.device).unsqueeze(0)
+        length_tensor = torch.tensor([route_tensor.shape[1]], dtype=torch.long, device=self.device)
+        feasible, distance = self.evaluate_routes_gpu(route_tensor, length_tensor)
+        if bool(feasible[0].item()):
+            return True, self.dispatch_cost + float(distance[0].item()) * self.unit_cost
+        return False, 0.0
+
     def evaluate_routes_gpu(self, routes_t: torch.Tensor, lengths_t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         100% Pure GPU tensor evaluation of an arbitrary batch of N routes on CUDA VRAM.
@@ -693,6 +714,11 @@ class TorchComputeBackend(BaseComputeBackend):
         time-window feasibility, and route distance in fully vectorized PyTorch operations.
         Zero host-device memory transfers.
         """
+        if self.strict_full_gpu:
+            if routes_t.device != self.device or lengths_t.device != self.device:
+                raise RuntimeError("strict full_gpu received a host or foreign-device tensor")
+            if routes_t.dtype != torch.long or lengths_t.dtype != torch.long:
+                raise RuntimeError("strict full_gpu route tensors must use torch.long")
         N, L = routes_t.shape
         if N == 0 or L < 2:
             return torch.zeros(N, dtype=torch.bool, device=self.device), torch.zeros(N, dtype=torch.float32, device=self.device)
@@ -746,6 +772,8 @@ class TorchComputeBackend(BaseComputeBackend):
         return feasible, total_dist
 
     def evaluate_routes(self, routes: Sequence[Sequence[int]]) -> List[RouteEval]:
+        if self.strict_full_gpu:
+            raise RuntimeError("strict full_gpu requires evaluate_routes_gpu()")
         if len(routes) == 0:
             return []
         packed, lengths = _pack_routes(routes, self.depot)
@@ -767,6 +795,12 @@ class TorchComputeBackend(BaseComputeBackend):
         pop_lengths_t: torch.Tensor,
         pop_route_counts_t: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        if self.strict_full_gpu:
+            tensors = (pop_routes_t, pop_lengths_t, pop_route_counts_t)
+            if any(t.device != self.device for t in tensors):
+                raise RuntimeError("strict full_gpu population tensors must stay on CUDA")
+            if pop_routes_t.dtype != torch.long or pop_lengths_t.dtype != torch.long or pop_route_counts_t.dtype != torch.long:
+                raise RuntimeError("strict full_gpu population indices must use torch.long")
         P, R, L = pop_routes_t.shape
         if L < 2:
             return (
@@ -788,6 +822,11 @@ class TorchComputeBackend(BaseComputeBackend):
         route_indices = torch.arange(R, device=self.device).unsqueeze(0)
         route_mask = route_indices < pop_route_counts_t.unsqueeze(-1)
         total_distances = torch.where(route_mask, route_dists, 0.0).sum(dim=-1)
+
+        end_indices = (pop_lengths_t - 1).clamp_min(0).unsqueeze(-1)
+        end_nodes = pop_routes_t.gather(2, end_indices).squeeze(-1)
+        endpoint_valid = (pop_routes_t[:, :, 0] == self.depot) & (end_nodes == self.depot)
+        route_endpoint_valid = torch.where(route_mask, endpoint_valid, True).all(dim=-1)
 
         delivs = torch.where(valid_mask, self.delivery_t[curr], 0.0)
         pickups = torch.where(valid_mask, self.pickup_t[curr], 0.0)
@@ -818,13 +857,21 @@ class TorchComputeBackend(BaseComputeBackend):
 
         route_tw_valid = torch.where(route_mask, tw_valid, True).all(dim=-1)
 
-        # Check that exactly self.customer_num customers are visited
-        cust_nodes = pop_routes_t * (route_mask.unsqueeze(-1))
-        is_cust = (cust_nodes > 0) & (cust_nodes <= self.customer_num)
-        cust_count = is_cust.sum(dim=(1, 2))
-        coverage_valid = cust_count == self.customer_num
+        # Vectorized exact 1-to-1 customer occurrence and boundary check on GPU
+        active_nodes_mask = valid_mask & route_mask.unsqueeze(-1)
+        nodes_in_routes = pop_routes_t[:, :, 1:]
+        nodes_in_routes = torch.where(active_nodes_mask, nodes_in_routes, 0)
+        is_depot = nodes_in_routes == self.depot
+        nodes_in_routes = torch.where(is_depot, 0, nodes_in_routes)
 
-        pop_feasible = route_load_valid & route_tw_valid & coverage_valid
+        has_invalid = ((nodes_in_routes < 0) | (nodes_in_routes > self.customer_num)).any(dim=-1).any(dim=-1)
+        flat_nodes = nodes_in_routes.reshape(P, -1)
+        occ = torch.zeros((P, self.customer_num + 1), dtype=torch.int32, device=self.device)
+        safe_flat = flat_nodes.clamp(0, self.customer_num)
+        occ.scatter_add_(1, safe_flat, torch.ones_like(safe_flat, dtype=torch.int32))
+        coverage_valid = (~has_invalid) & (occ[:, 1:self.customer_num + 1] == 1).all(dim=-1)
+
+        pop_feasible = route_endpoint_valid & route_load_valid & route_tw_valid & coverage_valid
 
         active_routes = route_mask & (pop_lengths_t > 2)
         vehicle_counts = active_routes.sum(dim=-1).long()
@@ -833,7 +880,65 @@ class TorchComputeBackend(BaseComputeBackend):
 
         return pop_feasible, total_costs, vehicle_counts, total_distances
 
+    def evaluate_candidate_insertions_tensor(
+        self, route_tensor: torch.Tensor, candidate_node: int
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Evaluates inserting candidate_node into all positions 1..L-1 of route_tensor in 1 pure GPU vector operation.
+        Returns feasible_mask (L-1,) and costs (L-1,).
+        """
+        L = int(route_tensor.shape[0])
+        if L < 2:
+            return torch.zeros(0, dtype=torch.bool, device=self.device), torch.zeros(0, dtype=torch.float32, device=self.device)
+
+        num_cands = L - 1
+        positions = torch.arange(1, L, device=self.device)
+        output_positions = torch.arange(L + 1, device=self.device).view(1, -1)
+        source_positions = torch.where(
+            output_positions < positions.view(-1, 1),
+            output_positions,
+            output_positions - 1,
+        ).clamp_min(0)
+        cand_routes = route_tensor.expand(num_cands, -1).gather(1, source_positions)
+        cand_routes.scatter_(1, positions.view(-1, 1), candidate_node)
+
+        cand_lengths = torch.full((num_cands,), L + 1, dtype=torch.long, device=self.device)
+        feas, total_dist = self.evaluate_routes_gpu(cand_routes, cand_lengths)
+        costs = torch.where(feas, self.dispatch_cost + total_dist * self.unit_cost, torch.tensor(float('inf'), device=self.device))
+        return feas, costs
+
+    def evaluate_candidate_batch_insertions_gpu(
+        self, candidate_routes_list: List[torch.Tensor], candidate_lengths_list: List[int]
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Evaluates a batch of arbitrary candidate route variations directly on GPU.
+        Zero CPU conversions.
+        """
+        if not candidate_routes_list:
+            return torch.zeros(0, dtype=torch.bool, device=self.device), torch.zeros(0, dtype=torch.float32, device=self.device)
+        N = len(candidate_routes_list)
+        max_len = max(candidate_lengths_list)
+        batch_t = torch.full((N, max_len), self.depot, dtype=torch.long, device=self.device)
+        lengths_t = torch.as_tensor(candidate_lengths_list, dtype=torch.long, device=self.device)
+        for i in range(N):
+            l = candidate_lengths_list[i]
+            batch_t[i, :l] = candidate_routes_list[i][:l]
+        return self.evaluate_routes_gpu(batch_t, lengths_t)
+
+    def compute_lexicographic_scores(
+        self, feas: torch.Tensor, v_counts: torch.Tensor, total_dists: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Strict lexicographic ordering: NV primary (1e8 multiplier), TD secondary.
+        Infeasible solutions receive a huge penalty (1e15).
+        """
+        scores = v_counts.to(torch.float64) * 1_000_000_000.0 + total_dists.to(torch.float64)
+        infeasible = torch.full((), float("inf"), device=self.device, dtype=torch.float64)
+        return torch.where(feas, scores, infeasible)
+
     def evaluate_insertions(self, route_nodes: Sequence[int], candidate_nodes: Sequence[int]) -> Tuple[np.ndarray, np.ndarray]:
+        if self.strict_full_gpu:
+            raise RuntimeError("strict full_gpu requires tensor insertion APIs")
         if len(candidate_nodes) == 0:
             return np.zeros(0, dtype=np.int32), np.zeros(0, dtype=np.float64)
 
@@ -872,37 +977,46 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
 
     snapshot = BackendSnapshot.from_data(data)
     
-    # Pre-compile JIT kernels in the main process to avoid multiprocessing cache race condition on Windows
-    try:
-        dummy_nl = np.array([0, 0], dtype=np.int32)
-        dummy_candidates = np.array([0], dtype=np.int32)
-        
-        # Compile _evaluate_route_cpu_kernel
-        _evaluate_route_cpu_kernel(
-            dummy_nl,
-            int(snapshot.depot), float(snapshot.start_time), float(snapshot.capacity), float(snapshot.dispatch_cost), float(snapshot.unit_cost),
-            snapshot.delivery, snapshot.pickup, snapshot.start, snapshot.end, snapshot.service, snapshot.dist, snapshot.time
-        )
-        
-        # Compile _evaluate_insertions_cpu_kernel
-        dummy_feasible = np.zeros(2, dtype=np.int32)
-        dummy_costs = np.zeros(2, dtype=np.float64)
-        _evaluate_insertions_cpu_kernel(
-            dummy_nl, dummy_candidates,
-            int(snapshot.depot), float(snapshot.start_time), float(snapshot.capacity), float(snapshot.dispatch_cost), float(snapshot.unit_cost),
-            snapshot.delivery, snapshot.pickup, snapshot.start, snapshot.end, snapshot.service, snapshot.dist, snapshot.time,
-            dummy_feasible, dummy_costs
-        )
-    except Exception as e:
-        print("Warning: JIT pre-compilation failed: %s" % e)
+    strict_full_gpu = getattr(data, "architecture", "legacy") == "full_gpu"
+    if strict_full_gpu and requested == "cpu":
+        raise RuntimeError("architecture=full_gpu requires compute_backend=cuda or auto")
+
+    # Avoid even initializing the CPU JIT path during a strict GPU run.
+    if not strict_full_gpu:
+        try:
+            dummy_nl = np.array([0, 0], dtype=np.int32)
+            dummy_candidates = np.array([0], dtype=np.int32)
+            _evaluate_route_cpu_kernel(
+                dummy_nl,
+                int(snapshot.depot), float(snapshot.start_time), float(snapshot.capacity), float(snapshot.dispatch_cost), float(snapshot.unit_cost),
+                snapshot.delivery, snapshot.pickup, snapshot.start, snapshot.end, snapshot.service, snapshot.dist, snapshot.time
+            )
+            dummy_feasible = np.zeros(2, dtype=np.int32)
+            dummy_costs = np.zeros(2, dtype=np.float64)
+            _evaluate_insertions_cpu_kernel(
+                dummy_nl, dummy_candidates,
+                int(snapshot.depot), float(snapshot.start_time), float(snapshot.capacity), float(snapshot.dispatch_cost), float(snapshot.unit_cost),
+                snapshot.delivery, snapshot.pickup, snapshot.start, snapshot.end, snapshot.service, snapshot.dist, snapshot.time,
+                dummy_feasible, dummy_costs
+            )
+        except Exception as e:
+            print("Warning: JIT pre-compilation failed: %s" % e)
 
     if requested in {"auto", "cuda"}:
-        if torch is not None:
+        if torch is not None and torch.cuda.is_available():
             try:
-                device_str = "cuda" if torch.cuda.is_available() else "cpu"
-                return TorchComputeBackend(snapshot, device_str=device_str)
+                return TorchComputeBackend(
+                    snapshot,
+                    device_str="cuda",
+                    strict_full_gpu=strict_full_gpu,
+                )
             except Exception as e:
+                if strict_full_gpu:
+                    raise RuntimeError("Failed to initialize strict CUDA tensor backend") from e
                 print("Failed to initialize TorchComputeBackend: %s" % e)
+
+        if strict_full_gpu:
+            raise RuntimeError("architecture=full_gpu requires a working PyTorch CUDA runtime")
 
         cuda_available = False
         if cuda is not None:
@@ -927,6 +1041,8 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
                 if requested == "cuda":
                     print("CUDA backend requested but unavailable. Falling back to CPU backend.")
 
+    if strict_full_gpu:
+        raise RuntimeError("No CUDA backend is available for architecture=full_gpu")
     return BaseComputeBackend(snapshot)
 
 
