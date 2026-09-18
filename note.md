@@ -13,5 +13,22 @@ copy status từ GPU về CPU;
 decode nghiệm cuối;
 run_best.check(data, false) sau mỗi run;
 best_solution.check(data) ở cuối để hậu kiểm
+hoặc các phần phụ không liên quan
+ý tui cpu ko được nằm bên trong 1 run: ví dụ: cpu -> run(full gpu) - thuật toán -> cpu. Miễn là toàn bộ cái showoa hoàn toàn trên gpu, còn mấy cái phụ phụ thì ko quan trọng
+
+Flow này:
+CPU_PREP run=N
+    ↓
+RUN_GPU_BEGIN run=N
+    ↓
+Toàn bộ initialization + SA + RCRS-GRASP +
+SHO/WOA + objective + acceptance +
+local search + migration trên CUDA
+    ↓
+RUN_GPU_END run=N
+    ↓
+CPU_DECODE sau khi hoàn tất toàn bộ runs
+
+đảm bảo đúng flow này cho tui
 
 File code tui chạy trên kaggle: kaggle_gpu_sa_rcrs_grasp

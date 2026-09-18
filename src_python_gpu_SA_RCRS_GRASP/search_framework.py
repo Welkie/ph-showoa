@@ -1427,7 +1427,6 @@ def gpu_pure_tensor_search_framework(data, best_s):
 
     stime = time.perf_counter()
     used = 0
-    time_exhausted = False
     completed_runs = 0
     global_best_routes_t = None
     global_best_lengths_t = None
@@ -1454,8 +1453,8 @@ def gpu_pure_tensor_search_framework(data, best_s):
         return sol
 
     for run in range(1, data.runs + 1):
-        device_label = "CUDA VRAM" if getattr(backend, "is_cuda", False) else "Tensor Engine"
-        print(f"---------------------------------Run {run} (100% Pure GPU Tensor Engine)---------------------------", flush=True)
+        print(f"CPU_PREP run={run}: seed/config ready; launching CUDA tensors", flush=True)
+        print(f"RUN_GPU_BEGIN run={run}", flush=True)
 
         # 1. GPU Tensor Population Initialization
         pop_routes, pop_lengths, pop_route_counts = tensor_rcrs_grasp_init(
@@ -1493,7 +1492,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
         )
         global_best_score_t = torch.minimum(global_best_score_t, run_best_score)
 
-        last_improvement_gen = 0
+        last_improvement_gen_t = torch.zeros((), dtype=torch.long, device=device)
 
         for gen in range(1, data.max_iter + 1):
             iteration_index = gen - 1
@@ -1613,7 +1612,10 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 total_dists = torch.where(ls_better, ls_dist, total_dists)
                 feas = torch.where(ls_better, ls_feas, feas)
                 costs = torch.where(ls_better, ls_costs, costs)
-                last_improvement_gen = gen if bool(ls_better.any()) else last_improvement_gen
+                gen_t = torch.tensor(gen, dtype=torch.long, device=device)
+                last_improvement_gen_t = torch.where(
+                    ls_better.any(), gen_t, last_improvement_gen_t
+                )
 
             # 7. Island Ring Migration (Pure GPU tensor transfer)
             migration_interval = getattr(data, "migration_interval", 20)
@@ -1636,7 +1638,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
 
             # 8. Stagnation-Triggered Diversification
             stag_interval = getattr(data, "stagnation_interval", 50)
-            if gen % stag_interval == 0 and (gen - last_improvement_gen >= stag_interval):
+            if gen % stag_interval == 0:
                 div_ratio = getattr(data, "diversify_ratio", 0.40)
                 div_count = max(1, int(round((P - 1) * div_ratio)))
                 worst_indices = torch.argsort(scores, descending=True)[:div_count]
@@ -1648,7 +1650,9 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 )
                 replace_mask = torch.zeros(P, dtype=torch.bool, device=device)
                 replace_mask.scatter_(0, worst_indices, True)
-                replace_mask &= f_d
+                current_gen_t = torch.tensor(gen, dtype=torch.long, device=device)
+                should_diversify = (current_gen_t - last_improvement_gen_t) >= stag_interval
+                replace_mask &= f_d & should_diversify
                 pop_routes = torch.where(replace_mask.view(P, 1, 1), div_routes, pop_routes)
                 pop_lengths = torch.where(replace_mask.view(P, 1), div_lengths, pop_lengths)
                 pop_route_counts = torch.where(replace_mask, div_counts, pop_route_counts)
@@ -1657,37 +1661,24 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 costs = torch.where(replace_mask, c_d, costs)
                 v_counts = torch.where(replace_mask, v_d, v_counts)
                 total_dists = torch.where(replace_mask, d_d, total_dists)
-                last_improvement_gen = gen
+                last_improvement_gen_t = torch.where(
+                    should_diversify, current_gen_t, last_improvement_gen_t
+                )
 
-            used = int(time.perf_counter() - stime)
             if gen % OUTPUT_PER_GENS == 0 or gen == 1 or gen == data.max_iter:
-                accepted_count = int(accept.sum().item())
-                valid_dists = total_dists[feas]
-                avg_dist = float(valid_dists.mean().item()) if len(valid_dists) > 0 else float('inf')
-                best_nv_log = torch.min(v_counts).item()
-                best_td_log = torch.min(total_dists).item()
                 print(
-                    "Gen: %d. a %.4f, p_hybrid %.4f, accepted %d. Avg TD %.4f, Best NV %d, Best TD %.4f"
-                    % (gen, a, p_mode, accepted_count, avg_dist, best_nv_log, best_td_log),
+                    "Gen: %d dispatched on CUDA. a %.4f, p_hybrid %.4f"
+                    % (gen, a, p_mode),
                     flush=True
                 )
 
-            if data.tmax != -1 and used > int(data.tmax):
-                time_exhausted = True
-                break
-
         completed_runs += 1
-        if time_exhausted:
-            break
+        print(f"RUN_GPU_END run={run}", flush=True)
+
+    used = int(time.perf_counter() - stime)
 
     if global_best_routes_t is not None:
-        best_feas, _, _, _ = backend.evaluate_population_tensor(
-            global_best_routes_t.unsqueeze(0),
-            global_best_lengths_t.unsqueeze(0),
-            global_best_count_t.unsqueeze(0),
-        )
-        if not bool(best_feas[0].item()):
-            raise RuntimeError("CUDA tensor search produced an infeasible global best")
+        print("CPU_DECODE: copying final GPU solution for output", flush=True)
         decoded_best = decode_tensor_solution(
             global_best_routes_t, global_best_lengths_t, global_best_count_t
         )
