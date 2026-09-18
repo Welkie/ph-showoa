@@ -4,3 +4,11 @@ về mặt thời gian thì vẫn nhanh hơn nhưng chạy vẫn còn tệ về 
 src_cpp_hybrid_SA_RCRS_GRASP 
 Phải luôn đảm bảo 100% chạy trên GPU
 
+Chỉ CPU các phần:
+đọc dataset và upload dữ liệu ban đầu;
+tạo seed/config rồi copy lên GPU;
+vòng host để launch các CUDA kernels;
+copy status từ GPU về CPU;
+decode nghiệm cuối;
+run_best.check(data, false) sau mỗi run;
+best_solution.check(data) ở cuối để hậu kiểm

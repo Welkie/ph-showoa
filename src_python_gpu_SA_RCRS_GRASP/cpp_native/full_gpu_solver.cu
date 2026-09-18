@@ -3567,6 +3567,12 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
             }
 
             total_gpu_ms += (initialization_ms + generation_ms);
+            std::printf(
+                "Run %d GPU kernel time: init=%.3f ms, search=%.3f ms, total=%.3f ms\n",
+                run, initialization_ms, generation_ms,
+                initialization_ms + generation_ms
+            );
+            std::fflush(stdout);
             Solution run_best = decode_solution(global_best, 0, data);
             const bool is_run_best_feasible = run_best.check(data, false);
             if (is_run_best_feasible) {
@@ -3588,6 +3594,8 @@ bool run_full_gpu_solver(Data& data, Solution& best_solution, std::string& error
 
         std::printf("------------Summary-----------\n");
         std::printf("Total %d runs, total consumed %d sec\n", data.runs, consumed_sec);
+        std::printf("Total GPU kernel time: %.3f ms\n", total_gpu_ms);
+        std::fflush(stdout);
         best_solution.output(data);
         if (!best_solution.check(data)) {
             throw std::runtime_error("CPU final verification rejected the full-GPU solution");
