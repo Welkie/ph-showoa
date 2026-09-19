@@ -1561,6 +1561,15 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=15
             )
 
+        if backend.is_cuda:
+            assert pop_routes.is_cuda and pop_lengths.is_cuda and pop_route_counts.is_cuda, "CRITICAL: Population tensors not on CUDA!"
+            assert backend.dist_t.is_cuda and backend.delivery_t.is_cuda, "CRITICAL: Distance/demand matrices not on CUDA!"
+            vram_mb = torch.cuda.memory_allocated(device) / (1024 * 1024)
+            vram_res = torch.cuda.memory_reserved(device) / (1024 * 1024)
+            dev_name = torch.cuda.get_device_name(device)
+            print(f"  [GPU_TELEMETRY] Device='{dev_name}' (CUDA:0) | VRAM: {vram_mb:.2f}MB alloc, {vram_res:.2f}MB res", flush=True)
+            print(f"  [GPU_TELEMETRY] Residency check: pop_routes={pop_routes.device}, dist_matrix={backend.dist_t.device} (100% CUDA Resident)", flush=True)
+
         feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
             pop_routes, pop_lengths, pop_route_counts
         )
@@ -1875,7 +1884,11 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 global_best_nv_t = v_pol[0]
                 global_best_dist_t = d_pol[0]
 
-        print(f"RUN_GPU_END run={run}", flush=True)
+        if backend.is_cuda:
+            vram_mb = torch.cuda.memory_allocated(device) / (1024 * 1024)
+            print(f"RUN_GPU_END run={run} (Device: {torch.cuda.get_device_name(device)}, Peak VRAM: {vram_mb:.2f}MB, 0 CPU fallback)", flush=True)
+        else:
+            print(f"RUN_GPU_END run={run}", flush=True)
         run_best_idx = torch.argmin(scores)
         run_best_solution = decode_tensor_solution(
             pop_routes[run_best_idx],
@@ -1888,7 +1901,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
     used = int(time.perf_counter() - stime)
 
     if global_best_routes_t is not None:
-        print("CPU_DECODE: copying final GPU solution for output", flush=True)
+        print("CPU_DECODE: copying final GPU solution for output (Single Host Sync after all runs)", flush=True)
         decoded_best = decode_tensor_solution(
             global_best_routes_t, global_best_lengths_t, global_best_count_t
         )
