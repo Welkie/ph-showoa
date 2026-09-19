@@ -1511,6 +1511,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
     global_best_lengths_t = None
     global_best_count_t = None
     global_best_score_t = torch.tensor(float("inf"), device=device, dtype=torch.float64)
+    global_best_dist_t = torch.tensor(float("inf"), device=device, dtype=torch.float32)
 
     sa_iters = getattr(data, "sa_iterations", 25)
     alpha_lo = getattr(data, "grasp_alpha_lo", 0.10)
@@ -1532,6 +1533,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
         return sol
 
     for run in range(1, data.runs + 1):
+        print(f"---------------------------------Run {run} (100% Pure GPU Tensor Engine)---------------------------", flush=True)
         print(f"CPU_PREP run={run}: seed/config ready; launching CUDA tensors", flush=True)
         print(f"RUN_GPU_BEGIN run={run}", flush=True)
 
@@ -1543,10 +1545,9 @@ def gpu_pure_tensor_search_framework(data, best_s):
             pop_routes, pop_lengths, pop_route_counts = tensor_sa_warmup(
                 pop_routes, pop_lengths, pop_route_counts, backend, data, sa_iters=sa_iters
             )
-        for _ in range(3):
-            pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
-                pop_routes, pop_lengths, pop_route_counts, backend
-            )
+        pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
+            pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=20
+        )
 
         feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
             pop_routes, pop_lengths, pop_route_counts
@@ -1569,6 +1570,9 @@ def gpu_pure_tensor_search_framework(data, best_s):
         global_best_count_t = torch.where(
             run_improves_global, run_best_count, global_best_count_t
             if global_best_count_t is not None else run_best_count
+        )
+        global_best_dist_t = torch.where(
+            run_improves_global, total_dists[run_best_idx], global_best_dist_t
         )
         global_best_score_t = torch.minimum(global_best_score_t, run_best_score)
 
@@ -1637,10 +1641,9 @@ def gpu_pure_tensor_search_framework(data, best_s):
             costs = torch.where(accept, c_costs, costs)
 
             if gen % max(1, getattr(data, "local_search_interval", 25)) == 0:
-                for _ in range(3):
-                    pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
-                        pop_routes, pop_lengths, pop_route_counts, backend
-                    )
+                pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
+                    pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=10
+                )
                 feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
                     pop_routes, pop_lengths, pop_route_counts
                 )
@@ -1662,6 +1665,11 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     pop_route_counts[elimination_best_idx],
                     global_best_count_t,
                 )
+                global_best_dist_t = torch.where(
+                    elimination_improves,
+                    total_dists[elimination_best_idx],
+                    global_best_dist_t,
+                )
                 global_best_score_t = torch.minimum(global_best_score_t, elimination_best_score)
 
             accepted_scores = torch.where(accept, c_scores, torch.tensor(float("inf"), device=device))
@@ -1673,6 +1681,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
             global_best_routes_t = torch.where(generation_improves, generation_best_routes, global_best_routes_t)
             global_best_lengths_t = torch.where(generation_improves, generation_best_lengths, global_best_lengths_t)
             global_best_count_t = torch.where(generation_improves, generation_best_count, global_best_count_t)
+            global_best_dist_t = torch.where(generation_improves, c_dists[generation_best_idx_t], global_best_dist_t)
             global_best_score_t = torch.minimum(global_best_score_t, generation_best_score)
 
             # 6. Periodic Deep Local Search on Global Best
@@ -1724,6 +1733,11 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     ls_counts[ls_best_idx],
                     global_best_count_t,
                 )
+                global_best_dist_t = torch.where(
+                    ls_improves_global,
+                    ls_dist[ls_best_idx],
+                    global_best_dist_t,
+                )
                 global_best_score_t = torch.minimum(global_best_score_t, ls_best_score)
 
                 worst_idx = torch.argmax(scores)
@@ -1755,7 +1769,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 )
                 total_dists[worst_idx] = torch.where(
                     replace_elite,
-                    (global_best_score_t - global_best_count_t.to(torch.float64) * 1_000_000_000.0).to(total_dists.dtype),
+                    global_best_dist_t,
                     total_dists[worst_idx],
                 )
                 feas[worst_idx] = torch.where(
@@ -1822,9 +1836,12 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 )
 
             if gen % OUTPUT_PER_GENS == 0 or gen == 1 or gen == data.max_iter:
+                acc_cnt = int(accept.sum().item())
+                avg_td = float(total_dists[feas].mean().item()) if feas.any() else float("inf")
+                b_nv = int(global_best_count_t.item())
+                b_td = float(global_best_dist_t.item())
                 print(
-                    "Gen: %d dispatched on CUDA. a %.4f, p_hybrid %.4f"
-                    % (gen, a, p_mode),
+                    f"Gen: {gen}. a {a:.4f}, p_hybrid {p_mode:.4f}, accepted {acc_cnt}. Avg TD {avg_td:.4f}, Best NV {b_nv}, Best TD {b_td:.4f}",
                     flush=True
                 )
 
