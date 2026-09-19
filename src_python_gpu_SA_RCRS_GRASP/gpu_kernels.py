@@ -88,6 +88,9 @@ def build_kernel_bundle(is_cuda: bool = False):
             return False, 0.0
         if length == 2:
             return True, 0.0
+        for i in range(1, length - 1):
+            if route[i] == depot:
+                return False, 0.0
 
         load = 0.0
         for i in range(1, length - 1):
@@ -492,11 +495,14 @@ def build_kernel_bundle(is_cuda: bool = False):
                             for k in range(l):
                                 scratch_route[s, k] = nodes[s, r, k]
                             val = scratch_route[s, i]
-                            for k in range(i, l - 1):
-                                scratch_route[s, k] = scratch_route[s, k + 1]
-                            for k in range(l - 1, j, -1):
-                                scratch_route[s, k] = scratch_route[s, k - 1]
-                            scratch_route[s, j] = val
+                            if i < j:
+                                for k in range(i, j):
+                                    scratch_route[s, k] = scratch_route[s, k + 1]
+                                scratch_route[s, j] = val
+                            else:
+                                for k in range(i, j, -1):
+                                    scratch_route[s, k] = scratch_route[s, k - 1]
+                                scratch_route[s, j] = val
                             ok, new_d = eval_route(scratch_route[s, :l], l, prob_data)
                             if ok:
                                 _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
@@ -538,6 +544,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                 if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-4)):
                                     for k in range(l1 - 1):
                                         nodes[s, r1, k] = scratch_route[s, k]
+                                    nodes[s, r1, l1 - 1] = 0
                                     rlen[s, r1] = l1 - 1
                                     for k in range(l2 + 1):
                                         nodes[s, r2, k] = scratch_route2[s, k]
@@ -618,18 +625,21 @@ def build_kernel_bundle(is_cuda: bool = False):
                 l = rlen[s, r]
                 if l < 4:
                     continue
-                for i in range(1, l - 2):
-                    for j in range(1, l - 2):
+                for i in range(1, l - 1):
+                    for j in range(1, l - 1):
                         if i == j:
                             continue
                         for k in range(l):
                             scratch_route[s, k] = nodes[s, r, k]
                         val = scratch_route[s, i]
-                        for k in range(i, l - 1):
-                            scratch_route[s, k] = scratch_route[s, k + 1]
-                        for k in range(l - 1, j, -1):
-                            scratch_route[s, k] = scratch_route[s, k - 1]
-                        scratch_route[s, j] = val
+                        if i < j:
+                            for k in range(i, j):
+                                scratch_route[s, k] = scratch_route[s, k + 1]
+                            scratch_route[s, j] = val
+                        else:
+                            for k in range(i, j, -1):
+                                scratch_route[s, k] = scratch_route[s, k - 1]
+                            scratch_route[s, j] = val
                         ok, new_d = eval_route(scratch_route[s, :l], l, prob_data)
                         if ok:
                             _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
@@ -639,6 +649,128 @@ def build_kernel_bundle(is_cuda: bool = False):
                                 dist[s] += (new_d - old_d)
                                 cost[s] += (new_d - old_d) * prob_data[4]
                                 improved = True
+
+            # 3. Inter-route 2-opt* (swap tails of two routes)
+            L = scratch_route.shape[1]
+            dist_matrix = prob_data[10]
+            for r1 in range(num_r - 1):
+                len1 = rlen[s, r1]
+                if len1 < 4:
+                    continue
+                found_tail_swap = False
+                for r2 in range(r1 + 1, num_r):
+                    len2 = rlen[s, r2]
+                    if len2 < 4:
+                        continue
+                    for p1 in range(2, len1 - 1):
+                        u1 = nodes[s, r1, p1 - 1]
+                        v1 = nodes[s, r1, p1]
+                        for p2 in range(2, len2 - 1):
+                            u2 = nodes[s, r2, p2 - 1]
+                            v2 = nodes[s, r2, p2]
+                            new_len1 = p1 + len2 - p2
+                            new_len2 = p2 + len1 - p1
+                            if new_len1 >= L or new_len2 >= L:
+                                continue
+                            delta_d = (dist_matrix[u1, v2] + dist_matrix[u2, v1] -
+                                       dist_matrix[u1, v1] - dist_matrix[u2, v2])
+                            if delta_d < -1e-4:
+                                for k in range(p1):
+                                    scratch_route[s, k] = nodes[s, r1, k]
+                                for k in range(p2, len2):
+                                    scratch_route[s, p1 + (k - p2)] = nodes[s, r2, k]
+                                ok1, d1 = eval_route(scratch_route[s, :new_len1], new_len1, prob_data)
+                                if ok1:
+                                    for k in range(p2):
+                                        scratch_route2[s, k] = nodes[s, r2, k]
+                                    for k in range(p1, len1):
+                                        scratch_route2[s, p2 + (k - p1)] = nodes[s, r1, k]
+                                    ok2, d2 = eval_route(scratch_route2[s, :new_len2], new_len2, prob_data)
+                                    if ok2:
+                                        _, old_d1 = eval_route(nodes[s, r1, :len1], len1, prob_data)
+                                        _, old_d2 = eval_route(nodes[s, r2, :len2], len2, prob_data)
+                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-4:
+                                            for k in range(new_len1):
+                                                nodes[s, r1, k] = scratch_route[s, k]
+                                            for k in range(new_len1, len1):
+                                                nodes[s, r1, k] = 0
+                                            for k in range(new_len2):
+                                                nodes[s, r2, k] = scratch_route2[s, k]
+                                            for k in range(new_len2, len2):
+                                                nodes[s, r2, k] = 0
+                                            rlen[s, r1] = new_len1
+                                            rlen[s, r2] = new_len2
+                                            change = (d1 + d2) - (old_d1 + old_d2)
+                                            dist[s] += change
+                                            cost[s] += change * prob_data[4]
+                                            improved = True
+                                            found_tail_swap = True
+                                            break
+                        if found_tail_swap:
+                            break
+                    if found_tail_swap:
+                        break
+                if found_tail_swap:
+                    break
+
+            # 4. Inter-route Relocate (move single customer between routes)
+            for r1 in range(num_r):
+                len1 = rlen[s, r1]
+                if len1 < 4:
+                    continue
+                found_reloc = False
+                for r2 in range(num_r):
+                    if r1 == r2:
+                        continue
+                    len2 = rlen[s, r2]
+                    if len2 + 1 >= L:
+                        continue
+                    for i in range(1, len1 - 1):
+                        u = nodes[s, r1, i]
+                        prev_u = nodes[s, r1, i - 1]
+                        next_u = nodes[s, r1, i + 1]
+                        cost_rem = dist_matrix[prev_u, next_u] - (dist_matrix[prev_u, u] + dist_matrix[u, next_u])
+                        for j in range(1, len2):
+                            prev_v = nodes[s, r2, j - 1]
+                            next_v = nodes[s, r2, j]
+                            cost_ins = (dist_matrix[prev_v, u] + dist_matrix[u, next_v]) - dist_matrix[prev_v, next_v]
+                            if cost_rem + cost_ins < -1e-4:
+                                k_idx = 0
+                                for k in range(len1):
+                                    if k != i:
+                                        scratch_route[s, k_idx] = nodes[s, r1, k]
+                                        k_idx += 1
+                                ok1, d1 = eval_route(scratch_route[s, :len1 - 1], len1 - 1, prob_data)
+                                if ok1:
+                                    for k in range(j):
+                                        scratch_route2[s, k] = nodes[s, r2, k]
+                                    scratch_route2[s, j] = u
+                                    for k in range(j, len2):
+                                        scratch_route2[s, k + 1] = nodes[s, r2, k]
+                                    ok2, d2 = eval_route(scratch_route2[s, :len2 + 1], len2 + 1, prob_data)
+                                    if ok2:
+                                        _, old_d1 = eval_route(nodes[s, r1, :len1], len1, prob_data)
+                                        _, old_d2 = eval_route(nodes[s, r2, :len2], len2, prob_data)
+                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-4:
+                                            for k in range(len1 - 1):
+                                                nodes[s, r1, k] = scratch_route[s, k]
+                                            nodes[s, r1, len1 - 1] = 0
+                                            for k in range(len2 + 1):
+                                                nodes[s, r2, k] = scratch_route2[s, k]
+                                            rlen[s, r1] = len1 - 1
+                                            rlen[s, r2] = len2 + 1
+                                            change = (d1 + d2) - (old_d1 + old_d2)
+                                            dist[s] += change
+                                            cost[s] += change * prob_data[4]
+                                            improved = True
+                                            found_reloc = True
+                                            break
+                        if found_reloc:
+                            break
+                    if found_reloc:
+                        break
+                if found_reloc:
+                    break
 
             if not improved:
                 break
