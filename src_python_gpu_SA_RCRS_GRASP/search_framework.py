@@ -1512,6 +1512,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
     global_best_count_t = None
     global_best_score_t = torch.tensor(float("inf"), device=device, dtype=torch.float64)
     global_best_dist_t = torch.tensor(float("inf"), device=device, dtype=torch.float32)
+    global_best_nv_t = torch.tensor(9999, device=device, dtype=torch.long)
 
     sa_iters = getattr(data, "sa_iterations", 25)
     alpha_lo = getattr(data, "grasp_alpha_lo", 0.10)
@@ -1570,6 +1571,9 @@ def gpu_pure_tensor_search_framework(data, best_s):
         global_best_count_t = torch.where(
             run_improves_global, run_best_count, global_best_count_t
             if global_best_count_t is not None else run_best_count
+        )
+        global_best_nv_t = torch.where(
+            run_improves_global, v_counts[run_best_idx], global_best_nv_t
         )
         global_best_dist_t = torch.where(
             run_improves_global, total_dists[run_best_idx], global_best_dist_t
@@ -1665,6 +1669,11 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     pop_route_counts[elimination_best_idx],
                     global_best_count_t,
                 )
+                global_best_nv_t = torch.where(
+                    elimination_improves,
+                    v_counts[elimination_best_idx],
+                    global_best_nv_t,
+                )
                 global_best_dist_t = torch.where(
                     elimination_improves,
                     total_dists[elimination_best_idx],
@@ -1681,6 +1690,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
             global_best_routes_t = torch.where(generation_improves, generation_best_routes, global_best_routes_t)
             global_best_lengths_t = torch.where(generation_improves, generation_best_lengths, global_best_lengths_t)
             global_best_count_t = torch.where(generation_improves, generation_best_count, global_best_count_t)
+            global_best_nv_t = torch.where(generation_improves, c_vcnts[generation_best_idx_t], global_best_nv_t)
             global_best_dist_t = torch.where(generation_improves, c_dists[generation_best_idx_t], global_best_dist_t)
             global_best_score_t = torch.minimum(global_best_score_t, generation_best_score)
 
@@ -1733,6 +1743,11 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     ls_counts[ls_best_idx],
                     global_best_count_t,
                 )
+                global_best_nv_t = torch.where(
+                    ls_improves_global,
+                    ls_nv[ls_best_idx],
+                    global_best_nv_t,
+                )
                 global_best_dist_t = torch.where(
                     ls_improves_global,
                     ls_dist[ls_best_idx],
@@ -1764,7 +1779,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 )
                 v_counts[worst_idx] = torch.where(
                     replace_elite,
-                    global_best_count_t,
+                    global_best_nv_t,
                     v_counts[worst_idx],
                 )
                 total_dists[worst_idx] = torch.where(
@@ -1779,7 +1794,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 )
                 costs[worst_idx] = torch.where(
                     replace_elite,
-                    global_best_count_t.to(costs.dtype) * backend.dispatch_cost + total_dists[worst_idx] * backend.unit_cost,
+                    global_best_nv_t.float() * data.backend.dispatch_cost + global_best_dist_t * data.backend.unit_cost,
                     costs[worst_idx],
                 )
                 gen_t = torch.tensor(gen, dtype=torch.long, device=device)
@@ -1806,12 +1821,11 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 feas[destination_indices[migrate]] = feas[source_indices[migrate]]
                 costs[destination_indices[migrate]] = costs[source_indices[migrate]]
 
-            # 8. Stagnation-Triggered Diversification
+            # 7. Population Stagnation Diversification
             stag_interval = getattr(data, "stagnation_interval", 50)
             if gen % stag_interval == 0:
-                div_ratio = getattr(data, "diversify_ratio", 0.40)
-                div_count = max(1, int(round((P - 1) * div_ratio)))
-                worst_indices = torch.argsort(scores, descending=True)[:div_count]
+                worst_k = max(1, int(P * getattr(data, "diversify_ratio", 0.40)))
+                worst_indices = torch.topk(scores, k=worst_k, largest=True).indices
                 div_routes, div_lengths, div_counts = tensor_generate_offspring_batch(
                     pop_routes, pop_lengths, pop_route_counts, backend, gpu_rng
                 )
@@ -1838,7 +1852,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
             if gen % OUTPUT_PER_GENS == 0 or gen == 1 or gen == data.max_iter:
                 acc_cnt = int(accept.sum().item())
                 avg_td = float(total_dists[feas].mean().item()) if feas.any() else float("inf")
-                b_nv = int(global_best_count_t.item())
+                b_nv = int(global_best_nv_t.item())
                 b_td = float(global_best_dist_t.item())
                 print(
                     f"Gen: {gen}. a {a:.4f}, p_hybrid {p_mode:.4f}, accepted {acc_cnt}. Avg TD {avg_td:.4f}, Best NV {b_nv}, Best TD {b_td:.4f}",
