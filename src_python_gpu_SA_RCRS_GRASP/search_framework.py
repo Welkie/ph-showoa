@@ -42,6 +42,7 @@ from .operator import (
     tensor_inter_route_swap_gpu,
     tensor_inter_route_relocate_all,
     tensor_deep_local_search_gpu,
+    tensor_deep_local_search_solution,
     tensor_2opt_route_gpu,
     feasible_or_repair_algorithm_10,
     rcrs_grasp_initialization,
@@ -1756,6 +1757,24 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 )
                 global_best_score_t = torch.minimum(global_best_score_t, ls_best_score)
 
+                if global_best_routes_t is not None:
+                    d_r, d_l, d_c = tensor_deep_local_search_solution(
+                        global_best_routes_t,
+                        global_best_lengths_t,
+                        global_best_count_t,
+                        backend,
+                    )
+                    d_feas, d_costs, d_nv, d_dist = backend.evaluate_population_tensor(
+                        d_r.unsqueeze(0), d_l.unsqueeze(0), d_c.unsqueeze(0)
+                    )
+                    if d_feas[0] and (d_nv[0] < global_best_nv_t or (d_nv[0] == global_best_nv_t and d_dist[0] < global_best_dist_t - 1e-4)):
+                        global_best_routes_t = d_r
+                        global_best_lengths_t = d_l
+                        global_best_count_t = d_c
+                        global_best_nv_t = d_nv[0]
+                        global_best_dist_t = d_dist[0]
+                        global_best_score_t = backend.compute_lexicographic_scores(d_feas, d_nv, d_dist)[0]
+
                 worst_idx = torch.argmax(scores)
                 replace_elite = global_best_score_t < scores[worst_idx]
                 pop_routes[worst_idx] = torch.where(
@@ -1862,27 +1881,22 @@ def gpu_pure_tensor_search_framework(data, best_s):
 
         # GPU Deep Local Search Polish on global best
         if global_best_routes_t is not None:
-            best_r_in = global_best_routes_t.unsqueeze(0)
-            best_l_in = global_best_lengths_t.unsqueeze(0)
-            best_c_in = global_best_count_t.unsqueeze(0)
-            best_r_in, best_l_in, best_c_in = tensor_local_search_batch(
-                best_r_in, best_l_in, best_c_in, backend, gpu_rng, passes=40
-            )
-            best_r_in, best_l_in, best_c_in = tensor_relocate_batch(
-                best_r_in, best_l_in, best_c_in, backend, gpu_rng, passes=30
-            )
-            best_r_in, best_l_in, best_c_in = tensor_swap_batch(
-                best_r_in, best_l_in, best_c_in, backend, gpu_rng, passes=25
+            d_r, d_l, d_c = tensor_deep_local_search_solution(
+                global_best_routes_t,
+                global_best_lengths_t,
+                global_best_count_t,
+                backend,
             )
             f_pol, _, v_pol, d_pol = backend.evaluate_population_tensor(
-                best_r_in, best_l_in, best_c_in
+                d_r.unsqueeze(0), d_l.unsqueeze(0), d_c.unsqueeze(0)
             )
             if f_pol[0] and (v_pol[0] < global_best_nv_t or (v_pol[0] == global_best_nv_t and d_pol[0] < global_best_dist_t)):
-                global_best_routes_t = best_r_in[0]
-                global_best_lengths_t = best_l_in[0]
-                global_best_count_t = best_c_in[0]
+                global_best_routes_t = d_r
+                global_best_lengths_t = d_l
+                global_best_count_t = d_c
                 global_best_nv_t = v_pol[0]
                 global_best_dist_t = d_pol[0]
+                global_best_score_t = backend.compute_lexicographic_scores(f_pol, v_pol, d_pol)[0]
 
         if backend.is_cuda:
             vram_mb = torch.cuda.memory_allocated(device) / (1024 * 1024)
