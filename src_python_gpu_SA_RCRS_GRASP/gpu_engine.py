@@ -247,6 +247,15 @@ class GpuEngine:
 
         k = self.kernels
 
+        if self.is_cuda:
+            try:
+                dev = cuda.get_current_device()
+                d_name = dev.name.decode("utf-8") if isinstance(dev.name, bytes) else str(dev.name)
+            except Exception:
+                d_name = "NVIDIA CUDA Device"
+        else:
+            d_name = "CPU"
+
         for run in range(1, total_runs + 1):
             run_seed = base_seed + run * 100003
             rng_states = self._init_rng(run_seed)
@@ -254,16 +263,16 @@ class GpuEngine:
             print(f"---------------------------------Run {run} (100% Pure {backend_label} Engine)---------------------------", flush=True)
             if self.is_cuda:
                 try:
-                    dev = cuda.get_current_device()
-                    d_name = dev.name.decode("utf-8") if isinstance(dev.name, bytes) else str(dev.name)
+                    free_b, total_b = cuda.current_context().get_memory_info()
+                    vram_str = f"VRAM: {(total_b - free_b) / (1024 * 1024):.1f}MB used / {total_b / (1024 * 1024):.0f}MB total"
                 except Exception:
-                    d_name = "NVIDIA CUDA Device"
-                print(f"  [GPU_TELEMETRY] Device='{d_name}' (CUDA:0) | Pure Numba CUDA Kernel Grid: blocks={self.blocks}, threads={self.threads_per_block} | Pre-allocated device memory", flush=True)
+                    vram_str = "VRAM: Pre-allocated device buffers"
+                print(f"  Run {run} [GPU_TELEMETRY] Device='{d_name}' (CUDA:0) | {vram_str} | Grid: {self.blocks} blocks x {self.threads_per_block} threads (100% GPU Resident)", flush=True)
             else:
-                print(f"  [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P={self.P}, islands={self.num_islands})", flush=True)
+                print(f"  Run {run} [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P={self.P}, islands={self.num_islands})", flush=True)
 
-            print(f"CPU_PREP run={run}: seed/config ready; launching on {backend_label}", flush=True)
-            print(f"RUN_GPU_BEGIN run={run}", flush=True)
+            print(f"  Run {run} CPU_PREP: seed/config ready; launching on {backend_label}", flush=True)
+            print(f"  Run {run} RUN_GPU_BEGIN", flush=True)
 
             # Reset ibest and gbest
             if self.is_cuda:
@@ -422,18 +431,14 @@ class GpuEngine:
                     else:
                         b_nv = int(gbest_nr[0])
                         b_td = float(gbest_dist[0])
-                    print(f"Gen: {gen}. a {a:.4f}, p_hybrid {p_mode:.4f}. Best NV {b_nv}, Best TD {b_td:.4f}", flush=True)
+                    dev_tag = f"[GPU {d_name}]" if self.is_cuda else "[CPU]"
+                    print(f"{dev_tag} Gen: {gen}. a {a:.4f}, p_hybrid {p_mode:.4f}. Best NV {b_nv}, Best TD {b_td:.4f}", flush=True)
 
             if self.is_cuda:
                 cuda.synchronize()
-                try:
-                    dev = cuda.get_current_device()
-                    d_name = dev.name.decode("utf-8") if isinstance(dev.name, bytes) else str(dev.name)
-                except Exception:
-                    d_name = "NVIDIA CUDA Device"
-                print(f"RUN_GPU_END run={run} (Device: {d_name}, 0 CPU fallback)", flush=True)
+                print(f"  Run {run} RUN_GPU_END (Device: {d_name}, 0 CPU fallback)", flush=True)
             else:
-                print(f"RUN_GPU_END run={run}", flush=True)
+                print(f"  Run {run} RUN_CPU_END", flush=True)
 
             # 3. CPU_DECODE (Single sync at end of run)
             if self.is_cuda:
@@ -482,7 +487,7 @@ class GpuEngine:
                 state.best_s_cost = best_s.cost
                 state.find_best_run = run
                 td = (best_s.cost - best_s.len() * float(self.data.vehicle.d_cost)) / float(self.data.vehicle.unit_cost)
-                print(f"Best solution update: {best_s.cost:.4f} (NV={best_s.len()}, TD={td:.4f})", flush=True)
+                print(f"  Run {run} Best solution update: {best_s.cost:.4f} (NV={best_s.len()}, TD={td:.4f})", flush=True)
 
             print(f"Run {run} finishes", flush=True)
             completed_runs += 1
