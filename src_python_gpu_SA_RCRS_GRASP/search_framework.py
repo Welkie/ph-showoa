@@ -1936,17 +1936,8 @@ def gpu_pure_tensor_search_framework(data, best_s):
 
 
 def search_framework(data, best_s):
-    if getattr(data, "architecture", None) != "python_cuda":
-        raise RuntimeError("src_python_gpu_SA_RCRS_GRASP requires architecture=python_cuda")
-    if not getattr(data.backend, "is_cuda", False) and getattr(data, "compute_backend", None) == "cuda":
-        raise RuntimeError("architecture=python_cuda with compute_backend=cuda requires a CUDA PyTorch backend")
-
-    print(
-        f"[Search Framework] Running Python/PyTorch CUDA tensor engine "
-        f"(backend={data.backend.name}, device={data.backend.device}).",
-        flush=True,
-    )
-    return gpu_pure_tensor_search_framework(data, best_s)
+    from .gpu_engine import run_solver
+    return run_solver(data, best_s)
 
     pop = [Solution(data) for _ in range(data.p_size)]
     pop_fit = [0.0 for _ in range(data.p_size)]

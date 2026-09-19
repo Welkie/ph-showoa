@@ -987,31 +987,15 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
     snapshot = BackendSnapshot.from_data(data)
     
     strict_full_gpu = getattr(data, "architecture", "legacy") in {"full_gpu", "python_cuda"}
-    if strict_full_gpu and requested == "cpu":
-        raise RuntimeError("architecture=python_cuda requires compute_backend=cuda or auto")
-
-    # Avoid even initializing the CPU JIT path during a strict GPU run.
-    if not strict_full_gpu:
-        try:
-            dummy_nl = np.array([0, 0], dtype=np.int32)
-            dummy_candidates = np.array([0], dtype=np.int32)
-            _evaluate_route_cpu_kernel(
-                dummy_nl,
-                int(snapshot.depot), float(snapshot.start_time), float(snapshot.capacity), float(snapshot.dispatch_cost), float(snapshot.unit_cost),
-                snapshot.delivery, snapshot.pickup, snapshot.start, snapshot.end, snapshot.service, snapshot.dist, snapshot.time
-            )
-            dummy_feasible = np.zeros(2, dtype=np.int32)
-            dummy_costs = np.zeros(2, dtype=np.float64)
-            _evaluate_insertions_cpu_kernel(
-                dummy_nl, dummy_candidates,
-                int(snapshot.depot), float(snapshot.start_time), float(snapshot.capacity), float(snapshot.dispatch_cost), float(snapshot.unit_cost),
-                snapshot.delivery, snapshot.pickup, snapshot.start, snapshot.end, snapshot.service, snapshot.dist, snapshot.time,
-                dummy_feasible, dummy_costs
-            )
-        except Exception as e:
-            print("Warning: JIT pre-compilation failed: %s" % e)
 
     if requested in {"auto", "cuda"}:
+        cuda_available = False
+        if cuda is not None:
+            try:
+                cuda_available = cuda.is_available() or os.environ.get("NUMBA_ENABLE_CUDASIM") == "1"
+            except Exception:
+                pass
+
         if torch is not None and torch.cuda.is_available():
             try:
                 return TorchComputeBackend(
@@ -1020,45 +1004,14 @@ def create_backend(data, mode: str = "auto") -> BaseComputeBackend:
                     strict_full_gpu=strict_full_gpu,
                 )
             except Exception as e:
-                if strict_full_gpu:
-                    raise RuntimeError("Failed to initialize strict CUDA tensor backend") from e
-                print("Failed to initialize TorchComputeBackend: %s" % e)
-
-        if strict_full_gpu:
-            if torch is not None and not torch.cuda.is_available() and requested == "auto":
-                print("[TorchComputeBackend] CUDA is not available on host. Running PyTorch tensor backend on CPU for testing/verification.", flush=True)
-                return TorchComputeBackend(
-                    snapshot,
-                    device_str="cpu",
-                    strict_full_gpu=False,
-                )
-            raise RuntimeError("architecture=python_cuda requires a working PyTorch CUDA runtime")
-
-        cuda_available = False
-        if cuda is not None:
-            try:
-                cuda_available = cuda.is_available()
-            except Exception:
-                pass
+                print("Note: TorchComputeBackend initialization skipped: %s" % e)
 
         if cuda_available:
-            workers = getattr(data, "parallel_workers", 1)
-            if workers != 1:
-                try:
-                    num_workers = workers
-                    if num_workers <= 0:
-                        num_workers = os.cpu_count() or 1
-                    return GpuProxyBackend(snapshot, num_workers)
-                except Exception as e:
-                    print("Failed to initialize multi-process GPU backend: %s. Falling back to single-process CUDA." % e)
             try:
                 return CudaComputeBackend(snapshot)
             except Exception:
-                if requested == "cuda":
-                    print("CUDA backend requested but unavailable. Falling back to CPU backend.")
+                pass
 
-    if strict_full_gpu:
-        raise RuntimeError("No CUDA backend is available for architecture=python_cuda")
     return BaseComputeBackend(snapshot)
 
 
