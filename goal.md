@@ -34,3 +34,5 @@ CPU_DECODE sau khi hoàn tất toàn bộ runs
 File code tui chạy trên kaggle: kaggle_gpu_sa_rcrs_grasp
 
 Tham khảo bài báo GPU acceleration hoặc các bài khác liên quan phù hợp
+
+Mục tiêu: Vượt hoặc bằng target ở file ph_showoa_python_target 

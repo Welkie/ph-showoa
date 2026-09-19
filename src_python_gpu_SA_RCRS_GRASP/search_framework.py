@@ -34,6 +34,7 @@ from .operator import (
     tensor_generate_offspring_batch,
     tensor_local_search_batch,
     tensor_relocate_batch,
+    tensor_swap_batch,
     tensor_sho_crossover_single,
     tensor_woa_intensification_single,
     tensor_route_elimination_single,
@@ -1546,9 +1547,19 @@ def gpu_pure_tensor_search_framework(data, best_s):
             pop_routes, pop_lengths, pop_route_counts = tensor_sa_warmup(
                 pop_routes, pop_lengths, pop_route_counts, backend, data, sa_iters=sa_iters
             )
-        pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
-            pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=20
-        )
+        else:
+            pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
+                pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, max_elim_len=15, passes=35, k_tries=8
+            )
+            pop_routes, pop_lengths, pop_route_counts = tensor_local_search_batch(
+                pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=25
+            )
+            pop_routes, pop_lengths, pop_route_counts = tensor_relocate_batch(
+                pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=20
+            )
+            pop_routes, pop_lengths, pop_route_counts = tensor_swap_batch(
+                pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=15
+            )
 
         feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
             pop_routes, pop_lengths, pop_route_counts
@@ -1644,43 +1655,6 @@ def gpu_pure_tensor_search_framework(data, best_s):
             feas = torch.where(accept, c_feas, feas)
             costs = torch.where(accept, c_costs, costs)
 
-            if gen % max(1, getattr(data, "local_search_interval", 25)) == 0:
-                pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
-                    pop_routes, pop_lengths, pop_route_counts, backend, generator=gpu_rng, passes=10
-                )
-                feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
-                    pop_routes, pop_lengths, pop_route_counts
-                )
-                scores = backend.compute_lexicographic_scores(feas, v_counts, total_dists)
-                elimination_best_score, elimination_best_idx = torch.min(scores, dim=0)
-                elimination_improves = elimination_best_score < global_best_score_t
-                global_best_routes_t = torch.where(
-                    elimination_improves,
-                    pop_routes[elimination_best_idx],
-                    global_best_routes_t,
-                )
-                global_best_lengths_t = torch.where(
-                    elimination_improves,
-                    pop_lengths[elimination_best_idx],
-                    global_best_lengths_t,
-                )
-                global_best_count_t = torch.where(
-                    elimination_improves,
-                    pop_route_counts[elimination_best_idx],
-                    global_best_count_t,
-                )
-                global_best_nv_t = torch.where(
-                    elimination_improves,
-                    v_counts[elimination_best_idx],
-                    global_best_nv_t,
-                )
-                global_best_dist_t = torch.where(
-                    elimination_improves,
-                    total_dists[elimination_best_idx],
-                    global_best_dist_t,
-                )
-                global_best_score_t = torch.minimum(global_best_score_t, elimination_best_score)
-
             accepted_scores = torch.where(accept, c_scores, torch.tensor(float("inf"), device=device))
             generation_best_score, generation_best_idx_t = torch.min(accepted_scores, dim=0)
             generation_improves = generation_best_score < global_best_score_t
@@ -1697,13 +1671,23 @@ def gpu_pure_tensor_search_framework(data, best_s):
             # 6. Periodic Deep Local Search on Global Best
             ls_interval = getattr(data, "local_search_interval", 25)
             if gen % ls_interval == 0:
+                pop_routes, pop_lengths, pop_route_counts = tensor_route_elimination_population(
+                    pop_routes,
+                    pop_lengths,
+                    pop_route_counts,
+                    backend,
+                    generator=gpu_rng,
+                    max_elim_len=15,
+                    passes=25,
+                    k_tries=8,
+                )
                 ls_routes, ls_lengths, ls_counts = tensor_local_search_batch(
                     pop_routes,
                     pop_lengths,
                     pop_route_counts,
                     backend,
                     gpu_rng,
-                    passes=4,
+                    passes=25,
                 )
                 ls_routes, ls_lengths, ls_counts = tensor_relocate_batch(
                     ls_routes,
@@ -1711,7 +1695,15 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     ls_counts,
                     backend,
                     gpu_rng,
-                    passes=2,
+                    passes=20,
+                )
+                ls_routes, ls_lengths, ls_counts = tensor_swap_batch(
+                    ls_routes,
+                    ls_lengths,
+                    ls_counts,
+                    backend,
+                    gpu_rng,
+                    passes=15,
                 )
                 ls_feas, ls_costs, ls_nv, ls_dist = backend.evaluate_population_tensor(
                     ls_routes, ls_lengths, ls_counts
@@ -1858,6 +1850,30 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     f"Gen: {gen}. a {a:.4f}, p_hybrid {p_mode:.4f}, accepted {acc_cnt}. Avg TD {avg_td:.4f}, Best NV {b_nv}, Best TD {b_td:.4f}",
                     flush=True
                 )
+
+        # GPU Deep Local Search Polish on global best
+        if global_best_routes_t is not None:
+            best_r_in = global_best_routes_t.unsqueeze(0)
+            best_l_in = global_best_lengths_t.unsqueeze(0)
+            best_c_in = global_best_count_t.unsqueeze(0)
+            best_r_in, best_l_in, best_c_in = tensor_local_search_batch(
+                best_r_in, best_l_in, best_c_in, backend, gpu_rng, passes=40
+            )
+            best_r_in, best_l_in, best_c_in = tensor_relocate_batch(
+                best_r_in, best_l_in, best_c_in, backend, gpu_rng, passes=30
+            )
+            best_r_in, best_l_in, best_c_in = tensor_swap_batch(
+                best_r_in, best_l_in, best_c_in, backend, gpu_rng, passes=25
+            )
+            f_pol, _, v_pol, d_pol = backend.evaluate_population_tensor(
+                best_r_in, best_l_in, best_c_in
+            )
+            if f_pol[0] and (v_pol[0] < global_best_nv_t or (v_pol[0] == global_best_nv_t and d_pol[0] < global_best_dist_t)):
+                global_best_routes_t = best_r_in[0]
+                global_best_lengths_t = best_l_in[0]
+                global_best_count_t = best_c_in[0]
+                global_best_nv_t = v_pol[0]
+                global_best_dist_t = d_pol[0]
 
         print(f"RUN_GPU_END run={run}", flush=True)
         run_best_idx = torch.argmin(scores)
