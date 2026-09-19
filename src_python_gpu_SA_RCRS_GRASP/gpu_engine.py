@@ -489,7 +489,9 @@ class GpuEngine:
                 td = (best_s.cost - best_s.len() * float(self.data.vehicle.d_cost)) / float(self.data.vehicle.unit_cost)
                 print(f"  Run {run} Best solution update: {best_s.cost:.4f} (NV={best_s.len()}, TD={td:.4f})", flush=True)
 
-            print(f"Run {run} finishes", flush=True)
+            best_nv = best_s.len()
+            best_td = (best_s.cost - best_s.len() * float(self.data.vehicle.d_cost)) / float(self.data.vehicle.unit_cost)
+            print(f"Run {run} finishes | Run Best: NV={run_nv}, TD={run_dist:.4f} | Global Best: NV={best_nv}, TD={best_td:.4f}", flush=True)
             completed_runs += 1
 
         total_time = int(time.perf_counter() - start_total)
