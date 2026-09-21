@@ -1,0 +1,117 @@
+name: Release macOS Package
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Optional numeric macOS package version (for example, 1.2.3)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-macos-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          if [[ -z "$version" ]]; then
+            version="0.0.${GITHUB_RUN_NUMBER}"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "Invalid macOS package version: $version" >&2
+            exit 1
+          fi
+
+          short_sha="${GITHUB_SHA::12}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=macos-${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "release_name=macOS package ${version} (${short_sha})" >> "$GITHUB_OUTPUT"
+
+      - name: Build macOS installer package
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/build-macos-pkg.sh \
+            --version "${{ steps.meta.outputs.version }}" \
+            --output-dir dist/macos
+          shasum -a 256 dist/macos/*.pkg > dist/macos/SHA256SUMS
+
+      - name: Verify package payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="dist/macos/syk4y-${{ steps.meta.outputs.version }}-macos-universal.pkg"
+          test -f "$package"
+          pkgutil --payload-files "$package" | grep -F '/usr/local/bin/syk4y'
+          pkgutil --payload-files "$package" | grep -F '/usr/local/lib/syk4y/syk4y'
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: syk4y-macos-${{ steps.meta.outputs.version }}
+          path: dist/macos/
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.meta.outputs.release_name }}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            dist/macos/*.pkg
+            dist/macos/SHA256SUMS
+
+      - name: Load Homebrew tap deploy key
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+
+      - name: Update Homebrew formula
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_archive_url="https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_SHA}.tar.gz"
+          archive="$(mktemp "${RUNNER_TEMP}/syk4y-source.XXXXXX.tar.gz")"
+          tap_dir="$(mktemp -d "${RUNNER_TEMP}/syk4y-homebrew-tap.XXXXXX")"
+          trap 'rm -f "$archive"; rm -rf "$tap_dir"' EXIT
+          curl --fail --location --retry 3 --silent --show-error "$source_archive_url" -o "$archive"
+          source_sha256="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
+
+          git clone git@github.com:mihtriii/homebrew-syk4y.git "$tap_dir"
+          scripts/render-homebrew-formula.sh \
+            --version "$VERSION" \
+            --source-url "$source_archive_url" \
+            --sha256 "$source_sha256" \
+            --output "$tap_dir/Formula/syk4y.rb"
+
+          git -C "$tap_dir" config user.name "github-actions[bot]"
+          git -C "$tap_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$tap_dir" add Formula/syk4y.rb
+          if git -C "$tap_dir" diff --cached --quiet; then
+            echo "Homebrew formula already matches this release."
+            exit 0
+          fi
+
+          git -C "$tap_dir" commit -m "chore: update syk4y to $VERSION"
+          git -C "$tap_dir" push origin HEAD:main

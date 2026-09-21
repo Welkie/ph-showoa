@@ -1,0 +1,310 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/syk4y-cli-lib/python_env.sh"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/syk4y-cli-lib/kaggle_env.sh"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/syk4y-cli-lib/string_utils.sh"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/syk4y-cli-lib/gitignore_utils.sh"
+TEMPLATE_DIR="$SCRIPT_DIR/templates"
+
+OUT_FILE=""
+OUT_FILE_EXPLICIT=0
+WHEELHOUSE_FILE="wheelhouse.zip"
+UPLOAD_ROOT="kaggle_upload"
+REPO_ROOT_OVERRIDE=""
+SKIP_GEN=0
+SELECTED_ARTIFACTS=()
+WHEEL_ARCH="${WHEEL_ARCH:-}"
+
+usage() {
+  cat "$TEMPLATE_DIR/syk4y-gen-usage.txt"
+}
+
+require_cmd() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Error: $cmd is required." >&2
+    exit 1
+  fi
+}
+
+build_wheelhouse_for_init() {
+  local tmp_root tmp_upload_root tmp_wheelhouse_path
+  tmp_root="$REPO_ROOT/.syk4y-temp/wheelhouse-cache"
+  tmp_upload_root="$tmp_root/$REPO_SLUG"
+  tmp_wheelhouse_path="$tmp_upload_root/${REPO_SLUG}-wheelhouse/wheelhouse.zip"
+
+  mkdir -p "$tmp_upload_root"
+  mkdir -p "$(dirname "$WHEELHOUSE_ABS")"
+
+  echo "    wheelhouse build root: $tmp_upload_root"
+  local arch_args=()
+  if [[ -n "$WHEEL_ARCH" ]]; then
+    arch_args+=(--arch "$WHEEL_ARCH")
+  fi
+  "$SCRIPT_DIR/syk4y-kaggle" --repo-root "$REPO_ROOT" upload --upload-dir "$tmp_upload_root" --build-wheel-only "${arch_args[@]}"
+
+  if [[ ! -f "$tmp_wheelhouse_path" ]]; then
+    echo "Error: wheelhouse build finished but missing '$tmp_wheelhouse_path'." >&2
+    exit 1
+  fi
+
+  ln -sfn "$tmp_wheelhouse_path" "$WHEELHOUSE_ABS"
+  echo "    wheelhouse source: $tmp_wheelhouse_path"
+  echo "    link: $WHEELHOUSE_ABS -> $tmp_wheelhouse_path"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo-root)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      REPO_ROOT_OVERRIDE="$2"
+      shift 2
+      ;;
+    --skip-gen)
+      SKIP_GEN=1
+      shift
+      ;;
+    -a|--artifact)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      SELECTED_ARTIFACTS+=("$2")
+      shift 2
+      ;;
+    -o|--out)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      OUT_FILE="$2"
+      OUT_FILE_EXPLICIT=1
+      shift 2
+      ;;
+    -w|--wheelhouse)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      WHEELHOUSE_FILE="$2"
+      shift 2
+      ;;
+    -u|--upload-dir)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      UPLOAD_ROOT="$2"
+      shift 2
+      ;;
+    --arch)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      WHEEL_ARCH="$2"
+      shift 2
+      ;;
+    --wheel-arch)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      echo "Warning: --wheel-arch is deprecated and will be removed in a future version. Use --arch instead." >&2
+      WHEEL_ARCH="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ "$OUT_FILE_EXPLICIT" -eq 0 ]]; then
+  OUT_FILE="${UPLOAD_ROOT}/gen-full.py"
+fi
+
+if [[ "${#SELECTED_ARTIFACTS[@]}" -gt 0 ]]; then
+  declare -A seen_artifacts=()
+  declare -A artifact_slug_owner=()
+  normalized_artifacts=()
+  for artifact in "${SELECTED_ARTIFACTS[@]}"; do
+    if [[ -z "$artifact" ]]; then
+      echo "Error: artifact name cannot be empty." >&2
+      exit 2
+    fi
+    if [[ -z "${seen_artifacts[$artifact]+x}" ]]; then
+      artifact_slug="$(syk4y_slugify "$artifact")"
+      if [[ -n "${artifact_slug_owner[$artifact_slug]+x}" ]] && [[ "${artifact_slug_owner[$artifact_slug]}" != "$artifact" ]]; then
+        echo "Error: artifact slug collision between '${artifact_slug_owner[$artifact_slug]}' and '$artifact' (slug: '$artifact_slug')." >&2
+        echo "Use distinct artifact names that slugify uniquely." >&2
+        exit 2
+      fi
+      seen_artifacts["$artifact"]=1
+      artifact_slug_owner["$artifact_slug"]="$artifact"
+      normalized_artifacts+=("$artifact")
+    fi
+  done
+  SELECTED_ARTIFACTS=("${normalized_artifacts[@]}")
+fi
+
+if [[ -n "$REPO_ROOT_OVERRIDE" ]]; then
+  if [[ "$REPO_ROOT_OVERRIDE" == /* ]]; then
+    REPO_ROOT="$REPO_ROOT_OVERRIDE"
+  else
+    REPO_ROOT="$(cd "$REPO_ROOT_OVERRIDE" && pwd)"
+  fi
+else
+  if [[ "$SKIP_GEN" -eq 1 ]]; then
+    REPO_ROOT="$(pwd)"
+  else
+    require_cmd git
+    REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  fi
+fi
+
+if [[ -z "$REPO_ROOT" ]] || [[ ! -d "$REPO_ROOT" ]]; then
+  echo "Error: invalid repository root: '$REPO_ROOT'." >&2
+  exit 1
+fi
+
+if [[ "$SKIP_GEN" -eq 0 ]]; then
+  require_cmd git
+  GIT_ROOT="$(git -C "$REPO_ROOT" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [[ -z "$GIT_ROOT" ]]; then
+    echo "Error: 'gen' requires a git repository. '$REPO_ROOT' is not inside a git work tree." >&2
+    echo "Hint: run inside a git repo, or use --skip-gen for setup-only mode." >&2
+    exit 1
+  fi
+fi
+
+if [[ "$SKIP_GEN" -eq 1 ]] && [[ "${#SELECTED_ARTIFACTS[@]}" -eq 0 ]]; then
+  echo "Error: nothing to do. Use -a/--artifact to initialize upload artifact folders, or run without --skip-gen to generate snapshot script." >&2
+  exit 2
+fi
+
+cd "$REPO_ROOT"
+syk4y_ensure_kaggle_upload_gitignore "$REPO_ROOT"
+syk4y_ensure_temp_dir_gitignore "$REPO_ROOT"
+
+REPO_NAME="$(basename "$REPO_ROOT")"
+REPO_SLUG="$(syk4y_slugify "$REPO_NAME")"
+PYTHON_BIN="$(syk4y_resolve_python_bin_or_die "$REPO_ROOT" "syk4y gen")"
+KAGGLE_USERNAME=""
+if [[ "${#SELECTED_ARTIFACTS[@]}" -gt 0 ]]; then
+  KAGGLE_USERNAME="$(syk4y_resolve_kaggle_username "$PYTHON_BIN" 0)"
+fi
+
+if [[ "$OUT_FILE" == /* ]]; then
+  OUT_ABS="$OUT_FILE"
+else
+  OUT_ABS="$REPO_ROOT/$OUT_FILE"
+fi
+
+if [[ "${#SELECTED_ARTIFACTS[@]}" -gt 0 ]]; then
+  if [[ "$UPLOAD_ROOT" == /* ]]; then
+    UPLOAD_ROOT_ABS="$UPLOAD_ROOT"
+  else
+    UPLOAD_ROOT_ABS="$REPO_ROOT/$UPLOAD_ROOT"
+  fi
+
+  WHEELHOUSE_DATASET_DIR="$UPLOAD_ROOT_ABS/${REPO_SLUG}-wheelhouse"
+
+  if [[ "$WHEELHOUSE_FILE" == /* ]]; then
+    WHEELHOUSE_ABS="$WHEELHOUSE_FILE"
+  else
+    WHEELHOUSE_ABS="$WHEELHOUSE_DATASET_DIR/$WHEELHOUSE_FILE"
+  fi
+fi
+
+if [[ "$SKIP_GEN" -eq 0 ]]; then
+  "$PYTHON_BIN" "$SCRIPT_DIR/syk4y-lib/gen_snapshot_cli.py" "$REPO_ROOT" "$OUT_ABS" "$TEMPLATE_DIR"
+fi
+
+if [[ "${#SELECTED_ARTIFACTS[@]}" -gt 0 ]]; then
+  mkdir -p "$UPLOAD_ROOT_ABS"
+  echo "Initialized Kaggle upload folders:"
+  echo "  upload root: $UPLOAD_ROOT_ABS"
+
+  # Clean legacy monolithic upload layout from older script versions.
+  LEGACY_DATASET_DIR="$UPLOAD_ROOT_ABS/$REPO_SLUG"
+  if [[ -d "$LEGACY_DATASET_DIR" ]]; then
+    echo "  removed legacy folder: $LEGACY_DATASET_DIR"
+    rm -rf "$LEGACY_DATASET_DIR"
+  fi
+
+  for artifact in "${SELECTED_ARTIFACTS[@]}"; do
+    artifact_id="$(syk4y_slugify "$artifact")"
+    artifact_slug="${REPO_SLUG}-${artifact_id}"
+    artifact_dir="$UPLOAD_ROOT_ABS/$artifact_slug"
+    metadata_path="$artifact_dir/dataset-metadata.json"
+    dataset_id="${KAGGLE_USERNAME}/${artifact_slug}"
+    mkdir -p "$artifact_dir"
+    echo "  artifact: $artifact"
+    echo "    artifact id: $artifact_id"
+    echo "    dataset id: $dataset_id"
+    echo "    dataset dir: $artifact_dir"
+
+    # Clean stale generated entries while keeping metadata file path stable.
+    find "$artifact_dir" -mindepth 1 -maxdepth 1 ! -name 'dataset-metadata.json' -exec rm -rf {} +
+    artifact_source=""
+    artifact_item_name=""
+
+    if [[ "$artifact" != "wheelhouse" ]]; then
+      if [[ "$artifact" == /* ]]; then
+        src="$artifact"
+      else
+        src="$REPO_ROOT/$artifact"
+      fi
+      artifact_source="$artifact"
+      artifact_item_name="$(basename "$artifact")"
+      if [[ -z "$artifact_item_name" ]] || [[ "$artifact_item_name" == "." ]] || [[ "$artifact_item_name" == "/" ]]; then
+        artifact_item_name="$artifact_id"
+      fi
+      dst="$artifact_dir/$artifact_item_name"
+      if [[ ! -e "$src" ]]; then
+        echo "    link: skipped (missing source: $src)" >&2
+        rm -f "$dst"
+      else
+        ln -sfn "$src" "$dst"
+        echo "    link: $dst -> $src"
+      fi
+    else
+      artifact_item_name="wheelhouse.zip"
+      build_wheelhouse_for_init
+    fi
+
+    "$PYTHON_BIN" \
+      "$SCRIPT_DIR/syk4y-lib/write_dataset_metadata_cli.py" \
+      "$metadata_path" \
+      "$REPO_NAME" \
+      "$KAGGLE_USERNAME" \
+      "$artifact_slug" \
+      "$artifact" \
+      "$artifact_id" \
+      "$artifact_source" \
+      "$artifact_item_name" \
+      "$TEMPLATE_DIR"
+    echo "    metadata: $metadata_path"
+  done
+fi
+
+if [[ "$SKIP_GEN" -eq 0 ]]; then
+  echo "  snapshot script: $OUT_ABS"
+fi
+echo "Done."

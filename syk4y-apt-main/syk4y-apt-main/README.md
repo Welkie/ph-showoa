@@ -1,0 +1,396 @@
+# syk4y
+
+`syk4y` is a CLI to make Kaggle artifact workflows simple and repeatable:
+- initialize per-artifact Kaggle dataset folders
+- upload only changed artifacts
+- build and reuse offline `wheelhouse.zip`
+- optionally generate `kaggle_upload/gen-full.py`
+
+## Start Here (Fast Path)
+
+```bash
+# 1) Install
+sudo apt update
+sudo apt install -y syk4y
+
+# 2) Go to your repo
+cd /path/to/your/repo
+
+# 3) Check environment
+syk4y doctor
+
+# 4) Initialize artifact datasets (first time per repo)
+syk4y init checkpoints datasets models wheelhouse
+
+# 5) Configure Kaggle credentials (interactive)
+syk4y kaggle login
+
+# 6) Upload changed artifacts
+syk4y kaggle upload
+```
+
+If this is all you need, you can stop here.
+
+## Install
+
+### apt (signed repository)
+
+```bash
+curl -fsSL https://taiduc1001.github.io/syk4y-apt/keys/syk4y-archive-keyring.gpg \
+  | sudo tee /usr/share/keyrings/syk4y-archive-keyring.gpg >/dev/null
+
+echo "deb [signed-by=/usr/share/keyrings/syk4y-archive-keyring.gpg] https://taiduc1001.github.io/syk4y-apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/syk4y.list
+
+sudo apt update
+sudo apt install -y syk4y
+```
+
+## Before You Run
+
+### Python runtime
+
+`syk4y` needs a usable Python interpreter.
+Selection order:
+1. `PYTHON_BIN` (if set)
+2. local venv in repo (`.venv`, `venv`, `.env`, `env`, similar names)
+3. `uv python find`
+4. system `python3` / `python`
+
+Recommended local setup:
+
+```bash
+uv venv .venv
+uv pip install kaggle
+```
+
+### Kaggle credentials
+
+You need Kaggle credentials for `syk4y kaggle upload`.
+
+Get token:
+1. Log in to `https://www.kaggle.com`
+2. Open Account settings
+3. In API section, click `Create New Token`
+
+Use credentials in one of these ways:
+
+Interactive:
+
+```bash
+syk4y kaggle login
+```
+
+Explicit flags:
+
+```bash
+syk4y kaggle login --username <kaggle_username> --key <kaggle_api_key>
+```
+
+Environment variables:
+
+```bash
+export KAGGLE_USERNAME=<kaggle_username>
+export KAGGLE_KEY=<kaggle_api_key>
+syk4y kaggle upload
+```
+
+## Common Tasks
+
+### 1) First-time setup for a repo
+
+```bash
+cd /path/to/your/repo
+syk4y init checkpoints datasets models wheelhouse
+```
+
+This creates `kaggle_upload/` layout and metadata for each artifact dataset.
+If `wheelhouse` is included, `wheelhouse.zip` is built/updated.
+
+### 2) Upload only what changed
+
+```bash
+syk4y kaggle upload
+```
+
+Upload selected artifacts only:
+
+```bash
+syk4y kaggle upload datasets
+syk4y kaggle upload wheelhouse
+```
+
+Useful options:
+
+```bash
+syk4y kaggle upload --force
+syk4y kaggle upload --message "weekly refresh"
+syk4y kaggle upload --dir-mode zip
+```
+
+### 3) Build wheelhouse only (no Kaggle auth required)
+
+```bash
+syk4y kaggle upload --build-wheel-only
+```
+
+Wheelhouse dependency source:
+
+- If `uv.lock` exists, syk4y exports the locked dependencies with `uv export --locked`.
+  The lockfile must be up to date, and local/Git/URL sources are preserved.
+- If `uv.lock` does not exist, syk4y falls back to the installed environment from
+  `pip freeze`.
+
+### 4) Install dependencies offline from wheelhouse
+
+```bash
+unzip wheelhouse.zip -d wheelhouse
+
+# uv (recommended)
+uv pip install --offline --no-index --find-links /path/to/wheelhouse <package-or-requirements>
+
+# pip
+pip install --no-index --find-links /path/to/wheelhouse <package-or-requirements>
+```
+
+### 5) Generate full repo snapshot script
+
+```bash
+syk4y gen
+```
+
+Notes:
+- `gen` requires a git work tree unless you pass `--skip-gen`
+- default output is `kaggle_upload/gen-full.py`
+
+To generate snapshot and initialize artifact folders together:
+
+```bash
+syk4y gen -a checkpoints -a datasets -a models -a wheelhouse
+```
+
+## Command Cheat Sheet
+
+### Top-level
+
+```bash
+syk4y [--repo-root DIR] <command>
+```
+
+Commands:
+- `init` setup Kaggle artifact folders and metadata
+- `gen` generate snapshot script (`gen-full.py`)
+- `kaggle` Kaggle helpers and multi-account tools
+- `doctor` environment/readiness checks
+
+### `syk4y init`
+
+```bash
+syk4y init [--repo-root DIR] [options] <artifact...>
+```
+
+Options:
+- `-u, --upload-dir DIR`
+- `-w, --wheelhouse FILE`
+
+### `syk4y gen`
+
+```bash
+syk4y gen [options]
+```
+
+Key options:
+- `--repo-root DIR`
+- `--skip-gen`
+- `-a, --artifact NAME` (repeatable)
+- `-o, --out FILE`
+- `-w, --wheelhouse FILE`
+- `-u, --upload-dir DIR`
+
+### `syk4y kaggle`
+
+```bash
+syk4y kaggle <subcommand> [options]
+```
+
+Subcommands:
+- `login` configure `~/.kaggle/kaggle.json`
+- `upload` upload changed artifacts to Kaggle
+- `account` manage account pool (`add/list/remove/enable/disable/test/set`)
+- `run` multi-account notebook runner (`start/status/list/pull/stop/resume`)
+
+### `syk4y doctor`
+
+```bash
+syk4y doctor [--repo-root DIR] [--json]
+```
+
+## Troubleshooting
+
+### 1) "Kaggle credentials are not configured"
+
+```bash
+syk4y kaggle login
+```
+
+Or set env vars:
+
+```bash
+export KAGGLE_USERNAME=...
+export KAGGLE_KEY=...
+```
+
+### 2) Python not found / pip unavailable
+
+```bash
+uv venv .venv
+uv pip install kaggle
+```
+
+Then rerun command in the same repo.
+
+### 3) Upload says nothing changed
+
+This is expected change detection behavior.
+
+To force upload:
+
+```bash
+syk4y kaggle upload --force
+```
+
+### 4) General health check
+
+```bash
+syk4y doctor
+syk4y doctor --json
+```
+
+## Security Notes
+
+- Never commit `~/.kaggle/kaggle.json`
+- Prefer environment variables in CI
+- Rotate Kaggle API key if exposed
+
+## Maintainer Notes (Packaging)
+
+For package/repo maintainers:
+
+```bash
+scripts/build-deb.sh --version 0.1.0
+scripts/build-apt-repo.sh --output-dir site --deb dist/deb/syk4y_0.1.0_all.deb
+scripts/sign-apt-release.sh --repo-dir site --suite stable --key-id <KEY_ID>
+```
+
+## macOS Support
+
+A macOS installer is created automatically whenever a commit is pushed to `main`.
+Each successful run publishes a GitHub prerelease containing:
+
+- `syk4y-<version>-macos-universal.pkg`
+- `SHA256SUMS`
+
+Get the latest package from [GitHub Releases](https://github.com/TaiDuc1001/syk4y-apt/releases).
+
+### Install with Homebrew
+
+Install the public `syk4y` formula from the canonical Homebrew tap:
+
+```bash
+brew install mihtriii/syk4y/syk4y
+syk4y doctor
+```
+
+Homebrew 6+ automatically records trust for this fully qualified formula only; it does not trust
+every item in the tap. To update later:
+
+```bash
+brew update
+brew upgrade syk4y
+```
+
+The macOS release workflow updates [`mihtriii/homebrew-syk4y`](https://github.com/mihtriii/homebrew-syk4y)
+after every successful build from `main`.
+
+### Install with the `.pkg` installer
+
+#### 1. Install prerequisites
+
+`syk4y` requires Bash 4 or newer. macOS includes Bash 3.2, so install the current Bash with
+[Homebrew](https://brew.sh/):
+
+```bash
+brew install bash
+```
+
+> Apple Silicon installs Homebrew Bash at `/opt/homebrew/bin/bash`; Intel Macs normally use
+> `/usr/local/bin/bash`. The installed `syk4y` launcher detects both locations automatically.
+
+#### 2. Download and verify the installer
+
+Download **both** the `.pkg` and `SHA256SUMS` from the same macOS GitHub prerelease, then verify
+the exact package before installation:
+
+```bash
+cd ~/Downloads
+shasum -a 256 -c SHA256SUMS
+```
+
+Continue only if the result is:
+
+```text
+syk4y-<version>-macos-universal.pkg: OK
+```
+
+#### 3. Install and validate
+
+```bash
+sudo installer -pkg syk4y-<version>-macos-universal.pkg -target /
+syk4y doctor
+```
+
+The installer stores the application payload in `/usr/local/lib/syk4y` and installs these launcher
+commands in `/usr/local/bin`:
+
+```text
+syk4y
+syk4y-init
+syk4y-gen
+syk4y-kaggle
+syk4y-doctor
+make-gen-full-repo.sh
+```
+
+After installation, use the same commands documented above. For example:
+
+```bash
+cd /path/to/your/repo
+syk4y doctor
+syk4y init checkpoints datasets models wheelhouse
+syk4y kaggle login
+syk4y kaggle upload
+```
+
+### macOS troubleshooting
+
+**`syk4y on macOS requires Bash 4 or newer`**
+
+```bash
+brew install bash
+```
+
+Then open a new terminal and run `syk4y doctor` again.
+
+**`syk4y: command not found` after installation**
+
+The installer uses `/usr/local/bin`. Check that it is on your shell path:
+
+```bash
+printf '%s\n' "$PATH"
+ls -l /usr/local/bin/syk4y
+```
+
+Open a new terminal if the command was installed during the current session.
+
+> The package is currently not code-signed or notarized. It is distributed through GitHub Releases
+> with a SHA-256 checksum; verify `SHA256SUMS` before installing.

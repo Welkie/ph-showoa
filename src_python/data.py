@@ -1,4 +1,3 @@
-import os
 import math
 import random
 from dataclasses import dataclass
@@ -51,12 +50,6 @@ from .config import (
     P_SIZE,
     PENALTY_FACTOR,
     PRECISION,
-    SA_RCRS_GRASP,
-    RCG,
-    RCRS_GRASP,
-    DEFAULT_GRASP_ALPHA_LO,
-    DEFAULT_GRASP_ALPHA_HI,
-    DEFAULT_SA_ITERATIONS,
     RCRS,
     RCRS_RANDOM,
     RDSELECTION,
@@ -122,6 +115,8 @@ class Data:
         self.runs = RUNS
         self.p_size = P_SIZE
         if self.paper_flags:
+            # The experimental protocol in Table 2.  Explicit CLI values below
+            # always take precedence over these profile defaults.
             self.g_1 = 1000
             self.max_iter = 1000
             self.runs = 30
@@ -146,11 +141,6 @@ class Data:
         self.sa_alpha = 0.95
         self.sa_tmin = 0.1
         self.sa_itermax = 100
-        self.grasp_alpha_lo = DEFAULT_GRASP_ALPHA_LO
-        self.grasp_alpha_hi = DEFAULT_GRASP_ALPHA_HI
-        self.sa_iterations = DEFAULT_SA_ITERATIONS
-        self.num_islands = 6
-        self.migration_interval = 20
         self.cross_repair = DEFAULT_CROSSOVER
         self.lambda_gamma = (0.0, 0.0)
         self.latin = []
@@ -193,7 +183,6 @@ class Data:
         self.repair_opts = []
 
         pro_file = parser.retrieve("problem")
-        self.filepath = os.path.abspath(pro_file)
         with open(pro_file, "r", encoding="utf-8") as fp:
             lines = fp.readlines()
 
@@ -340,19 +329,26 @@ class Data:
 
         if parser.exists("runs"):
             self.runs = int(parser.retrieve("runs"))
+        if self.runs <= 0:
+            raise SystemExit("Expect runs to be positive")
         print("Runs: %d" % self.runs)
 
         if parser.exists("g_1"):
             self.g_1 = int(parser.retrieve("g_1"))
         print("g_1: %d" % self.g_1)
 
-        self.max_iter = self.g_1
+        if parser.exists("g_1"):
+            self.max_iter = self.g_1
         if parser.exists("max_iter"):
             self.max_iter = int(parser.retrieve("max_iter"))
+        if self.max_iter < 0:
+            raise SystemExit("Expect max_iter to be non-negative")
         print("Max PH-SHOWOA iterations: %d" % self.max_iter)
 
         if parser.exists("pop_size"):
             self.p_size = int(parser.retrieve("pop_size"))
+        if self.p_size <= 0:
+            raise SystemExit("Expect pop_size to be positive")
         print("Population size: %d" % self.p_size)
 
         if parser.exists("workers"):
@@ -407,6 +403,8 @@ class Data:
             raise SystemExit(-1)
         print("Compute backend: %s" % self.compute_backend)
 
+        # RCRS used a square Latin grid historically.  PH-SHOWOA specifies a
+        # population of 30, so make a sufficiently large grid and take P points.
         sr = int(math.ceil(math.sqrt(float(self.p_size))))
         if sr == 1:
             self.latin.append((0.5, 0.5))
@@ -422,17 +420,9 @@ class Data:
 
         if parser.exists("init"):
             self.init = parser.retrieve("init")
+        if self.paper_flags:
+            self.init = "sa"
         print("Insertion for initialization: %s" % self.init)
-        if parser.exists("grasp_alpha_lo"):
-            self.grasp_alpha_lo = float(parser.retrieve("grasp_alpha_lo"))
-        if parser.exists("grasp_alpha_hi"):
-            self.grasp_alpha_hi = float(parser.retrieve("grasp_alpha_hi"))
-        if parser.exists("sa_iterations"):
-            self.sa_iterations = int(parser.retrieve("sa_iterations"))
-        if parser.exists("num_islands"):
-            self.num_islands = int(parser.retrieve("num_islands"))
-        if parser.exists("migration_interval"):
-            self.migration_interval = int(parser.retrieve("migration_interval"))
         if parser.exists("k_init"):
             self.k_init = int(parser.retrieve("k_init"))
         if self.k_init == K:
@@ -563,6 +553,9 @@ class Data:
         if parser.exists("bks"):
             self.bks = float(parser.retrieve("bks"))
 
+        if self.paper_flags:
+            print("Paper flags: enabled (SA initialization & Targeted Feasibility-Repair)")
+
         for field, name, cast in (
             ("sa_t0", "sa_t0", float),
             ("sa_alpha", "sa_alpha", float),
@@ -571,48 +564,9 @@ class Data:
         ):
             if parser.exists(name):
                 setattr(self, field, cast(parser.retrieve(name)))
-
-        self.paper_flags = False
-        self.objective = "lexicographic"
-        if parser.exists("objective"):
-            self.objective = parser.retrieve("objective")
-        print("Objective mode: %s" % self.objective)
-
-        # This package is the Python/PyTorch CUDA implementation.
-        self.architecture = "python_cuda"
-        if parser.exists("architecture"):
-            self.architecture = parser.retrieve("architecture")
-        if self.architecture != "python_cuda":
-            raise ValueError(
-                "src_python_gpu_SA_RCRS_GRASP only supports architecture=python_cuda"
-            )
-        print("Architecture: %s" % self.architecture)
-
-        is_sa_rcrs_grasp = getattr(self, "init", "") in {"sa_rcrs_grasp", "rcrs_grasp", "rcg"}
-        if parser.exists("paper_flags") or is_sa_rcrs_grasp:
-            print("Paper flags: enabled (2opt, 2opt*, oropt_single, 2exchange, related_removal, regret_insertion, lexicographic)")
-            self.paper_flags = True
-            self.pruning = True
-            self.O_1_evl = True
-            self.two_opt = True
-            self.two_opt_star = True
-            self.or_opt = True
-            self.or_opt_len = 2
-            self.small_opts = ["2opt", "2opt*", "oropt_single", "2exchange"]
-            self.two_exchange = True
-            self.ex_len = 2
-            self.related_removal = True
-            self.regret_insertion = True
-            self.objective = "lexicographic"
-            if not parser.exists("init") and not is_sa_rcrs_grasp:
-                self.init = "sa"
-
-        for opt in self.small_opts:
-            if opt not in self.mem:
-                if opt in ("2opt", "oropt_single"):
-                    self.mem[opt] = [Move() for _ in range(self.vehicle.max_num)]
-                else:
-                    self.mem[opt] = [Move() for _ in range(self.vehicle.max_num * self.vehicle.max_num)]
+        if (self.sa_t0 <= 0 or self.sa_tmin <= 0 or self.sa_tmin >= self.sa_t0
+                or not 0 < self.sa_alpha < 1 or self.sa_itermax < 0):
+            raise SystemExit("Expect SA parameters: T0 > Tmin > 0, 0 < alpha < 1, itermax >= 0")
 
 
         c_num = self.customer_num

@@ -61,8 +61,9 @@ def prepare_problem_data(data: Any):
     depot = int(data.DC)
     capacity = float(data.vehicle.capacity)
     start_time = float(data.start_time)
-    dispatch_cost = float(data.vehicle.d_cost)
-    unit_cost = float(data.vehicle.unit_cost)
+    dispatch_cost = 2000.0  # Fixed paper score weighting: 2000.0 * NV + 1.0 * TD
+    unit_cost = 1.0
+    max_vehicles = int(data.vehicle.max_num)
 
     delivery = np.zeros(customer_num + 1, dtype=np.float64)
     pickup = np.zeros(customer_num + 1, dtype=np.float64)
@@ -83,7 +84,7 @@ def prepare_problem_data(data: Any):
     return (
         depot, capacity, start_time, dispatch_cost, unit_cost,
         delivery, pickup, start_tw, end_tw, service, dist_matrix, time_matrix,
-        0, 0, customer_num
+        max_vehicles, 0, customer_num
     )
 
 
@@ -486,11 +487,11 @@ class GpuEngine:
                 best_s.copy_from(run_best_sol)
                 state.best_s_cost = best_s.cost
                 state.find_best_run = run
-                td = (best_s.cost - best_s.len() * float(self.data.vehicle.d_cost)) / float(self.data.vehicle.unit_cost)
+                td = best_s.cost - best_s.len() * 2000.0
                 print(f"  Run {run} Best solution update: {best_s.cost:.4f} (NV={best_s.len()}, TD={td:.4f})", flush=True)
 
             best_nv = best_s.len()
-            best_td = (best_s.cost - best_s.len() * float(self.data.vehicle.d_cost)) / float(self.data.vehicle.unit_cost)
+            best_td = best_s.cost - best_s.len() * 2000.0
             print(f"Run {run} finishes | Run Best: NV={run_nv}, TD={run_dist:.4f} | Global Best: NV={best_nv}, TD={best_td:.4f}", flush=True)
             completed_runs += 1
 

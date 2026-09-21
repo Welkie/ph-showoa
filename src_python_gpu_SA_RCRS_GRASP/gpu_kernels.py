@@ -127,6 +127,7 @@ def build_kernel_bundle(is_cuda: bool = False):
         active_routes = 0
         dispatch_cost = prob_data[3]
         unit_cost = prob_data[4]
+        max_vehicles = int(prob_data[12])
 
         for r in range(num_routes):
             l = rlen[s, r]
@@ -136,6 +137,9 @@ def build_kernel_bundle(is_cuda: bool = False):
                     return False, 0, 1e12, 1e12
                 total_dist += d
                 active_routes += 1
+
+        if max_vehicles > 0 and active_routes > max_vehicles:
+            return False, active_routes, 1e12, 1e12
 
         total_cost = active_routes * dispatch_cost + total_dist * unit_cost
         return True, active_routes, total_dist, total_cost
