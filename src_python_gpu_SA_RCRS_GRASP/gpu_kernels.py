@@ -1107,13 +1107,13 @@ def build_kernel_bundle(is_cuda: bool = False):
                                      prob_data, alpha, rng_states)
                 sa_warmup_single(nodes, rlen, nr, dist, cost, s,
                                  scratch_route, scratch_route2,
-                                 prob_data, rng_states, sa_iters=20)
+                                 prob_data, rng_states, 20)
                 route_elimination_single(nodes, rlen, nr, dist, cost, s,
                                          scratch_route, scratch_unrouted, scratch_flags,
-                                         prob_data, passes=5)
+                                         prob_data, 5)
                 deep_local_search_single(nodes, rlen, nr, dist, cost, s,
                                          scratch_route, scratch_route2,
-                                         prob_data, max_passes=2)
+                                         prob_data, 2)
 
         @k_fn
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,

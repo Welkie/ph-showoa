@@ -11,7 +11,7 @@ requires-python = ">=3.9"
 dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
-cuda = ["numba>=0.60"]
+cuda = ["numba>=0.60", "numba-cuda>=0.30.4; python_version >= '3.10'", "numpy<2.3"]
 
 [project.scripts]
 ph-showoa = "src.__main__:main"
