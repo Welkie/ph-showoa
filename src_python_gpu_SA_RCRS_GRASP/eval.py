@@ -8,6 +8,25 @@ from .solution import Attr, attr_for_one_node, connect_inplace, connect_into
 from .state import call_count_move_eval, mean_duration_move_eval, mean_route_len
 
 
+def _materialize_sequences(s, sequences, sequence_count, data):
+    """Build exactly the route that apply_move will later install.
+
+    Handles both forward (start_point <= end_point) and reversed
+    (start_point > end_point) segments so that reversed 2-opt* moves
+    are evaluated in the direction they will actually be installed.
+    """
+    nodes = []
+    for index in range(sequence_count):
+        seq = sequences[index]
+        if seq.r_index == -1:
+            nodes.append(data.DC)
+            continue
+        source = s.get(seq.r_index).node_list
+        step = 1 if seq.start_point <= seq.end_point else -1
+        nodes.extend(source[pos] for pos in range(seq.start_point, seq.end_point + step, step))
+    return nodes
+
+
 def check_capacity(a: Attr, b: Attr, data) -> bool:
     return max(a.C_H + b.C_E, a.C_L + b.C_H) - data.vehicle.capacity <= 0
 
@@ -126,26 +145,13 @@ def eval_move(s, m, data) -> bool:
     ori_cost = s.get(r_indice[0]).cal_cost(data)
 
     if not data.O_1_evl:
-        target_n_l = []
-        for i in range(m.len_1):
-            seq = m.seqList_1[i]
-            source_n_l = s.get(seq.r_index).node_list
-            for index in range(seq.start_point, seq.end_point + 1):
-                target_n_l.append(source_n_l[index])
+        target_n_l = _materialize_sequences(s, m.seqList_1, m.len_1, data)
         flag, new_cost = _chk_route_list(target_n_l, data)
         if not flag:
             return False
 
         if len(r_indice) == 2:
-            target_n_l_2 = []
-            for i in range(m.len_2):
-                seq = m.seqList_2[i]
-                if seq.r_index == -1:
-                    target_n_l_2.append(data.DC)
-                    continue
-                source_n_l = s.get(seq.r_index).node_list
-                for index in range(seq.start_point, seq.end_point + 1):
-                    target_n_l_2.append(source_n_l[index])
+            target_n_l_2 = _materialize_sequences(s, m.seqList_2, m.len_2, data)
             if r_indice[1] != -1:
                 ori_cost += s.get(r_indice[1]).cal_cost(data)
             flag, cost = _chk_route_list(target_n_l_2, data)
@@ -161,7 +167,7 @@ def eval_move(s, m, data) -> bool:
         return False
     new_cost = 0.0
     if tmp_attr_1.num_cus != 0:
-        new_cost += data.vehicle.d_cost + tmp_attr_1.dist * data.vehicle.unit_cost
+        new_cost += FITNESS_VEHICLE_WEIGHT + tmp_attr_1.dist * FITNESS_DISTANCE_WEIGHT
     if len(r_indice) == 2:
         tmp_attr_2 = Attr()
         if not eval_route(s, m.seqList_2, m.len_2, tmp_attr_2, data):
@@ -169,7 +175,7 @@ def eval_move(s, m, data) -> bool:
         if r_indice[1] != -1:
             ori_cost += s.get(r_indice[1]).cal_cost(data)
         if tmp_attr_2.num_cus != 0:
-            new_cost += data.vehicle.d_cost + tmp_attr_2.dist * data.vehicle.unit_cost
+            new_cost += FITNESS_VEHICLE_WEIGHT + tmp_attr_2.dist * FITNESS_DISTANCE_WEIGHT
     m.delta_cost = new_cost - ori_cost
 
     return True

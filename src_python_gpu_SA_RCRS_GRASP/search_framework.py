@@ -1338,19 +1338,10 @@ def _sa_accept(
     rng: random.Random,
     data: Any = None,
 ) -> bool:
-    objective = getattr(data, "objective", "lexicographic") if data is not None else "lexicographic"
-    if objective == "lexicographic":
-        c_nv = new_solution.len()
-        r_nv = current.len()
-        if c_nv < r_nv:
-            return True
-        if c_nv > r_nv:
-            return False
-        delta = (new_solution.cost - 2000.0 * c_nv) - (current_fit - 2000.0 * r_nv)
-        scale = abs(current_fit - 2000.0 * r_nv)
-    else:
-        delta = new_solution.cost - current_fit
-        scale = abs(current_fit)
+    # P0.1: Use unified scalar score = 2000 * NV + TD consistently.
+    # Lexicographic (NV-first) mode removed to match base correctness semantics.
+    delta = new_solution.cost - current_fit
+    scale = abs(current_fit)
 
     if delta <= 0.001:
         return True
@@ -1431,7 +1422,9 @@ def _deep_local_search_best(s: Solution, data, executor=None) -> None:
     try:
         data.skip_finding_lo = False
         data.escape_local_optima = 0
-        data.vehicle.max_num = max(data.vehicle.max_num, s.len() + 2)
+        # NOTE: data.vehicle.max_num is intentionally NOT raised here.
+        # The declared fleet limit is a hard constraint and must not be
+        # relaxed during local search (see review P0 §2).
 
         if getattr(data, "paper_flags", False):
             _install_move_memory(data, ["2opt"])

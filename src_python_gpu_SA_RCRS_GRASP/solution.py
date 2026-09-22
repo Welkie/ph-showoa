@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional
 
-from .config import INFEASIBLE
+from .config import INFEASIBLE, FITNESS_VEHICLE_WEIGHT, FITNESS_DISTANCE_WEIGHT
 
 
 @dataclass
@@ -205,8 +205,8 @@ class Route:
     def cal_cost(self, data) -> float:
         if self.isempty():
             return 0.0
-        self.transcost = self.self.dist * 1.0
-        return 2000.0 + self.transcost
+        self.transcost = self.self.dist * FITNESS_DISTANCE_WEIGHT
+        return FITNESS_VEHICLE_WEIGHT + self.transcost
 
     def check(self, data):
         nodes = []
@@ -250,7 +250,7 @@ class Route:
             distance += data.dist[pre_node][node]
             pre_node = node
 
-        cost = 2000.0 + distance * 1.0
+        cost = FITNESS_VEHICLE_WEIGHT + distance * FITNESS_DISTANCE_WEIGHT
         return nodes, st_re_DC, smaller_ca, earlier_tw, cost
 
 
