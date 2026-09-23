@@ -41,28 +41,36 @@ Bên cạnh các toán tử nội tuyến và hoán đổi cơ bản, GPU hỗ t
 4. **Inter-route 2-opt\***: Tráo đổi hai phần đuôi (tails) giữa hai tuyến xe.
 5. **Inter-route Relocate**: Rút một khách hàng từ tuyến $r_1$ và chèn vào vị trí có lợi nhất trên tuyến $r_2$ (thỏa mãn tải trọng và thời gian). Toán tử này hỗ trợ đắc lực cho việc làm rỗng tuyến để giảm NV và rút ngắn TD.
 
-### 1.4. Phủ sóng Local Search & Route Elimination theo đảo (Island Scope) hoặc toàn quần thể
-- Cứ mỗi chu kỳ (mặc định 25 thế hệ), GPU thực thi `route_elimination` và `local_search`.
-- Hỗ trợ chế độ `island` (tinh chỉnh 4 cá thể tinh hoa đại diện 4 đảo, cân bằng tối ưu giữa thời gian chạy ~120s/run và chất lượng nghiệm) hoặc `population` (toàn bộ 32 cá thể).
-- Giúp các đảo luôn duy trì chất lượng nghiệm cao, cung cấp nguồn cha mẹ ưu tú và đa dạng cho các bước lai ghép tiếp theo.
+### 1.4. Phủ sóng Local Search & Route Elimination toàn quần thể (Population Scope)
+- Cứ mỗi chu kỳ (mặc định 25 thế hệ), GPU thực thi `route_elimination` và `local_search` với `max_passes = 2` cho toàn bộ $P=32$ cá thể trong quần thể (`--gpu_ls_scope population`).
+- Đảm bảo toàn bộ cá thể đều được gọt dũa kỹ lưỡng, cung cấp nguồn cha mẹ đa dạng và chất lượng cao cho các thế hệ tiếp theo (thay vì chỉ tối ưu 4 cá thể đảo, gây nghèo nàn nguồn gen).
 
-### 1.5. Toán tử lai ghép SHO Guided Crossover dùng Greedy Best-Insertion
+### 1.5. Lịch trình động thích nghi Cosine Decay cho Tỷ lệ Lai ghép $p_{hybrid}$
+- Thông số $p_{hybrid}$ chuyển đổi giữa Thăm dò (SHO Guided Crossover) và Khai thác (WOA Intensification) theo quy luật suy giảm hàm cosin:
+  $$p_{hybrid} = 0.5 \cdot \left(1.0 + \cos\left(\frac{\pi \cdot t}{t_{max}}\right)\right)$$
+- Tại thế hệ đầu ($t=0$), $p_{hybrid} = 1.0$ (100% thời lượng dành cho SHO Crossover mở rộng không gian tìm kiếm).
+- Tại thế hệ giữa ($t = t_{max}/2$), $p_{hybrid} = 0.5$ (cân bằng 50-50).
+- Tại các thế hệ cuối ($t \to t_{max}$), $p_{hybrid} \to 0.0$ (100% tập trung WOA Intensification và bao vây quanh các nghiệm cực tiểu cục bộ tốt nhất).
+
+### 1.6. Toán tử lai ghép SHO Guided Crossover dùng Greedy Best-Insertion
 - Kế thừa 1–2 tuyến tinh hoa từ cá thể tốt nhất của đảo (`ibest`).
 - Với các khách hàng chưa phục vụ từ nghiệm hiện tại và bạn phối ngẫu (peer): Áp dụng **Greedy Best-Insertion** với bộ lọc cắt tỉa khoảng cách tam giác ($\Delta d_{approx} < \text{best\_}\Delta d$) trước khi kiểm tra ràng buộc thời gian/tải trọng, giúp tốc độ chèn tăng hơn 10 lần.
 - Chỉ mở tuyến mới khi không thể chèn vào bất kỳ tuyến hiện có nào, tránh tạo ra các tuyến zíc-zắc có TD cao như cơ chế chèn tuần tự (sequential packing).
 - Cơ chế từ chối nghiệm không hợp lệ $O(1)$: Nếu cá thể con sau lai ghép không khả thi, thuật toán từ chối ngay lập tức thay vì chạy vòng lặp sửa nghiệm nặng nề ($O(N^3)$ repair), loại bỏ hoàn toàn phân kỳ luồng (warp divergence) trên GPU.
 
-### 1.6. Toán tử khai thác WOA Intensification trực tiếp
+### 1.7. Toán tử khai thác WOA Intensification trực tiếp
 - Khi $|A| < 1$ (giai đoạn bao vây thức ăn): Copy trực tiếp nghiệm tốt nhất của đảo (`ibest`) và áp dụng biến dị nhẹ 1–2 đỉnh để khai thác sâu xung quanh nghiệm ưu tú.
 - Khi $|A| \ge 1$ (giai đoạn thăm dò): Copy nghiệm hiện tại và áp dụng đảo đoạn 2-opt ngẫu nhiên.
 - Đánh giá khả thi trực tiếp và từ chối tức thời $O(1)$ nếu vi phạm, giữ nhịp độ thực thi đồng bộ trên GPU.
 
-### 1.7. Mô hình đa đảo (Island Model) & Ring Migration
+### 1.8. Bảo toàn tính đa dạng giữa các đảo (Island Independence & Ring Migration)
 - Chia quần thể $P=32$ thành 4 đảo độc lập (mỗi đảo 8 cá thể).
-- Định kỳ mỗi 20 thế hệ (`migration_interval`), nghiệm tốt nhất của đảo này được di cư sang đảo kế tiếp theo cấu trúc vòng tròn (Ring Topology) nếu tốt hơn cá thể kém nhất của đảo nhận.
+- **Tuyệt đối không phát sóng nghiệm toàn cục (`publish_global_best`) vào các đảo mỗi thế hệ**: Giúp các đảo không bị sụp đổ sớm về cùng một cực tiểu cục bộ (premature convergence).
+- Các đảo chỉ trao đổi thông tin thông qua **Ring Migration** định kỳ mỗi 20 thế hệ (`migration_interval`), đưa cá thể tinh hoa đảo $i$ thay thế cá thể kém nhất của đảo $(i+1) \pmod 4$ khi có sự cải thiện vượt bậc.
 
-### 1.8. Phá vỡ bế tắc theo từng đảo (Stagnation Diversification - Ruin & Recreate)
-- Khi một đảo bị đình trệ (không cải thiện nghiệm tốt nhất), $40\%$ cá thể kém nhất trong đảo sẽ được phá vỡ (Ruin $20\%-40\%$ số khách hàng) và tái thiết lập (Recreate bằng Best-Insertion), bảo vệ cá thể tinh hoa không bị phá hủy.
+### 1.9. Phá vỡ bế tắc theo từng đảo (Stagnation Diversification - Ruin & Recreate)
+- Khi một đảo bị đình trệ (không cải thiện nghiệm tốt nhất sau `stagnation_interval = 50` thế hệ), $40\%$ cá thể kém nhất trong đảo sẽ được phá vỡ (Ruin $20\%-40\%$ số khách hàng) và tái thiết lập (Recreate bằng Best-Insertion), bảo vệ cá thể tinh hoa không bị phá hủy.
+
 
 ---
 

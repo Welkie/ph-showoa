@@ -52,15 +52,15 @@ def build_graph_kernels(kernels):
             if ratio > 1.0:
                 ratio = 1.0
             a = 2.0 - 2.0 * ratio
-            p_val = 0.5 * (1.0 - ratio)
-            p = p_val if p_val >= 0.15 else 0.15
+            p_val = 0.5 * (1.0 + math.cos(3.141592653589793 * ratio))
             if mode == 1:
                 p = 1.0
             elif mode == 2:
                 p = 0.0
+            else:
+                p = p_val
             parameters[0] = a
             parameters[1] = p
-            previous_best[0] = gbest_cost[0]
 
     @cuda.jit
     def update_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -90,12 +90,13 @@ def build_graph_kernels(kernels):
                       scratch_route2, prob_data, generation, interval):
         if (generation[0] - 1) % interval == 0:
             search(nodes, rlen, nr, dist, cost, scratch_route, scratch_route2,
-                   prob_data, 0)
+                   prob_data, 2)
 
     @cuda.jit
     def stagnation_kernel(gbest_cost, previous_best, no_improve, diversify_due, interval):
         if cuda.grid(1) == 0:
             if gbest_cost[0] < previous_best[0] - 0.001:
+                previous_best[0] = gbest_cost[0]
                 no_improve[0] = 0
             else:
                 no_improve[0] += 1

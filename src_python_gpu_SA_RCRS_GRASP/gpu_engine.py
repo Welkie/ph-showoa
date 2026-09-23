@@ -33,8 +33,7 @@ def _dynamic_parameters(iter_idx: int, max_iter: int) -> Tuple[float, float]:
     if max_iter <= 0:
         return 0.0, 0.0
     a = 2.0 - 2.0 * (float(iter_idx) / float(max_iter))
-    ratio = min(max(float(iter_idx) / float(max_iter), 0.0), 1.0)
-    p_hybrid = max(0.15, 0.5 * (1.0 - ratio))
+    p_hybrid = 0.5 * (1.0 + math.cos(math.pi * float(iter_idx) / float(max_iter)))
     return a, p_hybrid
 
 
@@ -442,9 +441,6 @@ class GpuEngine:
                     k["update_global_best"](
                         ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                         gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, self.num_islands)
-                k["publish_global_best"](
-                    gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
-                    ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, self.num_islands)
                 if gbest_cost[0] < previous_best - PRECISION:
                     no_improve = 0
                 else:

@@ -152,8 +152,6 @@ class CudaSearchGraph:
             add("search", g["search"], search_blocks,
                 (*search_best, route, route2, problem, self.generation, ls), search_threads)
             bests(pop)
-            add("publish_best", k["publish_global_best"], 1,
-                (*gbest, *ibest, engine.num_islands), 1)
             add("stagnation", g["stagnation"], 1,
                 (gbest[4], self.previous_best, self.no_improve, self.diversify_due, stag), 1)
             add("diversify", g["diversify"], engine.isl_blocks,

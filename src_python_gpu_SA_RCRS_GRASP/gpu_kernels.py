@@ -506,7 +506,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             if not all_inserted:
                 break
             else:
-                # Retained route-elimination improvement must improve scalar TC.
                 delta = (added_distance - source_distance) * prob_data[4] - prob_data[3]
                 if delta >= -0.001:
                     for undo_idx in range(num_ejected):
