@@ -456,6 +456,64 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
                             break
                     if improved:
                         break
+            if improved:
+                continue
+            # Inter-route Relocate: move a single customer from r1 to r2
+            for r1 in range(counts[s]):
+                l1 = lengths[s, r1]
+                if l1 < 4:
+                    continue
+                for r2 in range(counts[s]):
+                    if r1 == r2:
+                        continue
+                    l2 = lengths[s, r2]
+                    if l2 + 1 > nodes.shape[2]:
+                        continue
+                    _, old1 = evaluate_route(nodes[s, r1], l1, problem)
+                    _, old2 = evaluate_route(nodes[s, r2], l2, problem)
+                    dm = problem[10]
+                    for i in range(1, l1 - 1):
+                        u = nodes[s, r1, i]
+                        prev_u = nodes[s, r1, i - 1]
+                        next_u = nodes[s, r1, i + 1]
+                        cost_rem = dm[prev_u, next_u] - (dm[prev_u, u] + dm[u, next_u])
+                        for j in range(1, l2):
+                            prev_v = nodes[s, r2, j - 1]
+                            next_v = nodes[s, r2, j]
+                            cost_ins = (dm[prev_v, u] + dm[u, next_v]) - dm[prev_v, next_v]
+                            if (cost_rem + cost_ins) * problem[4] >= -0.001:
+                                continue
+                            k_idx = 0
+                            for k in range(l1):
+                                if k != i:
+                                    scratch[s, k_idx] = nodes[s, r1, k]
+                                    k_idx += 1
+                            ok1, new1 = evaluate_route(scratch[s], l1 - 1, problem)
+                            if ok1:
+                                for k in range(j):
+                                    scratch2[s, k] = nodes[s, r2, k]
+                                scratch2[s, j] = u
+                                for k in range(j, l2):
+                                    scratch2[s, k + 1] = nodes[s, r2, k]
+                                ok2, new2 = evaluate_route(scratch2[s], l2 + 1, problem)
+                                if ok2 and (new1 + new2 - old1 - old2) * problem[4] < -0.001:
+                                    for k in range(l1 - 1):
+                                        nodes[s, r1, k] = scratch[s, k]
+                                    for k in range(l1 - 1, l1):
+                                        nodes[s, r1, k] = 0
+                                    for k in range(l2 + 1):
+                                        nodes[s, r2, k] = scratch2[s, k]
+                                    lengths[s, r1] = l1 - 1
+                                    lengths[s, r2] = l2 + 1
+                                    compact(nodes, lengths, counts, s)
+                                    improved = True
+                                    break
+                        if improved:
+                            break
+                    if improved:
+                        break
+                if improved:
+                    break
             if not improved:
                 break
         refresh(nodes, lengths, counts, distances, costs, s, problem)

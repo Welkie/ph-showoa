@@ -151,7 +151,7 @@ class Data:
         self.sa_iterations = self.sa_itermax
         self.num_islands = 4
         self.gpu_2opt_star = True
-        self.gpu_ls_scope = "island"
+        self.gpu_ls_scope = "population"
         self.migration_interval = 20
         self.cross_repair = DEFAULT_CROSSOVER
         self.lambda_gamma = (0.0, 0.0)
@@ -440,8 +440,8 @@ class Data:
             self.gpu_2opt_star = value == "1"
         if parser.exists("gpu_ls_scope"):
             self.gpu_ls_scope = parser.retrieve("gpu_ls_scope")
-        if self.gpu_ls_scope not in {"global", "island"}:
-            raise ValueError("gpu_ls_scope must be global or island")
+        if self.gpu_ls_scope not in {"population", "island", "global"}:
+            raise ValueError("gpu_ls_scope must be population, island or global")
         if parser.exists("migration_interval"):
             self.migration_interval = int(parser.retrieve("migration_interval"))
         if parser.exists("k_init"):

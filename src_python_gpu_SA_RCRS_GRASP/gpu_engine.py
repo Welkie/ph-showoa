@@ -120,9 +120,9 @@ class GpuEngine:
             print(f"[GpuEngine] P={self.P} is not divisible by requested islands={self.num_islands}; using one island", flush=True)
             self.num_islands = 1
         self.island_size = self.P // self.num_islands
-        self.ls_scope = getattr(data, "gpu_ls_scope", "island")
-        if self.ls_scope not in {"global", "island"}:
-            raise ValueError("gpu_ls_scope must be global or island")
+        self.ls_scope = getattr(data, "gpu_ls_scope", "population")
+        if self.ls_scope not in {"population", "island", "global"}:
+            raise ValueError("gpu_ls_scope must be population, island or global")
 
         self.N = int(data.customer_num)
         self.R = max(1, self.N)  # At most one non-empty route per customer.
@@ -426,7 +426,8 @@ class GpuEngine:
                     ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                     gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, self.num_islands)
                 if iter_idx % ls_interval == 0:
-                    search_best = ((ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost)
+                    search_best = (cur_pop if self.ls_scope == "population" else
+                                   (ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost)
                                    if self.ls_scope == "island" else
                                    (gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost))
                     k["route_elimination"](
@@ -435,6 +436,9 @@ class GpuEngine:
                     k["local_search"](
                         *search_best,
                         scratch_route, scratch_route2, prob_device, 0)
+                    k["update_island_bests"](
+                        *cur_pop, ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
+                        self.num_islands, self.island_size)
                     k["update_global_best"](
                         ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                         gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, self.num_islands)

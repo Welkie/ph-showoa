@@ -203,8 +203,12 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
     def is_better_cost(nr_a, cost_a, nr_b, cost_b):
         if nr_a <= 0 or not math.isfinite(cost_a):
             return False
-        if nr_b <= 0:
+        if nr_b <= 0 or not math.isfinite(cost_b):
             return True
+        if nr_a < nr_b:
+            return True
+        if nr_a > nr_b:
+            return False
         return cost_a < cost_b - 0.001
 
     base = build_base_operators(dev_fn, eval_route, eval_solution, copy_solution,
@@ -604,33 +608,51 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 scratch_flags[s, c] = 1
                 unrouted_cnt += 1
 
-        # Base crossover: pack the partner/current sequence by capacity,
-        # then run the same detect/repair/recheck pipeline.
-        if unrouted_cnt > 0:
-            r = cand_nr[s]
-            cand_nodes[s, r, 0] = depot
-            cand_rlen[s, r] = 2
-            cand_nodes[s, r, 1] = depot
-            cand_nr[s] += 1
-            for i in range(unrouted_cnt):
-                c = scratch_unrouted[s, i]
-                size = cand_rlen[s, r]
-                for k in range(size - 1):
-                    scratch_route[s, k] = cand_nodes[s, r, k]
-                scratch_route[s, size - 1] = c
-                scratch_route[s, size] = depot
-                if size > 2 and not route_capacity(scratch_route[s], size + 1, prob_data):
-                    r = cand_nr[s]
-                    if r >= cand_nodes.shape[1]:
-                        cand_cost[s] = math.inf
-                        return
-                    cand_nr[s] += 1
-                    cand_nodes[s, r, 0] = depot
-                    cand_rlen[s, r] = 2
-                    size = 2
-                cand_nodes[s, r, size - 1] = c
-                cand_nodes[s, r, size] = depot
-                cand_rlen[s, r] = size + 1
+        # Greedy Best-Insertion: insert unrouted customers into existing routes with min delta distance
+        for i in range(unrouted_cnt):
+            node = scratch_unrouted[s, i]
+            best_delta = 1e12
+            best_r = -1
+            best_p = -1
+
+            for r in range(cand_nr[s]):
+                l = cand_rlen[s, r]
+                if l + 1 > cand_nodes.shape[2]:
+                    continue
+                ok_o, old_d = eval_route(cand_nodes[s, r, :l], l, prob_data)
+                for p in range(1, l):
+                    for k in range(p):
+                        scratch_route[s, k] = cand_nodes[s, r, k]
+                    scratch_route[s, p] = node
+                    for k in range(p, l):
+                        scratch_route[s, k + 1] = cand_nodes[s, r, k]
+                    ok_n, new_d = eval_route(scratch_route[s, :l+1], l + 1, prob_data)
+                    if ok_n:
+                        delta = new_d - old_d
+                        if delta < best_delta:
+                            best_delta = delta
+                            best_r = r
+                            best_p = p
+
+            if best_r != -1:
+                l = cand_rlen[s, best_r]
+                for k in range(l, best_p, -1):
+                    cand_nodes[s, best_r, k] = cand_nodes[s, best_r, k - 1]
+                cand_nodes[s, best_r, best_p] = node
+                cand_rlen[s, best_r] = l + 1
+            else:
+                # Open new route
+                if cand_nr[s] < cand_nodes.shape[1]:
+                    new_r = cand_nr[s]
+                    cand_nodes[s, new_r, 0] = depot
+                    cand_nodes[s, new_r, 1] = node
+                    cand_nodes[s, new_r, 2] = depot
+                    cand_rlen[s, new_r] = 3
+                    cand_nr[s] = new_r + 1
+                else:
+                    cand_cost[s] = math.inf
+                    return
+
         repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
                scratch_route, scratch_flags, prob_data)
 
@@ -641,67 +663,42 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                   backup_nodes, backup_rlen, backup_nr, backup_dist, backup_cost,
                                   scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
                                   a_param, prob_data, rng_states):
-        # src_python._woa_intensification with paper_flags=True.
-        copy_solution(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
-                      cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
-        limit = min(cand_nr[s], ibest_nr[island_id])
-        for r in range(limit):
-            a_value = (2.0 * rand_u01(rng_states, s) - 1.0) * a_param
-            c_value = 2.0 * rand_u01(rng_states, s)
-            probability = rand_u01(rng_states, s)
-            copy_solution(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                          backup_nodes, backup_rlen, backup_nr, backup_dist, backup_cost, s)
-            if probability < 0.5 and abs(a_value) < 1.0:
-                if r < cand_nr[s]:
-                    relink(cand_nodes[s, r], cand_rlen[s, r],
-                           ibest_nodes[island_id, r], ibest_rlen[island_id, r],
-                           max(0.0, 1.0 - abs(a_value)) * c_value / 2.0,
-                           a_value < 0.0, scratch_unrouted[s])
-            elif probability < 0.5:
-                if rand_u01(rng_states, s) < 0.5:
-                    # Uniformly choose a route with at least two customers.
-                    eligible = 0
-                    for q in range(cand_nr[s]):
-                        if cand_rlen[s, q] >= 4:
-                            scratch_unrouted[s, eligible] = q
-                            eligible += 1
-                    if eligible > 0:
-                        q = scratch_unrouted[s, randint(rng_states, s, 0, eligible - 1)]
-                        size = cand_rlen[s, q]
-                        i = randint(rng_states, s, 1, size - 2)
-                        j = randint(rng_states, s, 1, size - 3)
-                        if j >= i:
-                            j += 1
-                        if i > j:
-                            i, j = j, i
-                        operation = randint(rng_states, s, 0, 2)
-                        if operation == 0:
-                            cand_nodes[s, q, i], cand_nodes[s, q, j] = cand_nodes[s, q, j], cand_nodes[s, q, i]
-                        elif operation == 1:
-                            value = cand_nodes[s, q, i]
-                            for k in range(i, j):
-                                cand_nodes[s, q, k] = cand_nodes[s, q, k + 1]
-                            cand_nodes[s, q, j] = value
-                        else:
-                            while i < j:
-                                cand_nodes[s, q, i], cand_nodes[s, q, j] = cand_nodes[s, q, j], cand_nodes[s, q, i]
-                                i += 1
-                                j -= 1
-                else:
-                    light_mutation(cand_nodes, cand_rlen, cand_nr, s, scratch_route,
-                                   scratch_route2, prob_data, rng_states)
-                    repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                           scratch_route, scratch_flags, prob_data)
-            else:
-                value = c_value - 1.0
-                spiral = min(1.0, abs(math.exp(value) * math.cos(2.0 * math.pi * value)))
-                if r < cand_nr[s]:
-                    relink(cand_nodes[s, r], cand_rlen[s, r],
-                           ibest_nodes[island_id, r], ibest_rlen[island_id, r],
-                           spiral, value < 0.0, scratch_unrouted[s])
-            if not refresh(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s, prob_data):
-                copy_solution(backup_nodes, backup_rlen, backup_nr, backup_dist, backup_cost, s,
-                              cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
+        r1 = rand_u01(rng_states, s)
+        a_vec = 2.0 * a_param * r1 - a_param
+
+        if abs(a_vec) < 1.0 and ibest_nr[island_id] > 0 and math.isfinite(ibest_cost[island_id]):
+            # Encirclement: start from island best, copy, perturb 1-2 random nodes
+            copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, island_id,
+                          cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
+            if cand_nr[s] > 0:
+                r = randint(rng_states, s, 0, cand_nr[s] - 1)
+                l = cand_rlen[s, r]
+                if l >= 5:
+                    p1 = randint(rng_states, s, 1, l - 3)
+                    p2 = randint(rng_states, s, p1 + 1, l - 2)
+                    tmp = cand_nodes[s, r, p1]
+                    cand_nodes[s, r, p1] = cand_nodes[s, r, p2]
+                    cand_nodes[s, r, p2] = tmp
+            repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
+                   scratch_route, scratch_flags, prob_data)
+        else:
+            # Exploration: start from current, apply random 2-opt segment reversal
+            copy_solution(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
+                          cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
+            if cand_nr[s] > 0:
+                r = randint(rng_states, s, 0, cand_nr[s] - 1)
+                l = cand_rlen[s, r]
+                if l >= 5:
+                    p1 = randint(rng_states, s, 1, l - 3)
+                    p2 = randint(rng_states, s, p1 + 1, l - 2)
+                    while p1 < p2:
+                        tmp = cand_nodes[s, r, p1]
+                        cand_nodes[s, r, p1] = cand_nodes[s, r, p2]
+                        cand_nodes[s, r, p2] = tmp
+                        p1 += 1
+                        p2 -= 1
+            repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
+                   scratch_route, scratch_flags, prob_data)
 
     @dev_fn
     def sho_woa_update_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -770,15 +767,22 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         cand_cost[s] = t_c
 
         accepted = False
-        new_cost = cand_cost[s]
-        old_cost = cur_cost[s]
+        new_nr = cand_nr[s]
+        old_nr = cur_nr[s]
+        new_dist = cand_dist[s]
+        old_dist = cur_dist[s]
 
-        if new_cost - old_cost <= 0.001:
+        if new_nr < old_nr:
             accepted = True
-        else:
-            prob = sa_probability(new_cost, old_cost, iteration, max_iter)
-            if rand_u01(rng_states, s) < prob:
+        elif new_nr == old_nr:
+            delta = new_dist - old_dist
+            if delta <= 1e-3:
                 accepted = True
+            else:
+                temp = 1.0 - float(iteration) / float(max_iter) if max_iter > 0 else 0.0
+                prob = math.exp(-delta / (1e-6 + temp * abs(old_dist)))
+                if rand_u01(rng_states, s) < prob:
+                    accepted = True
 
         if accepted:
             copy_solution(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
@@ -882,6 +886,8 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                  scratch_route, scratch_route2, prob_data, rng_states)
                 route_elimination_single(nodes, rlen, nr, dist, cost, s,
                                          scratch_route, scratch_unrouted, scratch_flags, prob_data, 5)
+                deep_local_search_single(nodes, rlen, nr, dist, cost, s,
+                                         scratch_route, scratch_route2, prob_data, 2)
 
         @k_fn
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -1014,6 +1020,8 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                  scratch_route, scratch_route2, prob_data, rng_states)
                 route_elimination_single(nodes, rlen, nr, dist, cost, s,
                                          scratch_route, scratch_unrouted, scratch_flags, prob_data, 5)
+                deep_local_search_single(nodes, rlen, nr, dist, cost, s,
+                                         scratch_route, scratch_route2, prob_data, 2)
 
         @k_fn
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
