@@ -211,6 +211,18 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             return False
         return cost_a < cost_b - 0.001
 
+    @dev_fn
+    def is_better_lex(nr_a, dist_a, nr_b, dist_b):
+        if nr_a <= 0 or not math.isfinite(dist_a):
+            return False
+        if nr_b <= 0 or not math.isfinite(dist_b):
+            return True
+        if nr_a < nr_b:
+            return True
+        if nr_a > nr_b:
+            return False
+        return dist_a < dist_b - 1e-4
+
     base = build_base_operators(dev_fn, eval_route, eval_solution, copy_solution,
                                 rand_u01, randint, shuffle_ints, sa_t0, sa_alpha,
                                 sa_tmin, sa_itermax, mutation_probability, diversify_ratio,
@@ -230,16 +242,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
     # 3. RCRS-GRASP Score & Construction
     # -------------------------------------------------------------------------
     @dev_fn
-    def rcrs_score(route, length, customer, pos, prob_data, lambda1, lambda2):
-        """Retained RCRS-GRASP extension with a residual-capacity proxy.
-
-        score = delta_td + lambda1 * rc_pen - lambda2 * rs
-        - delta_td: travel-distance increase (td)
-        - rc_pen:   capacity tightness proxy (tc simplified for GPU)
-        - rs:       round-trip savings from depot (dist[depot,c] + dist[c,depot])
-          sign negative => customers far from depot preferred (saves more distance)
-        lambda1, lambda2 sinh ngẫu nhiên per-agent từ RNG (Latin Hypercube spirit).
-        """
+    def rcrs_score(route, length, customer, pos, prob_data):
         depot = int(prob_data[0])
         capacity = prob_data[1]
         delivery = prob_data[5]
@@ -254,7 +257,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         if delta_td < 0.0:
             delta_td = 0.0
 
-        # Capacity tightness proxy: penalise routes nearing capacity (simplified tc)
+        # Capacity tightness proxy: penalise routes nearing capacity
         load = 0.0
         for i in range(1, length - 1):
             load += delivery[route[i]]
@@ -271,12 +274,12 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         if rc_pen < 0.0:
             rc_pen = 0.0
 
-        # Route savings: round-trip from depot — bám sát base code criterion()
-        # rs = dist[DC, node] + dist[node, DC]; larger rs => farther from depot
-        rs = dist_matrix[depot, customer] + dist_matrix[customer, depot]
+        # Route savings penalty: detour from radial path from depot (exact d88da6e)
+        dx_prev = dist_matrix[depot, prev]
+        dx_c = dist_matrix[depot, customer]
+        rs_pen = abs(dx_prev + dist_matrix[prev, customer] - dx_c)
 
-        # RCRS-GRASP extension: proxy differs from the base's exact tc.
-        return delta_td + lambda1 * rc_pen - lambda2 * rs
+        return delta_td + 0.5 * rc_pen + 0.3 * rs_pen
 
     @dev_fn
     def construct_rcrs_grasp(nodes, rlen, nr, dist, cost, s,
@@ -286,11 +289,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         depot = int(prob_data[0])
         dispatch_cost = prob_data[3]
         unit_cost = prob_data[4]
-
-        # Per-agent lambda parameters (bám sát base code Latin Hypercube sampling)
-        # Mỗi agent sinh lambda1, lambda2 ngẫu nhiên riêng => đa dạng hóa init
-        lambda1 = rand_u01(rng_states, s)
-        lambda2 = rand_u01(rng_states, s)
 
         unrouted_count = customer_num
         for i in range(customer_num):
@@ -340,7 +338,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
 
                         ok, _ = eval_route(scratch_route[s, :l+1], l + 1, prob_data)
                         if ok:
-                            sc = rcrs_score(nodes[s, r, :l], l, c, p, prob_data, lambda1, lambda2)
+                            sc = rcrs_score(nodes[s, r, :l], l, c, p, prob_data)
                             if sc < best_c_score:
                                 best_c_score = sc
                                 best_r = r
@@ -712,25 +710,15 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                               s, island_id, island_size,
                               prob_data, a_param, p_mode, iteration, max_iter, rng_states):
         island_start = island_id * island_size
-        # Base tournament: exclude self, sample up to three distinct partners.
-        # The island is the retained extension's population boundary.
-        best_peer = s
-        p1, p2 = -1, -1
-        for draw in range(min(3, island_size - 1)):
-            peer = island_start + randint(rng_states, s, 0, island_size - 2)
-            if peer >= s:
-                peer += 1
-            while peer == p1 or peer == p2:
-                peer = island_start + randint(rng_states, s, 0, island_size - 2)
-                if peer >= s:
-                    peer += 1
-            if draw == 0:
-                p1 = peer
-                best_peer = peer
-            elif draw == 1:
-                p2 = peer
-            if cur_cost[peer] < cur_cost[best_peer]:
-                best_peer = peer
+        p1 = island_start + randint(rng_states, s, 0, island_size - 1)
+        p2 = island_start + randint(rng_states, s, 0, island_size - 1)
+        p3 = island_start + randint(rng_states, s, 0, island_size - 1)
+
+        best_peer = p1
+        if is_better_lex(cur_nr[p2], cur_dist[p2], cur_nr[best_peer], cur_dist[best_peer]):
+            best_peer = p2
+        if is_better_lex(cur_nr[p3], cur_dist[p3], cur_nr[best_peer], cur_dist[best_peer]):
+            best_peer = p3
 
         if rand_u01(rng_states, s) < p_mode:
             guided_crossover_sho_single(cur_nodes, cur_rlen, cur_nr, s,
@@ -796,62 +784,82 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                 island_id, island_size,
                                 scratch_route, scratch_unrouted, scratch_flags,
                                 prob_data, rng_states):
-        if diversify_ratio <= 0.0 or island_size < 2:
-            return
-        start = island_id * island_size
-        elite = start
-        for s in range(start + 1, start + island_size):
-            if cost[s] < cost[elite]:
-                elite = s
-        if ibest_nr[island_id] > 0 and math.isfinite(ibest_cost[island_id]):
-            copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, island_id,
-                          nodes, rlen, nr, dist, cost, elite)
-        remaining = island_size - 1
-        selected = int(round(remaining * diversify_ratio))
-        for s in range(start, start + island_size):
-            if s == elite:
-                continue
-            take = selected > 0 and randint(rng_states, start, 0, remaining - 1) < selected
-            remaining -= 1
-            if not take:
-                continue
-            selected -= 1
-            copy_solution(nodes, rlen, nr, dist, cost, s,
-                          cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
-            customer_num = int(prob_data[14])
-            depot = int(prob_data[0])
-            for c in range(customer_num + 1):
-                scratch_flags[s, c] = 0
-            count = 0
-            for r in range(cand_nr[s]):
-                for p in range(1, cand_rlen[s, r] - 1):
-                    scratch_unrouted[s, count] = cand_nodes[s, r, p]
-                    count += 1
-            shuffle_ints(scratch_unrouted[s], count, rng_states, s)
-            ruin_count = max(1, int(round(count * (0.20 + 0.20 * rand_u01(rng_states, s)))))
-            for i in range(ruin_count):
-                scratch_flags[s, scratch_unrouted[s, i]] = 1
-            for r in range(cand_nr[s]):
-                write = 1
-                for p in range(1, cand_rlen[s, r] - 1):
-                    c = cand_nodes[s, r, p]
-                    if scratch_flags[s, c] == 0:
-                        cand_nodes[s, r, write] = c
-                        write += 1
-                cand_nodes[s, r, write] = depot
-                cand_rlen[s, r] = write + 1
-            compact(cand_nodes, cand_rlen, cand_nr, s)
-            shuffle_ints(scratch_unrouted[s], ruin_count, rng_states, s)
-            ok = True
-            for i in range(ruin_count):
-                if not insert_customer(cand_nodes, cand_rlen, cand_nr, s,
-                                       scratch_unrouted[s, i], scratch_route, prob_data):
-                    ok = False
-                    break
-            if ok and repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                             scratch_route, scratch_flags, prob_data):
-                copy_solution(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                              nodes, rlen, nr, dist, cost, s)
+        island_start = island_id * island_size
+        diversify_count = max(1, int(island_size * 0.40))
+        customer_num = int(prob_data[14])
+        depot = int(prob_data[0])
+
+        for idx in range(diversify_count):
+            s = island_start + island_size - 1 - idx
+            for i in range(customer_num + 1):
+                scratch_flags[s, i] = 0
+
+            # Pick random customers to remove (20-40%)
+            ruin_cnt = randint(rng_states, s, max(1, int(customer_num * 0.20)), max(1, int(customer_num * 0.40)))
+            for i in range(customer_num):
+                scratch_unrouted[s, i] = i + 1
+            shuffle_ints(scratch_unrouted[s], customer_num, rng_states, s)
+            for i in range(ruin_cnt):
+                c = scratch_unrouted[s, i]
+                scratch_flags[s, c] = 1
+
+            # Remove flagged customers from routes
+            for r in range(nr[s]):
+                l = rlen[s, r]
+                write_p = 1
+                for p in range(1, l - 1):
+                    node = nodes[s, r, p]
+                    if scratch_flags[s, node] == 0:
+                        nodes[s, r, write_p] = node
+                        write_p += 1
+                nodes[s, r, write_p] = depot
+                rlen[s, r] = write_p + 1
+
+            # Recreate: insert removed customers back with min delta distance
+            for i in range(ruin_cnt):
+                c = scratch_unrouted[s, i]
+                best_delta = 1e12
+                best_r = -1
+                best_p = -1
+                for r in range(nr[s]):
+                    l = rlen[s, r]
+                    if l <= 2:
+                        continue
+                    ok_o, old_d = eval_route(nodes[s, r, :l], l, prob_data)
+                    for p in range(1, l):
+                        for k in range(p):
+                            scratch_route[s, k] = nodes[s, r, k]
+                        scratch_route[s, p] = c
+                        for k in range(p, l):
+                            scratch_route[s, k + 1] = nodes[s, r, k]
+                        ok_n, new_d = eval_route(scratch_route[s, :l+1], l + 1, prob_data)
+                        if ok_n:
+                            delta = new_d - old_d
+                            if delta < best_delta:
+                                best_delta = delta
+                                best_r = r
+                                best_p = p
+
+                if best_r != -1:
+                    l = rlen[s, best_r]
+                    for k in range(l, best_p, -1):
+                        nodes[s, best_r, k] = nodes[s, best_r, k - 1]
+                    nodes[s, best_r, best_p] = c
+                    rlen[s, best_r] = l + 1
+                else:
+                    new_r = nr[s]
+                    nodes[s, new_r, 0] = depot
+                    nodes[s, new_r, 1] = c
+                    nodes[s, new_r, 2] = depot
+                    rlen[s, new_r] = 3
+                    nr[s] = new_r + 1
+
+            compact(nodes, rlen, nr, s)
+            ok, n_act, t_d, t_c = eval_solution(nodes, rlen, nr, s, prob_data)
+            if ok:
+                nr[s] = n_act
+                dist[s] = t_d
+                cost[s] = t_c
 
     # -------------------------------------------------------------------------
     # 9. Top-Level Kernels
@@ -922,37 +930,45 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                        num_islands, island_size):
             isl = cuda.grid(1)
             if isl < num_islands:
-                best_s = isl * island_size
-                for i in range(1, island_size):
+                best_s = -1
+                for i in range(island_size):
                     cand_s = isl * island_size + i
-                    if is_better_cost(pop_nr[cand_s], pop_cost[cand_s], pop_nr[best_s], pop_cost[best_s]):
+                    if not math.isfinite(pop_cost[cand_s]) or pop_nr[cand_s] <= 0:
+                        continue
+                    if best_s == -1 or is_better_lex(pop_nr[cand_s], pop_dist[cand_s], pop_nr[best_s], pop_dist[best_s]):
                         best_s = cand_s
-                if is_better_cost(pop_nr[best_s], pop_cost[best_s], ibest_nr[isl], ibest_cost[isl]):
-                    copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
-                                  ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
+                if best_s != -1:
+                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0 or is_better_lex(pop_nr[best_s], pop_dist[best_s], ibest_nr[isl], ibest_dist[isl]):
+                        copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
+                                      ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
 
         @k_fn
         def update_global_best_kernel(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                       gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
                                       num_islands):
             if cuda.grid(1) == 0:
-                best_isl = 0
-                for isl in range(1, num_islands):
-                    if is_better_cost(ibest_nr[isl], ibest_cost[isl], ibest_nr[best_isl], ibest_cost[best_isl]):
+                best_isl = -1
+                for isl in range(num_islands):
+                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
+                        continue
+                    if best_isl == -1 or is_better_lex(ibest_nr[isl], ibest_dist[isl], ibest_nr[best_isl], ibest_dist[best_isl]):
                         best_isl = isl
-                if is_better_cost(ibest_nr[best_isl], ibest_cost[best_isl], gbest_nr[0], gbest_cost[0]):
-                    copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
-                                  gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
+                if best_isl != -1:
+                    if not math.isfinite(gbest_cost[0]) or gbest_nr[0] <= 0 or is_better_lex(ibest_nr[best_isl], ibest_dist[best_isl], gbest_nr[0], gbest_dist[0]):
+                        copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
+                                      gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
 
         @k_fn
         def publish_global_best_kernel(g_nodes, g_rlen, g_nr, g_dist, g_cost,
                                        i_nodes, i_rlen, i_nr, i_dist, i_cost, num_islands):
             if cuda.grid(1) == 0:
+                if not math.isfinite(g_cost[0]) or g_nr[0] <= 0:
+                    return
                 best = 0
                 for i in range(1, num_islands):
-                    if is_better_cost(i_nr[i], i_cost[i], i_nr[best], i_cost[best]):
+                    if is_better_lex(i_nr[i], i_dist[i], i_nr[best], i_dist[best]):
                         best = i
-                if is_better_cost(g_nr[0], g_cost[0], i_nr[best], i_cost[best]):
+                if is_better_lex(g_nr[0], g_dist[0], i_nr[best], i_dist[best]):
                     copy_solution(g_nodes, g_rlen, g_nr, g_dist, g_cost, 0,
                                   i_nodes, i_rlen, i_nr, i_dist, i_cost, best)
 
@@ -963,15 +979,17 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             if cuda.grid(1) == 0 and num_islands > 1:
                 # Ring migration: copy ibest of island i to worst of island (i + 1) % num_islands
                 for isl in range(num_islands):
+                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
+                        continue
                     dst_isl = (isl + 1) % num_islands
                     # Find worst in dst_isl
                     worst_s = dst_isl * island_size
                     for i in range(1, island_size):
                         cand_s = dst_isl * island_size + i
-                        if is_better_cost(pop_nr[worst_s], pop_cost[worst_s], pop_nr[cand_s], pop_cost[cand_s]):
+                        if is_better_lex(pop_nr[worst_s], pop_dist[worst_s], pop_nr[cand_s], pop_dist[cand_s]):
                             worst_s = cand_s
                     # If ibest of isl is better than worst of dst_isl, migrate
-                    if is_better_cost(ibest_nr[isl], ibest_cost[isl], pop_nr[worst_s], pop_cost[worst_s]):
+                    if is_better_lex(ibest_nr[isl], ibest_dist[isl], pop_nr[worst_s], pop_dist[worst_s]):
                         copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl,
                                       pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, worst_s)
 
@@ -1052,36 +1070,44 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                        num_islands, island_size):
             for isl in range(num_islands):
-                best_s = isl * island_size
-                for i in range(1, island_size):
+                best_s = -1
+                for i in range(island_size):
                     cand_s = isl * island_size + i
-                    if is_better_cost(pop_nr[cand_s], pop_cost[cand_s], pop_nr[best_s], pop_cost[best_s]):
+                    if not math.isfinite(pop_cost[cand_s]) or pop_nr[cand_s] <= 0:
+                        continue
+                    if best_s == -1 or is_better_lex(pop_nr[cand_s], pop_dist[cand_s], pop_nr[best_s], pop_dist[best_s]):
                         best_s = cand_s
-                if is_better_cost(pop_nr[best_s], pop_cost[best_s], ibest_nr[isl], ibest_cost[isl]):
-                    copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
-                                  ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
+                if best_s != -1:
+                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0 or is_better_lex(pop_nr[best_s], pop_dist[best_s], ibest_nr[isl], ibest_dist[isl]):
+                        copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
+                                      ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
 
         @k_fn
         def update_global_best_kernel(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                       gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
                                       num_islands):
-            best_isl = 0
-            for isl in range(1, num_islands):
-                if is_better_cost(ibest_nr[isl], ibest_cost[isl], ibest_nr[best_isl], ibest_cost[best_isl]):
+            best_isl = -1
+            for isl in range(num_islands):
+                if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
+                    continue
+                if best_isl == -1 or is_better_lex(ibest_nr[isl], ibest_dist[isl], ibest_nr[best_isl], ibest_dist[best_isl]):
                     best_isl = isl
-            if is_better_cost(ibest_nr[best_isl], ibest_cost[best_isl], gbest_nr[0], gbest_cost[0]):
-                copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
-                              gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
+            if best_isl != -1:
+                if not math.isfinite(gbest_cost[0]) or gbest_nr[0] <= 0 or is_better_lex(ibest_nr[best_isl], ibest_dist[best_isl], gbest_nr[0], gbest_dist[0]):
+                    copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
+                                  gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
 
         @k_fn
         def publish_global_best_kernel(g_nodes, g_rlen, g_nr, g_dist, g_cost,
                                        i_nodes, i_rlen, i_nr, i_dist, i_cost, num_islands):
             if True:
+                if not math.isfinite(g_cost[0]) or g_nr[0] <= 0:
+                    return
                 best = 0
                 for i in range(1, num_islands):
-                    if is_better_cost(i_nr[i], i_cost[i], i_nr[best], i_cost[best]):
+                    if is_better_lex(i_nr[i], i_dist[i], i_nr[best], i_dist[best]):
                         best = i
-                if is_better_cost(g_nr[0], g_cost[0], i_nr[best], i_cost[best]):
+                if is_better_lex(g_nr[0], g_dist[0], i_nr[best], i_dist[best]):
                     copy_solution(g_nodes, g_rlen, g_nr, g_dist, g_cost, 0,
                                   i_nodes, i_rlen, i_nr, i_dist, i_cost, best)
 
@@ -1091,13 +1117,15 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                     num_islands, island_size):
             if num_islands > 1:
                 for isl in range(num_islands):
+                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
+                        continue
                     dst_isl = (isl + 1) % num_islands
                     worst_s = dst_isl * island_size
                     for i in range(1, island_size):
                         cand_s = dst_isl * island_size + i
-                        if is_better_cost(pop_nr[worst_s], pop_cost[worst_s], pop_nr[cand_s], pop_cost[cand_s]):
+                        if is_better_lex(pop_nr[worst_s], pop_dist[worst_s], pop_nr[cand_s], pop_dist[cand_s]):
                             worst_s = cand_s
-                    if is_better_cost(ibest_nr[isl], ibest_cost[isl], pop_nr[worst_s], pop_cost[worst_s]):
+                    if is_better_lex(ibest_nr[isl], ibest_dist[isl], pop_nr[worst_s], pop_dist[worst_s]):
                         copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl,
                                       pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, worst_s)
 

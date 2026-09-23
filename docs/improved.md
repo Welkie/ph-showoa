@@ -9,6 +9,9 @@ Các cải tiến của `src_python_gpu_SA_RCRS_GRASP` so với mã nguồn gố
 ### 1.1. Khởi tạo toàn diện SA_RCRS_GRASP kết hợp Deep Local Search
 Quá trình khởi tạo mỗi cá thể trong quần thể được thực hiện hoàn toàn trên GPU theo chuỗi 5 bước:
 1. **RCRS-GRASP construction**: Kết hợp heuristic RCRS với danh sách ứng viên giới hạn (RCL) ngẫu nhiên hóa theo tham số $\alpha \in [\alpha_{lo}, \alpha_{hi}]$ để tạo các nghiệm ban đầu đa dạng.
+   - **Hàm điểm RCRS (`rcrs_score`)**:
+     $$Score = \Delta TD + 0.5 \cdot rc\_pen + 0.3 \cdot rs\_pen$$
+     trong đó $rc\_pen = \max(0, c_{new} - 0.70 \cdot Capacity)$ phạt các tuyến gần đầy tải, và $rs\_pen = |dist(depot, prev) + dist(prev, c) - dist(depot, c)|$ phạt độ lệch so với hướng tâm xuất phát từ kho (depot). Điểm số này giúp tạo ra các cụm tuyến xuyên tâm rất gọn và tối ưu tổng quãng đường (TD).
 2. **Feasibility check & Repair**: Tự động phát hiện và khắc phục vi phạm tải trọng, cửa sổ thời gian hoặc khách hàng bị thiếu/trùng lặp.
 3. **Simulated Annealing Warmup**: Tinh chỉnh nghiệm ban đầu qua các toán tử nhiễu loạn lân cận với cơ chế làm nguội SA.
 4. **Route Elimination**: Loại bỏ các tuyến ngắn (ít khách) và chèn lại khách vào các tuyến khác để giảm số lượng xe (NV) ngay từ đầu.
@@ -24,6 +27,10 @@ So với hàm mục tiêu scalar $Cost = 2000 \cdot NV + TD$ của base:
     - Chấp nhận ngay nếu $TD_{new} \le TD_{old} + 10^{-3}$.
     - Nếu $TD_{new} > TD_{old}$, xác suất chấp nhận theo phân bố Metropolis:
       $$P = \exp\left(-\frac{TD_{new} - TD_{old}}{10^{-6} + T \cdot TD_{old}}\right) \quad \text{với } T = 1 - \frac{t}{t_{max}}$$
+- **Đấu loại Lexicographic trong chọn bạn phối ngẫu (`sho_woa_update_single`)**:
+  - Chọn ngẫu nhiên 3 cá thể trong cùng một đảo và tổ chức đấu loại (3-peer tournament) bằng hàm so sánh thứ tự từ vựng `is_better_lex(nr, dist)`. Cá thể có ít xe hơn sẽ luôn được ưu tiên; nếu cùng số xe, cá thể có quãng đường ngắn hơn sẽ thắng giải để làm cha mẹ phối ngẫu.
+- **Cập nhật tinh hoa (Elite Tracking) & Di cư (Island Migration)**:
+  - Cập nhật `island_best`, `global_best` và `island_migration` đều sử dụng `is_better_lex` kèm bộ lọc nghiệm khả thi (`math.isfinite(cost)` và $NV > 0$), đảm bảo không bao giờ lưu trữ nghiệm không khả thi và luôn bảo tồn được cá thể có $NV$ nhỏ nhất cùng $TD$ tối ưu nhất.
 - **Ý nghĩa**: Khắc phục triệt để hiện tượng "loãng nhiệt" khi chia cho $Cost \approx 21000$ (khiến xác suất chấp nhận nghiệm xấu $> 99\%$), giúp thuật toán hội tụ mạnh mẽ và ép sâu giá trị TD ở các thế hệ sau.
 
 ### 1.3. Tập toán tử láng giềng sâu (Deep Local Search) kết hợp Inter-route Relocate

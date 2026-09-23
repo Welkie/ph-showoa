@@ -435,7 +435,7 @@ class GpuEngine:
                         scratch_route, scratch_unrouted, scratch_flags, prob_device, 5)
                     k["local_search"](
                         *search_best,
-                        scratch_route, scratch_route2, prob_device, 0)
+                        scratch_route, scratch_route2, prob_device, 2)
                     k["update_island_bests"](
                         *cur_pop, ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                         self.num_islands, self.island_size)
