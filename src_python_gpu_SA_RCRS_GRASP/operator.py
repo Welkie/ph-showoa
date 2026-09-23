@@ -830,7 +830,7 @@ def tensor_sa_warmup(
         pop_routes, pop_lengths, pop_route_counts, backend, generator=rng, passes=15
     )
     feas, costs, nv, dist = backend.evaluate_population_tensor(pop_routes, pop_lengths, pop_route_counts)
-    scores = backend.compute_scalar_scores(feas, nv, dist)
+    scores = backend.compute_lexicographic_scores(feas, nv, dist)
     best_init_idx = torch.argmin(scores)
     r_p, l_p, c_p = tensor_deep_local_search_solution(pop_routes[best_init_idx], pop_lengths[best_init_idx], pop_route_counts[best_init_idx], backend)
     f_p, _, nv_p, d_p = backend.evaluate_population_tensor(r_p.unsqueeze(0), l_p.unsqueeze(0), c_p.unsqueeze(0))

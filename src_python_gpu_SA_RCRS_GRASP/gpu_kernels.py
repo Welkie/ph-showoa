@@ -11,17 +11,6 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from .gpu_base_operators import build_base_operators
-
-
-def scalar_sa_probability(new_cost, current_cost, iteration, max_iter):
-    """Algorithm 1: Boltzmann acceptance using the complete scalar objective."""
-    delta = new_cost - current_cost
-    if delta <= 0.001:
-        return 1.0
-    temperature = 1.0 - float(iteration) / float(max_iter) if max_iter > 0 else 0.0
-    return math.exp(-delta / (1e-6 + temperature * abs(current_cost)))
-
 try:
     from numba import cuda, njit
 except ImportError:
@@ -30,24 +19,14 @@ except ImportError:
         return lambda f: f
 
 
-def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
-                        sa_t0: float = 100.0, sa_alpha: float = 0.95,
-                        sa_tmin: float = 0.1, sa_itermax: int = 100,
-                        mutation_probability: float = 0.35,
-                        diversify_ratio: float = 0.40,
-                        enable_two_opt_star: bool = True):
+def build_kernel_bundle(is_cuda: bool = False):
     """Builds a bundle of Numba device functions and kernels for CUDA or CPU."""
-    seen_size = int(customer_count) + 1
     if is_cuda:
         dev_fn = lambda f: cuda.jit(device=True)(f)
         k_fn = lambda f: cuda.jit(f)
     else:
-        # Infeasible solutions use infinity; fastmath may invalidate isfinite
-        # and ordered comparisons against that sentinel.
-        dev_fn = lambda f: njit(nogil=True)(f)
-        k_fn = lambda f: njit(nogil=True)(f)
-
-    sa_probability = dev_fn(scalar_sa_probability)
+        dev_fn = lambda f: njit(fastmath=True, nogil=True)(f)
+        k_fn = lambda f: njit(fastmath=True, nogil=True)(f)
 
     # -------------------------------------------------------------------------
     # 1. Device PRNG: Xorshift128 (4 uint32 state words per thread)
@@ -110,7 +89,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         if length == 2:
             return True, 0.0
         for i in range(1, length - 1):
-            if route[i] <= 0 or route[i] > int(prob_data[14]):
+            if route[i] == depot:
                 return False, 0.0
 
         load = 0.0
@@ -148,40 +127,15 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         active_routes = 0
         dispatch_cost = prob_data[3]
         unit_cost = prob_data[4]
-        max_vehicles = int(prob_data[12])
-
-        if num_routes < 0 or num_routes > nodes.shape[1]:
-            return False, 0, math.inf, math.inf
-        if is_cuda:
-            seen = cuda.local.array(seen_size, dtype=np.int32)
-        else:
-            seen = np.empty(seen_size, dtype=np.int32)
-        for c in range(customer_count + 1):
-            seen[c] = 0
-        visited = 0
 
         for r in range(num_routes):
             l = rlen[s, r]
-            if l < 2 or l > nodes.shape[2]:
-                return False, 0, math.inf, math.inf
             if l > 2:
                 ok, d = eval_route(nodes[s, r, :l], l, prob_data)
                 if not ok:
-                    return False, 0, math.inf, math.inf
-                for p in range(1, l - 1):
-                    c = nodes[s, r, p]
-                    if seen[c] != 0:
-                        return False, 0, math.inf, math.inf
-                    seen[c] = 1
-                    visited += 1
+                    return False, 0, 1e12, 1e12
                 total_dist += d
                 active_routes += 1
-
-        if max_vehicles > 0 and active_routes > max_vehicles:
-            return False, active_routes, math.inf, math.inf
-
-        if visited != int(prob_data[14]):
-            return False, active_routes, math.inf, math.inf
 
         total_cost = active_routes * dispatch_cost + total_dist * unit_cost
         return True, active_routes, total_dist, total_cost
@@ -200,43 +154,16 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 dst_nodes[dst_s, r, i] = src_nodes[src_s, r, i]
 
     @dev_fn
-    def is_better_cost(nr_a, cost_a, nr_b, cost_b):
-        if nr_a <= 0 or not math.isfinite(cost_a):
-            return False
-        if nr_b <= 0 or not math.isfinite(cost_b):
-            return True
-        if nr_a < nr_b:
-            return True
-        if nr_a > nr_b:
-            return False
-        return cost_a < cost_b - 0.001
-
-    @dev_fn
     def is_better_lex(nr_a, dist_a, nr_b, dist_b):
-        if nr_a <= 0 or not math.isfinite(dist_a):
+        if nr_a <= 0:
             return False
-        if nr_b <= 0 or not math.isfinite(dist_b):
+        if nr_b <= 0:
             return True
         if nr_a < nr_b:
             return True
-        if nr_a > nr_b:
-            return False
-        return dist_a < dist_b - 1e-4
-
-    base = build_base_operators(dev_fn, eval_route, eval_solution, copy_solution,
-                                rand_u01, randint, shuffle_ints, sa_t0, sa_alpha,
-                                sa_tmin, sa_itermax, mutation_probability, diversify_ratio,
-                                enable_two_opt_star)
-    compact = base['compact']
-    refresh = base['refresh']
-    repair = base['repair']
-    insert_customer = base['insert_customer']
-    route_capacity = base['capacity']
-    sa_warmup_single = base['warmup']
-    deep_local_search_single = base['local_search']
-    relink = base['relink']
-    perturb = base['perturb']
-    light_mutation = base['light_mutation']
+        if nr_a == nr_b and dist_a < dist_b - 1e-4:
+            return True
+        return False
 
     # -------------------------------------------------------------------------
     # 3. RCRS-GRASP Score & Construction
@@ -252,12 +179,10 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         prev = route[pos - 1]
         next_node = route[pos]
 
-        # Travel-distance increase (delta_td)
         delta_td = dist_matrix[prev, customer] + dist_matrix[customer, next_node] - dist_matrix[prev, next_node]
         if delta_td < 0.0:
             delta_td = 0.0
 
-        # Capacity tightness proxy: penalise routes nearing capacity
         load = 0.0
         for i in range(1, length - 1):
             load += delivery[route[i]]
@@ -274,7 +199,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         if rc_pen < 0.0:
             rc_pen = 0.0
 
-        # Route savings penalty: detour from radial path from depot (exact d88da6e)
         dx_prev = dist_matrix[depot, prev]
         dx_c = dist_matrix[depot, customer]
         rs_pen = abs(dx_prev + dist_matrix[prev, customer] - dx_c)
@@ -446,8 +370,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 break
 
             num_ejected = min_len - 2
-            _, source_distance = eval_route(nodes[s, min_r], min_len, prob_data)
-            added_distance = 0.0
             for i in range(num_ejected):
                 scratch_unrouted[s, i] = nodes[s, min_r, i + 1]
 
@@ -484,7 +406,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                     nodes[s, best_target_r, best_target_p] = c
                     rlen[s, best_target_r] = l + 1
                     scratch_flags[s, e_idx] = best_target_r
-                    added_distance += best_delta
                 else:
                     all_inserted = False
                     # Rollback all previously inserted customers from this elimination attempt
@@ -506,7 +427,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             if not all_inserted:
                 break
             else:
-                cost_before = cost[s]
                 # Successfully inserted all ejected customers! Remove min_r by shifting
                 for r in range(min_r, num_r - 1):
                     rlen[s, r] = rlen[s, r + 1]
@@ -515,29 +435,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 rlen[s, num_r - 1] = 0
                 nr[s] = num_r - 1
                 ok, n_act, t_dist, t_cost = eval_solution(nodes, rlen, nr, s, prob_data)
-                if not ok or t_cost > cost_before + 0.001:
-                    # Rollback shift and insertions if cost increased
-                    for r in range(num_r - 1, min_r, -1):
-                        rlen[s, r] = rlen[s, r - 1]
-                        for i in range(rlen[s, r]):
-                            nodes[s, r, i] = nodes[s, r - 1, i]
-                    rlen[s, min_r] = min_len
-                    nodes[s, min_r, 0] = int(prob_data[0])
-                    for i in range(num_ejected):
-                        nodes[s, min_r, i + 1] = scratch_unrouted[s, i]
-                    nodes[s, min_r, min_len - 1] = int(prob_data[0])
-                    nr[s] = num_r
-                    for undo_idx in range(num_ejected):
-                        undo_r = scratch_flags[s, undo_idx]
-                        undo_c = scratch_unrouted[s, undo_idx]
-                        lr = rlen[s, undo_r]
-                        for pos in range(1, lr - 1):
-                            if nodes[s, undo_r, pos] == undo_c:
-                                for k in range(pos, lr - 1):
-                                    nodes[s, undo_r, k] = nodes[s, undo_r, k + 1]
-                                rlen[s, undo_r] = lr - 1
-                                break
-                    break
                 dist[s] = t_dist
                 cost[s] = t_cost
 
@@ -547,7 +444,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
     @dev_fn
     def sa_warmup_single(nodes, rlen, nr, dist, cost, s,
                          scratch_route, scratch_route2,
-                         prob_data, rng_states, sa_iters=20):
+                         prob_data, rng_states, sa_iters=25):
         temp = 100.0
         cooling = 0.85
         num_r = nr[s]
@@ -559,7 +456,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 num_r = nr[s]
                 if num_r == 0:
                     break
-                move_type = randint(rng_states, s, 1, 4)
+                move_type = randint(rng_states, s, 1, 5)
 
                 if move_type == 1 and num_r >= 1:
                     # Intra 2-opt
@@ -623,7 +520,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                     if r1 != r2:
                         l1 = rlen[s, r1]
                         l2 = rlen[s, r2]
-                        if l1 >= 4 and l2 >= 3 and l2 + 1 <= nodes.shape[2]:
+                        if l1 >= 4 and l2 >= 3:
                             i = randint(rng_states, s, 1, l1 - 2)
                             j = randint(rng_states, s, 1, l2 - 1)
                             c = nodes[s, r1, i]
@@ -687,7 +584,199 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             temp *= cooling
 
     # -------------------------------------------------------------------------
-    # 6. SHO / WOA Offspring Generation (Guided Crossover & Intensification)
+    # 6. Deep Local Search (Systematic 2-Opt & Relocate)
+    # -------------------------------------------------------------------------
+    @dev_fn
+    def deep_local_search_single(nodes, rlen, nr, dist, cost, s,
+                                 scratch_route, scratch_route2,
+                                 prob_data, max_passes=2):
+        num_r = nr[s]
+        if num_r == 0:
+            return
+
+        for _ in range(max_passes):
+            improved = False
+            for r in range(num_r):
+                l = rlen[s, r]
+                if l < 5:
+                    continue
+                for i in range(1, l - 3):
+                    for j in range(i + 1, l - 2):
+                        for k in range(l):
+                            scratch_route[s, k] = nodes[s, r, k]
+                        p1, p2 = i, j
+                        while p1 < p2:
+                            tmp = scratch_route[s, p1]
+                            scratch_route[s, p1] = scratch_route[s, p2]
+                            scratch_route[s, p2] = tmp
+                            p1 += 1
+                            p2 -= 1
+                        ok, new_d = eval_route(scratch_route[s, :l], l, prob_data)
+                        if ok:
+                            _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
+                            if new_d < old_d - 1e-4:
+                                for k in range(l):
+                                    nodes[s, r, k] = scratch_route[s, k]
+                                dist[s] += (new_d - old_d)
+                                cost[s] += (new_d - old_d) * prob_data[4]
+                                improved = True
+
+            for r in range(num_r):
+                l = rlen[s, r]
+                if l < 4:
+                    continue
+                for i in range(1, l - 1):
+                    for j in range(1, l - 1):
+                        if i == j:
+                            continue
+                        for k in range(l):
+                            scratch_route[s, k] = nodes[s, r, k]
+                        val = scratch_route[s, i]
+                        if i < j:
+                            for k in range(i, j):
+                                scratch_route[s, k] = scratch_route[s, k + 1]
+                            scratch_route[s, j] = val
+                        else:
+                            for k in range(i, j, -1):
+                                scratch_route[s, k] = scratch_route[s, k - 1]
+                            scratch_route[s, j] = val
+                        ok, new_d = eval_route(scratch_route[s, :l], l, prob_data)
+                        if ok:
+                            _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
+                            if new_d < old_d - 1e-4:
+                                for k in range(l):
+                                    nodes[s, r, k] = scratch_route[s, k]
+                                dist[s] += (new_d - old_d)
+                                cost[s] += (new_d - old_d) * prob_data[4]
+                                improved = True
+
+            # 3. Inter-route 2-opt* (swap tails of two routes)
+            L = scratch_route.shape[1]
+            dist_matrix = prob_data[10]
+            for r1 in range(num_r - 1):
+                len1 = rlen[s, r1]
+                if len1 < 4:
+                    continue
+                found_tail_swap = False
+                for r2 in range(r1 + 1, num_r):
+                    len2 = rlen[s, r2]
+                    if len2 < 4:
+                        continue
+                    for p1 in range(2, len1 - 1):
+                        u1 = nodes[s, r1, p1 - 1]
+                        v1 = nodes[s, r1, p1]
+                        for p2 in range(2, len2 - 1):
+                            u2 = nodes[s, r2, p2 - 1]
+                            v2 = nodes[s, r2, p2]
+                            new_len1 = p1 + len2 - p2
+                            new_len2 = p2 + len1 - p1
+                            if new_len1 >= L or new_len2 >= L:
+                                continue
+                            delta_d = (dist_matrix[u1, v2] + dist_matrix[u2, v1] -
+                                       dist_matrix[u1, v1] - dist_matrix[u2, v2])
+                            if delta_d < -1e-4:
+                                for k in range(p1):
+                                    scratch_route[s, k] = nodes[s, r1, k]
+                                for k in range(p2, len2):
+                                    scratch_route[s, p1 + (k - p2)] = nodes[s, r2, k]
+                                ok1, d1 = eval_route(scratch_route[s, :new_len1], new_len1, prob_data)
+                                if ok1:
+                                    for k in range(p2):
+                                        scratch_route2[s, k] = nodes[s, r2, k]
+                                    for k in range(p1, len1):
+                                        scratch_route2[s, p2 + (k - p1)] = nodes[s, r1, k]
+                                    ok2, d2 = eval_route(scratch_route2[s, :new_len2], new_len2, prob_data)
+                                    if ok2:
+                                        _, old_d1 = eval_route(nodes[s, r1, :len1], len1, prob_data)
+                                        _, old_d2 = eval_route(nodes[s, r2, :len2], len2, prob_data)
+                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-4:
+                                            for k in range(new_len1):
+                                                nodes[s, r1, k] = scratch_route[s, k]
+                                            for k in range(new_len1, len1):
+                                                nodes[s, r1, k] = 0
+                                            for k in range(new_len2):
+                                                nodes[s, r2, k] = scratch_route2[s, k]
+                                            for k in range(new_len2, len2):
+                                                nodes[s, r2, k] = 0
+                                            rlen[s, r1] = new_len1
+                                            rlen[s, r2] = new_len2
+                                            change = (d1 + d2) - (old_d1 + old_d2)
+                                            dist[s] += change
+                                            cost[s] += change * prob_data[4]
+                                            improved = True
+                                            found_tail_swap = True
+                                            break
+                        if found_tail_swap:
+                            break
+                    if found_tail_swap:
+                        break
+                if found_tail_swap:
+                    break
+
+            # 4. Inter-route Relocate (move single customer between routes)
+            for r1 in range(num_r):
+                len1 = rlen[s, r1]
+                if len1 < 4:
+                    continue
+                found_reloc = False
+                for r2 in range(num_r):
+                    if r1 == r2:
+                        continue
+                    len2 = rlen[s, r2]
+                    if len2 + 1 >= L:
+                        continue
+                    for i in range(1, len1 - 1):
+                        u = nodes[s, r1, i]
+                        prev_u = nodes[s, r1, i - 1]
+                        next_u = nodes[s, r1, i + 1]
+                        cost_rem = dist_matrix[prev_u, next_u] - (dist_matrix[prev_u, u] + dist_matrix[u, next_u])
+                        for j in range(1, len2):
+                            prev_v = nodes[s, r2, j - 1]
+                            next_v = nodes[s, r2, j]
+                            cost_ins = (dist_matrix[prev_v, u] + dist_matrix[u, next_v]) - dist_matrix[prev_v, next_v]
+                            if cost_rem + cost_ins < -1e-4:
+                                k_idx = 0
+                                for k in range(len1):
+                                    if k != i:
+                                        scratch_route[s, k_idx] = nodes[s, r1, k]
+                                        k_idx += 1
+                                ok1, d1 = eval_route(scratch_route[s, :len1 - 1], len1 - 1, prob_data)
+                                if ok1:
+                                    for k in range(j):
+                                        scratch_route2[s, k] = nodes[s, r2, k]
+                                    scratch_route2[s, j] = u
+                                    for k in range(j, len2):
+                                        scratch_route2[s, k + 1] = nodes[s, r2, k]
+                                    ok2, d2 = eval_route(scratch_route2[s, :len2 + 1], len2 + 1, prob_data)
+                                    if ok2:
+                                        _, old_d1 = eval_route(nodes[s, r1, :len1], len1, prob_data)
+                                        _, old_d2 = eval_route(nodes[s, r2, :len2], len2, prob_data)
+                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-4:
+                                            for k in range(len1 - 1):
+                                                nodes[s, r1, k] = scratch_route[s, k]
+                                            nodes[s, r1, len1 - 1] = 0
+                                            for k in range(len2 + 1):
+                                                nodes[s, r2, k] = scratch_route2[s, k]
+                                            rlen[s, r1] = len1 - 1
+                                            rlen[s, r2] = len2 + 1
+                                            change = (d1 + d2) - (old_d1 + old_d2)
+                                            dist[s] += change
+                                            cost[s] += change * prob_data[4]
+                                            improved = True
+                                            found_reloc = True
+                                            break
+                        if found_reloc:
+                            break
+                    if found_reloc:
+                        break
+                if found_reloc:
+                    break
+
+            if not improved:
+                break
+
+    # -------------------------------------------------------------------------
+    # 7. SHO / WOA Offspring Generation (Guided Crossover & Intensification)
     # -------------------------------------------------------------------------
     @dev_fn
     def guided_crossover_sho_single(cur_nodes, cur_rlen, cur_nr, s,
@@ -722,9 +811,9 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 cand_nr[s] = c_idx + 1
 
             if num_elite == 2 and best_r_count > 1:
-                r2 = randint(rng_states, s, 0, best_r_count - 2)
-                if r2 >= r1:
-                    r2 += 1
+                r2 = randint(rng_states, s, 0, best_r_count - 1)
+                if r2 == r1:
+                    r2 = (r1 + 1) % best_r_count
                 l2 = ibest_rlen[island_id, r2]
                 if l2 > 2:
                     c_idx = cand_nr[s]
@@ -738,18 +827,18 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
 
         # Step 2: Collect remaining unrouted customers from current and peer
         unrouted_cnt = 0
-        # From peer
-        for r in range(peer_nr[peer_s]):
-            for k in range(1, peer_rlen[peer_s, r] - 1):
-                node = peer_nodes[peer_s, r, k]
-                if node != depot and scratch_flags[s, node] == 0:
-                    scratch_unrouted[s, unrouted_cnt] = node
-                    scratch_flags[s, node] = 1
-                    unrouted_cnt += 1
         # From current
         for r in range(cur_nr[s]):
             for k in range(1, cur_rlen[s, r] - 1):
                 node = cur_nodes[s, r, k]
+                if node != depot and scratch_flags[s, node] == 0:
+                    scratch_unrouted[s, unrouted_cnt] = node
+                    scratch_flags[s, node] = 1
+                    unrouted_cnt += 1
+        # From peer
+        for r in range(peer_nr[peer_s]):
+            for k in range(1, peer_rlen[peer_s, r] - 1):
+                node = peer_nodes[peer_s, r, k]
                 if node != depot and scratch_flags[s, node] == 0:
                     scratch_unrouted[s, unrouted_cnt] = node
                     scratch_flags[s, node] = 1
@@ -761,25 +850,17 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 scratch_flags[s, c] = 1
                 unrouted_cnt += 1
 
-        # Greedy Best-Insertion: insert unrouted customers into existing routes with min delta distance
+        # Insert unrouted customers into candidate routes with min delta
         for i in range(unrouted_cnt):
             node = scratch_unrouted[s, i]
             best_delta = 1e12
             best_r = -1
             best_p = -1
 
-            dm = prob_data[10]
             for r in range(cand_nr[s]):
                 l = cand_rlen[s, r]
-                if l + 1 > cand_nodes.shape[2]:
-                    continue
                 ok_o, old_d = eval_route(cand_nodes[s, r, :l], l, prob_data)
                 for p in range(1, l):
-                    prev_node = cand_nodes[s, r, p - 1]
-                    next_node = cand_nodes[s, r, p]
-                    approx_delta = dm[prev_node, node] + dm[node, next_node] - dm[prev_node, next_node]
-                    if approx_delta >= best_delta:
-                        continue
                     for k in range(p):
                         scratch_route[s, k] = cand_nodes[s, r, k]
                     scratch_route[s, p] = node
@@ -801,16 +882,12 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 cand_rlen[s, best_r] = l + 1
             else:
                 # Open new route
-                if cand_nr[s] < cand_nodes.shape[1]:
-                    new_r = cand_nr[s]
-                    cand_nodes[s, new_r, 0] = depot
-                    cand_nodes[s, new_r, 1] = node
-                    cand_nodes[s, new_r, 2] = depot
-                    cand_rlen[s, new_r] = 3
-                    cand_nr[s] = new_r + 1
-                else:
-                    cand_cost[s] = math.inf
-                    return
+                new_r = cand_nr[s]
+                cand_nodes[s, new_r, 0] = depot
+                cand_nodes[s, new_r, 1] = node
+                cand_nodes[s, new_r, 2] = depot
+                cand_rlen[s, new_r] = 3
+                cand_nr[s] = new_r + 1
 
         eval_solution(cand_nodes, cand_rlen, cand_nr, s, prob_data)
 
@@ -818,16 +895,18 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
     def woa_intensification_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
                                   ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, island_id,
                                   cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                  backup_nodes, backup_rlen, backup_nr, backup_dist, backup_cost,
-                                  scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
+                                  scratch_route, scratch_unrouted, scratch_flags,
                                   a_param, prob_data, rng_states):
+        depot = int(prob_data[0])
+        customer_num = int(prob_data[14])
         r1 = rand_u01(rng_states, s)
         a_vec = 2.0 * a_param * r1 - a_param
 
-        if abs(a_vec) < 1.0 and ibest_nr[island_id] > 0 and math.isfinite(ibest_cost[island_id]):
-            # Encirclement: start from island best, copy, perturb 1-2 random nodes
+        if abs(a_vec) < 1.0 and ibest_nr[island_id] > 0:
+            # Encirclement: start from best, copy segments, repair
             copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, island_id,
                           cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
+            # Perturb 1-2 random nodes
             if cand_nr[s] > 0:
                 r = randint(rng_states, s, 0, cand_nr[s] - 1)
                 l = cand_rlen[s, r]
@@ -839,7 +918,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                     cand_nodes[s, r, p2] = tmp
             eval_solution(cand_nodes, cand_rlen, cand_nr, s, prob_data)
         else:
-            # Exploration: start from current, apply random 2-opt segment reversal
+            # Exploration: start from current, apply random 2-opt or relocate
             copy_solution(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
                           cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
             if cand_nr[s] > 0:
@@ -886,11 +965,9 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             woa_intensification_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
                                       ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, island_id,
                                       cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                      next_nodes, next_rlen, next_nr, next_dist, next_cost,
-                                      scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
+                                      scratch_route, scratch_unrouted, scratch_flags,
                                       a_param, prob_data, rng_states)
 
-        compact(cand_nodes, cand_rlen, cand_nr, s)
         # Evaluate candidate validity
         ok, act_r, t_d, t_c = eval_solution(cand_nodes, cand_rlen, cand_nr, s, prob_data)
         if not ok:
@@ -934,23 +1011,22 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
     # -------------------------------------------------------------------------
     @dev_fn
     def diversify_island_single(nodes, rlen, nr, dist, cost,
-                                cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                 island_id, island_size,
                                 scratch_route, scratch_unrouted, scratch_flags,
                                 prob_data, rng_states):
         island_start = island_id * island_size
         diversify_count = max(1, int(island_size * 0.40))
-        customer_num = int(prob_data[14])
-        depot = int(prob_data[0])
-
+        # Diversify the worst individuals in this island
         for idx in range(diversify_count):
             s = island_start + island_size - 1 - idx
+            # Ruin 20-40% customers
+            customer_num = int(prob_data[14])
+            depot = int(prob_data[0])
             for i in range(customer_num + 1):
                 scratch_flags[s, i] = 0
 
-            # Pick random customers to remove (20-40%)
-            ruin_cnt = randint(rng_states, s, max(1, int(customer_num * 0.20)), max(1, int(customer_num * 0.40)))
+            # Pick random customers to remove
+            ruin_cnt = randint(rng_states, s, int(customer_num * 0.20), int(customer_num * 0.40))
             for i in range(customer_num):
                 scratch_unrouted[s, i] = i + 1
             shuffle_ints(scratch_unrouted[s], customer_num, rng_states, s)
@@ -970,7 +1046,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                 nodes[s, r, write_p] = depot
                 rlen[s, r] = write_p + 1
 
-            # Recreate: insert removed customers back with min delta distance
+            # Recreate: insert removed customers back with min delta
             for i in range(ruin_cnt):
                 c = scratch_unrouted[s, i]
                 best_delta = 1e12
@@ -1009,12 +1085,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                     rlen[s, new_r] = 3
                     nr[s] = new_r + 1
 
-            compact(nodes, rlen, nr, s)
-            ok, n_act, t_d, t_c = eval_solution(nodes, rlen, nr, s, prob_data)
-            if ok:
-                nr[s] = n_act
-                dist[s] = t_d
-                cost[s] = t_c
+            eval_solution(nodes, rlen, nr, s, prob_data)
 
     # -------------------------------------------------------------------------
     # 9. Top-Level Kernels
@@ -1022,8 +1093,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
     if is_cuda:
         @k_fn
         def init_population_kernel(nodes, rlen, nr, dist, cost,
-                                   best_nodes, best_rlen, best_nr, best_dist, best_cost,
-                                   trial_nodes, trial_rlen, trial_nr, trial_dist, trial_cost,
                                    scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                                    prob_data, alpha_lo, alpha_hi, rng_states):
             s = cuda.grid(1)
@@ -1033,11 +1102,14 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                      scratch_route, scratch_unrouted, scratch_flags, scratch_scores,
                                      prob_data, alpha, rng_states)
                 sa_warmup_single(nodes, rlen, nr, dist, cost, s,
-                                 scratch_route, scratch_route2, prob_data, rng_states, 20)
+                                 scratch_route, scratch_route2,
+                                 prob_data, rng_states, sa_iters=20)
                 route_elimination_single(nodes, rlen, nr, dist, cost, s,
-                                         scratch_route, scratch_unrouted, scratch_flags, prob_data, 5)
+                                         scratch_route, scratch_unrouted, scratch_flags,
+                                         prob_data, passes=5)
                 deep_local_search_single(nodes, rlen, nr, dist, cost, s,
-                                         scratch_route, scratch_route2, prob_data, 2)
+                                         scratch_route, scratch_route2,
+                                         prob_data, max_passes=2)
 
         @k_fn
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -1079,47 +1151,27 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                        num_islands, island_size):
             isl = cuda.grid(1)
             if isl < num_islands:
-                best_s = -1
-                for i in range(island_size):
+                best_s = isl * island_size
+                for i in range(1, island_size):
                     cand_s = isl * island_size + i
-                    if not math.isfinite(pop_cost[cand_s]) or pop_nr[cand_s] <= 0:
-                        continue
-                    if best_s == -1 or is_better_lex(pop_nr[cand_s], pop_dist[cand_s], pop_nr[best_s], pop_dist[best_s]):
+                    if is_better_lex(pop_nr[cand_s], pop_dist[cand_s], pop_nr[best_s], pop_dist[best_s]):
                         best_s = cand_s
-                if best_s != -1:
-                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0 or is_better_lex(pop_nr[best_s], pop_dist[best_s], ibest_nr[isl], ibest_dist[isl]):
-                        copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
-                                      ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
+                if is_better_lex(pop_nr[best_s], pop_dist[best_s], ibest_nr[isl], ibest_dist[isl]) or ibest_nr[isl] == 0:
+                    copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
+                                  ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
 
         @k_fn
         def update_global_best_kernel(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                       gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
                                       num_islands):
             if cuda.grid(1) == 0:
-                best_isl = -1
-                for isl in range(num_islands):
-                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
-                        continue
-                    if best_isl == -1 or is_better_lex(ibest_nr[isl], ibest_dist[isl], ibest_nr[best_isl], ibest_dist[best_isl]):
+                best_isl = 0
+                for isl in range(1, num_islands):
+                    if is_better_lex(ibest_nr[isl], ibest_dist[isl], ibest_nr[best_isl], ibest_dist[best_isl]):
                         best_isl = isl
-                if best_isl != -1:
-                    if not math.isfinite(gbest_cost[0]) or gbest_nr[0] <= 0 or is_better_lex(ibest_nr[best_isl], ibest_dist[best_isl], gbest_nr[0], gbest_dist[0]):
-                        copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
-                                      gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
-
-        @k_fn
-        def publish_global_best_kernel(g_nodes, g_rlen, g_nr, g_dist, g_cost,
-                                       i_nodes, i_rlen, i_nr, i_dist, i_cost, num_islands):
-            if cuda.grid(1) == 0:
-                if not math.isfinite(g_cost[0]) or g_nr[0] <= 0:
-                    return
-                best = 0
-                for i in range(1, num_islands):
-                    if is_better_lex(i_nr[i], i_dist[i], i_nr[best], i_dist[best]):
-                        best = i
-                if is_better_lex(g_nr[0], g_dist[0], i_nr[best], i_dist[best]):
-                    copy_solution(g_nodes, g_rlen, g_nr, g_dist, g_cost, 0,
-                                  i_nodes, i_rlen, i_nr, i_dist, i_cost, best)
+                if is_better_lex(ibest_nr[best_isl], ibest_dist[best_isl], gbest_nr[0], gbest_dist[0]) or gbest_nr[0] == 0:
+                    copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
+                                  gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
 
         @k_fn
         def island_migration_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
@@ -1128,8 +1180,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             if cuda.grid(1) == 0 and num_islands > 1:
                 # Ring migration: copy ibest of island i to worst of island (i + 1) % num_islands
                 for isl in range(num_islands):
-                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
-                        continue
                     dst_isl = (isl + 1) % num_islands
                     # Find worst in dst_isl
                     worst_s = dst_isl * island_size
@@ -1144,15 +1194,11 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
 
         @k_fn
         def stagnation_diversify_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                                        cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states, num_islands, island_size):
             isl = cuda.grid(1)
             if isl < num_islands:
                 diversify_island_single(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                                        cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                         isl, island_size,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states)
@@ -1161,8 +1207,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         # CPU Mode
         @k_fn
         def init_population_kernel(nodes, rlen, nr, dist, cost,
-                                   best_nodes, best_rlen, best_nr, best_dist, best_cost,
-                                   trial_nodes, trial_rlen, trial_nr, trial_dist, trial_cost,
                                    scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                                    prob_data, alpha_lo, alpha_hi, rng_states):
             for s in range(nodes.shape[0]):
@@ -1171,11 +1215,14 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                      scratch_route, scratch_unrouted, scratch_flags, scratch_scores,
                                      prob_data, alpha, rng_states)
                 sa_warmup_single(nodes, rlen, nr, dist, cost, s,
-                                 scratch_route, scratch_route2, prob_data, rng_states, 20)
+                                 scratch_route, scratch_route2,
+                                 prob_data, rng_states, sa_iters=20)
                 route_elimination_single(nodes, rlen, nr, dist, cost, s,
-                                         scratch_route, scratch_unrouted, scratch_flags, prob_data, 5)
+                                         scratch_route, scratch_unrouted, scratch_flags,
+                                         prob_data, passes=5)
                 deep_local_search_single(nodes, rlen, nr, dist, cost, s,
-                                         scratch_route, scratch_route2, prob_data, 2)
+                                         scratch_route, scratch_route2,
+                                         prob_data, max_passes=2)
 
         @k_fn
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -1213,46 +1260,26 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                        num_islands, island_size):
             for isl in range(num_islands):
-                best_s = -1
-                for i in range(island_size):
+                best_s = isl * island_size
+                for i in range(1, island_size):
                     cand_s = isl * island_size + i
-                    if not math.isfinite(pop_cost[cand_s]) or pop_nr[cand_s] <= 0:
-                        continue
-                    if best_s == -1 or is_better_lex(pop_nr[cand_s], pop_dist[cand_s], pop_nr[best_s], pop_dist[best_s]):
+                    if is_better_lex(pop_nr[cand_s], pop_dist[cand_s], pop_nr[best_s], pop_dist[best_s]):
                         best_s = cand_s
-                if best_s != -1:
-                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0 or is_better_lex(pop_nr[best_s], pop_dist[best_s], ibest_nr[isl], ibest_dist[isl]):
-                        copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
-                                      ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
+                if is_better_lex(pop_nr[best_s], pop_dist[best_s], ibest_nr[isl], ibest_dist[isl]) or ibest_nr[isl] == 0:
+                    copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
+                                  ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, isl)
 
         @k_fn
         def update_global_best_kernel(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                       gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
                                       num_islands):
-            best_isl = -1
-            for isl in range(num_islands):
-                if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
-                    continue
-                if best_isl == -1 or is_better_lex(ibest_nr[isl], ibest_dist[isl], ibest_nr[best_isl], ibest_dist[best_isl]):
+            best_isl = 0
+            for isl in range(1, num_islands):
+                if is_better_lex(ibest_nr[isl], ibest_dist[isl], ibest_nr[best_isl], ibest_dist[best_isl]):
                     best_isl = isl
-            if best_isl != -1:
-                if not math.isfinite(gbest_cost[0]) or gbest_nr[0] <= 0 or is_better_lex(ibest_nr[best_isl], ibest_dist[best_isl], gbest_nr[0], gbest_dist[0]):
-                    copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
-                                  gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
-
-        @k_fn
-        def publish_global_best_kernel(g_nodes, g_rlen, g_nr, g_dist, g_cost,
-                                       i_nodes, i_rlen, i_nr, i_dist, i_cost, num_islands):
-            if True:
-                if not math.isfinite(g_cost[0]) or g_nr[0] <= 0:
-                    return
-                best = 0
-                for i in range(1, num_islands):
-                    if is_better_lex(i_nr[i], i_dist[i], i_nr[best], i_dist[best]):
-                        best = i
-                if is_better_lex(g_nr[0], g_dist[0], i_nr[best], i_dist[best]):
-                    copy_solution(g_nodes, g_rlen, g_nr, g_dist, g_cost, 0,
-                                  i_nodes, i_rlen, i_nr, i_dist, i_cost, best)
+            if is_better_lex(ibest_nr[best_isl], ibest_dist[best_isl], gbest_nr[0], gbest_dist[0]) or gbest_nr[0] == 0:
+                copy_solution(ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, best_isl,
+                              gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
 
         @k_fn
         def island_migration_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
@@ -1260,8 +1287,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                     num_islands, island_size):
             if num_islands > 1:
                 for isl in range(num_islands):
-                    if not math.isfinite(ibest_cost[isl]) or ibest_nr[isl] <= 0:
-                        continue
                     dst_isl = (isl + 1) % num_islands
                     worst_s = dst_isl * island_size
                     for i in range(1, island_size):
@@ -1274,28 +1299,15 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
 
         @k_fn
         def stagnation_diversify_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                                        cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states, num_islands, island_size):
             for isl in range(num_islands):
                 diversify_island_single(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                                        cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                                         isl, island_size,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states)
 
     return {
-        "device_evaluate": eval_solution,
-        "device_refresh": refresh,
-        "device_repair": repair,
-        "device_relink": relink,
-        "device_perturb": perturb,
-        "device_local_search": deep_local_search_single,
-        "device_crossover": guided_crossover_sho_single,
-        "device_warmup": base['warmup'],
-        "device_woa": woa_intensification_single,
         "init_population": init_population_kernel,
         "update_population": update_population_kernel,
         "route_elimination": route_elimination_kernel,
@@ -1303,6 +1315,5 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         "update_island_bests": update_island_bests_kernel,
         "update_global_best": update_global_best_kernel,
         "island_migration": island_migration_kernel,
-        "publish_global_best": publish_global_best_kernel,
         "stagnation_diversify": stagnation_diversify_kernel,
     }

@@ -1,4 +1,3 @@
-import os
 import math
 import random
 from dataclasses import dataclass
@@ -51,12 +50,6 @@ from .config import (
     P_SIZE,
     PENALTY_FACTOR,
     PRECISION,
-    SA_RCRS_GRASP,
-    RCG,
-    RCRS_GRASP,
-    DEFAULT_GRASP_ALPHA_LO,
-    DEFAULT_GRASP_ALPHA_HI,
-    DEFAULT_SA_ITERATIONS,
     RCRS,
     RCRS_RANDOM,
     RDSELECTION,
@@ -135,11 +128,6 @@ class Data:
         self.bks = -1.0
         self.rng = random.Random()
         self.init = DEFAULT_INIT
-        self.grasp_alpha_lo = DEFAULT_GRASP_ALPHA_LO
-        self.grasp_alpha_hi = DEFAULT_GRASP_ALPHA_HI
-        self.sa_iterations = DEFAULT_SA_ITERATIONS
-        self.num_islands = 6
-        self.migration_interval = 20
         self.cross_repair = DEFAULT_CROSSOVER
         self.lambda_gamma = (0.0, 0.0)
         self.latin = []
@@ -182,7 +170,6 @@ class Data:
         self.repair_opts = []
 
         pro_file = parser.retrieve("problem")
-        self.filepath = os.path.abspath(pro_file)
         with open(pro_file, "r", encoding="utf-8") as fp:
             lines = fp.readlines()
 
@@ -396,7 +383,10 @@ class Data:
             raise SystemExit(-1)
         print("Compute backend: %s" % self.compute_backend)
 
-        sr = max(1, int(math.sqrt(float(self.p_size))))
+        if not chk_p_square(self.p_size):
+            print("Expect popsize to be perfect squrare number")
+            raise SystemExit(-1)
+        sr = int(math.sqrt(float(self.p_size)))
         if sr == 1:
             self.latin.append((0.5, 0.5))
         else:
@@ -411,16 +401,6 @@ class Data:
         if parser.exists("init"):
             self.init = parser.retrieve("init")
         print("Insertion for initialization: %s" % self.init)
-        if parser.exists("grasp_alpha_lo"):
-            self.grasp_alpha_lo = float(parser.retrieve("grasp_alpha_lo"))
-        if parser.exists("grasp_alpha_hi"):
-            self.grasp_alpha_hi = float(parser.retrieve("grasp_alpha_hi"))
-        if parser.exists("sa_iterations"):
-            self.sa_iterations = int(parser.retrieve("sa_iterations"))
-        if parser.exists("num_islands"):
-            self.num_islands = int(parser.retrieve("num_islands"))
-        if parser.exists("migration_interval"):
-            self.migration_interval = int(parser.retrieve("migration_interval"))
         if parser.exists("k_init"):
             self.k_init = int(parser.retrieve("k_init"))
         if self.k_init == K:
@@ -551,49 +531,6 @@ class Data:
         if parser.exists("bks"):
             self.bks = float(parser.retrieve("bks"))
 
-        self.paper_flags = False
-        self.objective = "lexicographic"
-        if parser.exists("objective"):
-            self.objective = parser.retrieve("objective")
-        print("Objective mode: %s" % self.objective)
-
-        # This package is the Python/PyTorch CUDA implementation.
-        self.architecture = "python_cuda"
-        if parser.exists("architecture"):
-            self.architecture = parser.retrieve("architecture")
-        if self.architecture != "python_cuda":
-            raise ValueError(
-                "src_python_gpu_SA_RCRS_GRASP only supports architecture=python_cuda"
-            )
-        print("Architecture: %s" % self.architecture)
-
-        is_sa_rcrs_grasp = getattr(self, "init", "") in {"sa_rcrs_grasp", "rcrs_grasp", "rcg"}
-        if parser.exists("paper_flags") or is_sa_rcrs_grasp:
-            print("Paper flags: enabled (2opt, 2opt*, oropt_single, 2exchange, related_removal, regret_insertion, lexicographic)")
-            self.paper_flags = True
-            self.pruning = True
-            self.O_1_evl = True
-            self.two_opt = True
-            self.two_opt_star = True
-            self.or_opt = True
-            self.or_opt_len = 2
-            self.small_opts = ["2opt", "2opt*", "oropt_single", "2exchange"]
-            self.two_exchange = True
-            self.ex_len = 2
-            self.related_removal = True
-            self.regret_insertion = True
-            self.objective = "lexicographic"
-            if not parser.exists("init") and not is_sa_rcrs_grasp:
-                self.init = "sa"
-
-        for opt in self.small_opts:
-            if opt not in self.mem:
-                if opt in ("2opt", "oropt_single"):
-                    self.mem[opt] = [Move() for _ in range(self.vehicle.max_num)]
-                else:
-                    self.mem[opt] = [Move() for _ in range(self.vehicle.max_num * self.vehicle.max_num)]
-
-
         c_num = self.customer_num
         for i in range(c_num + 1):
             for j in range(c_num + 1):
@@ -603,7 +540,7 @@ class Data:
         self.backend = create_backend(self, self.compute_backend)
         print("Compute backend requested: %s" % self.compute_backend)
         print("Compute backend selected: %s" % self.backend.name)
-        if self.backend.is_cuda and not getattr(self.backend, "multi_process_safe", False) and self.parallel_workers != 1:
+        if self.backend.is_cuda and self.parallel_workers != 1:
             print(
                 "CUDA backend uses a single process. Forcing workers from %d to 1"
                 % self.parallel_workers

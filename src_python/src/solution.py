@@ -1,9 +1,12 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import List, Optional
 
-from .config import INFEASIBLE
+from .config import (
+    FITNESS_DISTANCE_WEIGHT,
+    FITNESS_VEHICLE_WEIGHT,
+    INFEASIBLE,
+    MAX_NODE_IN_ROUTE,
+)
 
 
 @dataclass
@@ -108,20 +111,38 @@ def make_tmp_nl(data) -> List[int]:
     return [data.DC, data.DC]
 
 
+def equal_attr(a: Attr, b: Attr) -> bool:
+    return (
+        a.num_cus == b.num_cus
+        and a.dist == b.dist
+        and a.s == b.s
+        and a.e == b.e
+        and a.T_D == b.T_D
+        and a.T_E == b.T_E
+        and a.T_L == b.T_L
+        and a.C_E == b.C_E
+        and a.C_H == b.C_H
+        and a.C_L == b.C_L
+    )
+
+
 class Route:
-    def __init__(self, data=None) -> None:
+    def __init__(self, data) -> None:
         self.node_list: List[int] = []
         self.dep_time = 0.0
         self.ret_time = 0.0
         self.transcost = 0.0
         self.attr: List[Attr] = []
         self.self = Attr()
-        if data is not None:
-            self.node_list = [data.DC, data.DC]
-            self.update(data)
+
+        self.attr = []
+        self.node_list = []
+        self.node_list.append(data.DC)
+        self.node_list.append(data.DC)
+        self.update(data)
 
     def clone(self) -> "Route":
-        new_route = Route()
+        new_route = Route.__new__(Route)
         new_route.node_list = list(self.node_list)
         new_route.dep_time = self.dep_time
         new_route.ret_time = self.ret_time
@@ -130,30 +151,12 @@ class Route:
         new_route.self = self.self.copy()
         return new_route
 
-    def isempty(self) -> bool:
-        return len(self.node_list) <= 2 or self.self.num_cus == 0
-
     def gat(self, i: int, j: int) -> Attr:
         nl_len = len(self.node_list)
         return self.attr[i * nl_len + j]
 
     def cal_attr(self, data) -> None:
         nl_len = len(self.node_list)
-        if nl_len <= 2:
-            self.attr = [Attr() for _ in range(nl_len * nl_len)]
-            for i in range(nl_len):
-                attr_for_one_node(data, self.node_list[i], self.gat(i, i))
-            if nl_len == 2:
-                connect_into(
-                    self.gat(0, 0),
-                    self.gat(1, 1),
-                    self.gat(0, 1),
-                    data.dist[data.DC][data.DC],
-                    data.time[data.DC][data.DC],
-                )
-                self.self = self.gat(0, 1).copy()
-            return
-
         end_index = nl_len - 1
         self.attr = [Attr() for _ in range(nl_len * nl_len)]
 
@@ -202,13 +205,18 @@ class Route:
         self.dep_time = self.self.T_E
         self.ret_time = self.dep_time + self.self.T_D
 
+    def set_node_list(self, nl: List[int]) -> None:
+        self.node_list = list(nl)
+
     def cal_cost(self, data) -> float:
-        if self.isempty():
-            return 0.0
-        unit_cost = getattr(data.vehicle, "unit_cost", 1.0)
-        d_cost = getattr(data.vehicle, "d_cost", 2000.0)
-        self.transcost = self.self.dist * unit_cost
-        return d_cost + self.transcost
+        self.transcost = self.self.dist * FITNESS_DISTANCE_WEIGHT
+        dispatchcost = 0.0
+        if not self.isempty():
+            dispatchcost = FITNESS_VEHICLE_WEIGHT
+        return self.transcost + dispatchcost
+
+    def isempty(self) -> bool:
+        return self.self.num_cus == 0
 
     def check(self, data):
         nodes = []
@@ -221,6 +229,7 @@ class Route:
         cost = 0.0
 
         if nl[0] != data.DC or nl[length - 1] != data.DC:
+            print("Not starting/ending at DC")
             st_re_DC = False
             return nodes, st_re_DC, smaller_ca, earlier_tw, cost
 
@@ -235,6 +244,7 @@ class Route:
 
         if load > capacity:
             smaller_ca = False
+            print("Whole delivery > capacity")
             return nodes, st_re_DC, smaller_ca, earlier_tw, cost
 
         pre_node = nl[0]
@@ -243,25 +253,40 @@ class Route:
             load = load - data.node[node].delivery + data.node[node].pickup
             if load > capacity:
                 smaller_ca = False
+                print(
+                    "Load %f > capacity %f at %d th node: %d, with delivery %f and pickup %f"
+                    % (
+                        load,
+                        capacity,
+                        i,
+                        node,
+                        data.node[node].delivery,
+                        data.node[node].pickup,
+                    )
+                )
                 return nodes, st_re_DC, smaller_ca, earlier_tw, cost
             time_val += data.time[pre_node][node]
             if time_val > data.node[node].end:
                 earlier_tw = False
+                print(
+                    "Arrive at %d th node: %d at time %f > tw end %f"
+                    % (i, node, time_val, data.node[node].end)
+                )
                 return nodes, st_re_DC, smaller_ca, earlier_tw, cost
             time_val = max(time_val, data.node[node].start) + data.node[node].s_time
             distance += data.dist[pre_node][node]
             pre_node = node
 
-        unit_cost = getattr(data.vehicle, "unit_cost", 1.0)
-        d_cost = getattr(data.vehicle, "d_cost", 2000.0)
-        cost = d_cost + distance * unit_cost
+        cost = FITNESS_VEHICLE_WEIGHT + distance * FITNESS_DISTANCE_WEIGHT
         return nodes, st_re_DC, smaller_ca, earlier_tw, cost
 
 
 class Solution:
     def __init__(self, data=None) -> None:
         self.route_list: List[Route] = []
-        self.cost = float("inf")
+        self.cost = 0.0
+        if data is not None:
+            self.route_list = []
 
     def clone(self) -> "Solution":
         new_solution = Solution()
@@ -273,9 +298,11 @@ class Solution:
         self.route_list = [r.clone() for r in other.route_list]
         self.cost = other.cost
 
+    def reserve(self, data) -> None:
+        return None
+
     def append(self, r: Route) -> None:
-        if not r.isempty():
-            self.route_list.append(r.clone())
+        self.route_list.append(r.clone())
 
     def delete(self, index: int) -> None:
         self.route_list.pop(index)
@@ -283,20 +310,30 @@ class Solution:
     def get(self, index: int) -> Route:
         return self.route_list[index]
 
+    def get_tail(self) -> Route:
+        return self.route_list[-1]
+
     def len(self) -> int:
         return len(self.route_list)
 
     def update(self, data) -> None:
-        self.route_list = [r for r in self.route_list if not r.isempty()]
-        for r in self.route_list:
-            r.update(data)
+        length = self.len()
+        index = 0
+        while index < length:
+            route = self.get(index)
+            route.update(data)
+            if route.isempty():
+                self.delete(index)
+                length -= 1
+            else:
+                index += 1
 
     def local_update(self, route_indice: List[int]) -> None:
         length = self.len()
         empty_id = -1
         last_id_in = False
         for item in route_indice:
-            if 0 <= item < length and self.get(item).isempty():
+            if self.get(item).isempty():
                 empty_id = item
             if item == length - 1:
                 last_id_in = True
@@ -309,45 +346,19 @@ class Solution:
                 if not last_id_in:
                     route_indice.append(length - 1)
 
-    def clear(self, data=None) -> None:
+    def clear(self, data) -> None:
         self.route_list = []
-        self.cost = float("inf")
+        self.cost = 0.0
 
     def cal_cost(self, data) -> float:
-        self.update(data)
-        if len(self.route_list) == 0:
-            self.cost = float("inf")
-            return self.cost
-        self.cost = sum(r.cal_cost(data) for r in self.route_list)
+        self.cost = 0.0
+        for route in self.route_list:
+            self.cost += route.cal_cost(data)
         return self.cost
 
-    def check(self, data, verbose=True) -> bool:
-        total_cost = 0.0
-        record = set()
-        for r in self.route_list:
-            nodes, st_re_DC, smaller_ca, earlier_tw, cost = r.check(data)
-            if not st_re_DC or not smaller_ca or not earlier_tw:
-                if verbose:
-                    print("Route check failed for route:", r.node_list)
-                return False
-            total_cost += cost
-            for node in nodes:
-                if node != data.DC and 1 <= node <= data.customer_num:
-                    if node in record:
-                        if verbose:
-                            print(f"Customer {node} visited multiple times!")
-                        return False
-                    record.add(node)
-        if len(record) != data.customer_num:
-            if verbose:
-                print(f"Visited {len(record)} customers, expected {data.customer_num}")
-            return False
-        return True
-
     def build_output_str(self) -> str:
-        length = self.len()
-        td = self.cost - 2000.0 * length
         output_s = "Details of the solution:\n"
+        length = self.len()
         for i in range(length):
             nl = self.route_list[i].node_list
             output_s += (
@@ -363,15 +374,42 @@ class Solution:
                 output_s += " " + str(node)
             output_s += "\n"
         output_s += "vehicle (route) number: " + str(length) + "\n"
-        output_s += "Vehicle count: " + str(length) + "\n"
-        output_s += f"Total distance: {td:.4f}\n"
         output_s += "Total cost: " + str(self.cost) + "\n"
         return output_s
 
     def output(self, data) -> None:
         output_s = self.build_output_str()
-        if not getattr(data, "if_output", False):
-            print(output_s, end="", flush=True)
+        if not data.if_output:
+            print(output_s, end="")
         else:
             with open(data.output, "w", encoding="utf-8") as out:
                 out.write(output_s)
+
+    def check(self, data) -> bool:
+        total_cost = 0.0
+        length = self.len()
+        record = set()
+        for i in range(length):
+            route = self.get(i)
+            nodes, st_re_DC, smaller_ca, earlier_tw, cost = route.check(data)
+            if not st_re_DC or not smaller_ca or not earlier_tw:
+                return False
+            total_cost += cost
+            for node in nodes:
+                if node not in record:
+                    record.add(node)
+                else:
+                    print("Duplicate node: %d" % node)
+                    return False
+        for i in range(data.customer_num + 1):
+            if i == data.DC:
+                continue
+            if i not in record:
+                print("Missing customer: %d" % i)
+                return False
+
+        print(
+            "This cost %f, check total cost %f, diff %f"
+            % (self.cost, total_cost, total_cost - self.cost)
+        )
+        return True
