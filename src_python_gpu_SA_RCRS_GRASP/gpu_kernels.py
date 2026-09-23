@@ -615,12 +615,18 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
             best_r = -1
             best_p = -1
 
+            dm = prob_data[10]
             for r in range(cand_nr[s]):
                 l = cand_rlen[s, r]
                 if l + 1 > cand_nodes.shape[2]:
                     continue
                 ok_o, old_d = eval_route(cand_nodes[s, r, :l], l, prob_data)
                 for p in range(1, l):
+                    prev_node = cand_nodes[s, r, p - 1]
+                    next_node = cand_nodes[s, r, p]
+                    approx_delta = dm[prev_node, node] + dm[node, next_node] - dm[prev_node, next_node]
+                    if approx_delta >= best_delta:
+                        continue
                     for k in range(p):
                         scratch_route[s, k] = cand_nodes[s, r, k]
                     scratch_route[s, p] = node
@@ -653,8 +659,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                     cand_cost[s] = math.inf
                     return
 
-        repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-               scratch_route, scratch_flags, prob_data)
+        eval_solution(cand_nodes, cand_rlen, cand_nr, s, prob_data)
 
     @dev_fn
     def woa_intensification_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
@@ -679,8 +684,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                     tmp = cand_nodes[s, r, p1]
                     cand_nodes[s, r, p1] = cand_nodes[s, r, p2]
                     cand_nodes[s, r, p2] = tmp
-            repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                   scratch_route, scratch_flags, prob_data)
+            eval_solution(cand_nodes, cand_rlen, cand_nr, s, prob_data)
         else:
             # Exploration: start from current, apply random 2-opt segment reversal
             copy_solution(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
@@ -697,8 +701,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                         cand_nodes[s, r, p2] = tmp
                         p1 += 1
                         p2 -= 1
-            repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                   scratch_route, scratch_flags, prob_data)
+            eval_solution(cand_nodes, cand_rlen, cand_nr, s, prob_data)
 
     @dev_fn
     def sho_woa_update_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -736,16 +739,6 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                                         cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states)
-            if refresh(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s, prob_data):
-                if rand_u01(rng_states, s) < mutation_probability:
-                    copy_solution(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                                  next_nodes, next_rlen, next_nr, next_dist, next_cost, s)
-                    light_mutation(cand_nodes, cand_rlen, cand_nr, s, scratch_route,
-                                   scratch_route2, prob_data, rng_states)
-                    if not repair(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
-                                  scratch_route, scratch_flags, prob_data):
-                        copy_solution(next_nodes, next_rlen, next_nr, next_dist, next_cost, s,
-                                      cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s)
         else:
             woa_intensification_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
                                       ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, island_id,

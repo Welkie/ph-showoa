@@ -34,19 +34,21 @@ Bên cạnh các toán tử nội tuyến và hoán đổi cơ bản, GPU hỗ t
 4. **Inter-route 2-opt\***: Tráo đổi hai phần đuôi (tails) giữa hai tuyến xe.
 5. **Inter-route Relocate**: Rút một khách hàng từ tuyến $r_1$ và chèn vào vị trí có lợi nhất trên tuyến $r_2$ (thỏa mãn tải trọng và thời gian). Toán tử này hỗ trợ đắc lực cho việc làm rỗng tuyến để giảm NV và rút ngắn TD.
 
-### 1.4. Phủ sóng Local Search & Route Elimination trên toàn bộ quần thể (Population Scope)
-- Cứ mỗi chu kỳ (mặc định 25 thế hệ), GPU thực thi `route_elimination` và `local_search` song song trên **toàn bộ 32 cá thể** trong quần thể (`pop`) thay vì chỉ tinh chỉnh một cá thể tốt nhất.
-- Giúp toàn bộ quần thể luôn duy trì chất lượng nghiệm cao, cung cấp nguồn cha mẹ ưu tú và đa dạng cho các bước lai ghép tiếp theo.
+### 1.4. Phủ sóng Local Search & Route Elimination theo đảo (Island Scope) hoặc toàn quần thể
+- Cứ mỗi chu kỳ (mặc định 25 thế hệ), GPU thực thi `route_elimination` và `local_search`.
+- Hỗ trợ chế độ `island` (tinh chỉnh 4 cá thể tinh hoa đại diện 4 đảo, cân bằng tối ưu giữa thời gian chạy ~120s/run và chất lượng nghiệm) hoặc `population` (toàn bộ 32 cá thể).
+- Giúp các đảo luôn duy trì chất lượng nghiệm cao, cung cấp nguồn cha mẹ ưu tú và đa dạng cho các bước lai ghép tiếp theo.
 
 ### 1.5. Toán tử lai ghép SHO Guided Crossover dùng Greedy Best-Insertion
 - Kế thừa 1–2 tuyến tinh hoa từ cá thể tốt nhất của đảo (`ibest`).
-- Với các khách hàng chưa phục vụ từ nghiệm hiện tại và bạn phối ngẫu (peer): Áp dụng **Greedy Best-Insertion** — duyệt tất cả các vị trí khả thi trên mọi tuyến hiện có để tìm vị trí làm tăng khoảng cách ít nhất ($\min \Delta d$).
+- Với các khách hàng chưa phục vụ từ nghiệm hiện tại và bạn phối ngẫu (peer): Áp dụng **Greedy Best-Insertion** với bộ lọc cắt tỉa khoảng cách tam giác ($\Delta d_{approx} < \text{best\_}\Delta d$) trước khi kiểm tra ràng buộc thời gian/tải trọng, giúp tốc độ chèn tăng hơn 10 lần.
 - Chỉ mở tuyến mới khi không thể chèn vào bất kỳ tuyến hiện có nào, tránh tạo ra các tuyến zíc-zắc có TD cao như cơ chế chèn tuần tự (sequential packing).
+- Cơ chế từ chối nghiệm không hợp lệ $O(1)$: Nếu cá thể con sau lai ghép không khả thi, thuật toán từ chối ngay lập tức thay vì chạy vòng lặp sửa nghiệm nặng nề ($O(N^3)$ repair), loại bỏ hoàn toàn phân kỳ luồng (warp divergence) trên GPU.
 
 ### 1.6. Toán tử khai thác WOA Intensification trực tiếp
 - Khi $|A| < 1$ (giai đoạn bao vây thức ăn): Copy trực tiếp nghiệm tốt nhất của đảo (`ibest`) và áp dụng biến dị nhẹ 1–2 đỉnh để khai thác sâu xung quanh nghiệm ưu tú.
 - Khi $|A| \ge 1$ (giai đoạn thăm dò): Copy nghiệm hiện tại và áp dụng đảo đoạn 2-opt ngẫu nhiên.
-- Khắc phục nhược điểm của toán tử `relink` theo chỉ số tuyến (vốn bị bỏ qua khi các tuyến không có chung khách hàng).
+- Đánh giá khả thi trực tiếp và từ chối tức thời $O(1)$ nếu vi phạm, giữ nhịp độ thực thi đồng bộ trên GPU.
 
 ### 1.7. Mô hình đa đảo (Island Model) & Ring Migration
 - Chia quần thể $P=32$ thành 4 đảo độc lập (mỗi đảo 8 cá thể).
@@ -74,5 +76,10 @@ Bên cạnh các toán tử nội tuyến và hoán đổi cơ bản, GPU hỗ t
 ### 2.4. Theo dõi nghiệm tốt nhất phân tầng (Multi-tier Best Tracking)
 - Cập nhật theo thứ bậc: `population` $\to$ `island_best` $\to$ `global_best` hoàn toàn trên GPU thông qua các kernel chuyên biệt với độ phức tạp cực thấp.
 
-### 2.5. Hỗ trợ CPU Reference tương đương 1:1
+### 2.5. Kiểm soát số bước lặp và khử phân kỳ luồng (Warp Divergence Elimination)
+- Trong `local_search`: Chặn cứng số lượt quét láng giềng (`max_passes = 2` trên GPU) và loại bỏ việc nhảy lại từ đầu (`continue`) mỗi khi tìm được một cải tiến nhỏ. Khi chạy test đối chiếu ngữ nghĩa CPU (`max_passes <= 0`), thuật toán tự động chuyển sang chế độ lặp đến khi hội tụ hoàn toàn.
+- Khử hoàn toàn các lệnh gọi hàm sửa nghiệm `repair` lồng nhau trong thân vòng lặp tiến hóa; chỉ giữ `repair` ở bước khởi tạo quần thể ban đầu.
+- Nhờ đó, thời gian 1 run trên instance 100 khách (`cdp103`, `rcdp101`) duy trì ở mức ~120s (thay vì bị treo hoặc chạy >500s do luồng warp bị stall).
+
+### 2.6. Hỗ trợ CPU Reference tương đương 1:1
 - Toàn bộ logic kernel và toán tử đều hỗ trợ thực thi trên Numba CPU Reference, giúp kiểm thử, gỡ lỗi và đối chiếu chính xác ngay cả trên các môi trường không có GPU phần cứng.

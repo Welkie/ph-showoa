@@ -300,11 +300,14 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
 
     @dev_fn
     def local_search(nodes, lengths, counts, distances, costs, s, scratch, scratch2,
-                     problem, unused_passes=0):
-        # Ordered first improvement, restarting after every improving move.
+                     problem, max_passes=2):
         if not refresh(nodes, lengths, counts, distances, costs, s, problem):
             return
+        pass_idx = 0
         while True:
+            if max_passes > 0 and pass_idx >= max_passes:
+                break
+            pass_idx += 1
             improved = False
             for r in range(counts[s]):
                 size = lengths[s, r]
@@ -325,7 +328,7 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
                         break
                 if improved:
                     break
-            if improved:
+            if improved and max_passes <= 0:
                 continue
             for r1 in range(counts[s]):
                 l1 = lengths[s, r1]
@@ -409,7 +412,7 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
                         break
                 if improved:
                     break
-            if improved:
+            if improved and max_passes <= 0:
                 continue
             # GPU extension: exchange non-empty tails after exhausting the
             # base neighborhoods. Keep both vehicles; validate both new routes.
@@ -456,7 +459,7 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
                             break
                     if improved:
                         break
-            if improved:
+            if improved and max_passes <= 0:
                 continue
             # Inter-route Relocate: move a single customer from r1 to r2
             for r1 in range(counts[s]):
@@ -514,6 +517,8 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
                         break
                 if improved:
                     break
+            if improved and max_passes <= 0:
+                continue
             if not improved:
                 break
         refresh(nodes, lengths, counts, distances, costs, s, problem)
