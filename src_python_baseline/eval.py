@@ -18,7 +18,7 @@ def check_tw(a: Attr, b: Attr, data) -> bool:
 
 def _chk_route_list_cpu(nl, data):
     length = len(nl)
-    if nl[0] != data.DC or nl[length - 1] != data.DC:
+    if length < 2 or nl[0] != data.DC or nl[length - 1] != data.DC:
         return False, 0.0
     if length == 2:
         return True, 0.0
@@ -36,7 +36,7 @@ def _chk_route_list_cpu(nl, data):
     for i in range(1, length):
         node = nl[i]
         load = load - data.node[node].delivery + data.node[node].pickup
-        if load > capacity:
+        if load < 0 or load > capacity:
             return False, 0.0
         time_val += data.time[pre_node][node]
         if time_val > data.node[node].end:
@@ -49,9 +49,26 @@ def _chk_route_list_cpu(nl, data):
     return True, cost
 
 
+def _materialize_sequences(s, sequences, sequence_count, data):
+    """Build exactly the route that apply_move will later install."""
+    nodes = []
+    for index in range(sequence_count):
+        seq = sequences[index]
+        if seq.r_index == -1:
+            nodes.append(data.DC)
+            continue
+        source = s.get(seq.r_index).node_list
+        step = 1 if seq.start_point <= seq.end_point else -1
+        nodes.extend(source[pos] for pos in range(seq.start_point, seq.end_point + step, step))
+    return nodes
+
+
 def _chk_route_list(nl, data):
     backend = getattr(data, "backend", None)
     if backend is not None:
+        if backend.name == "GpuProxyBackend":
+            from .compute_backend import _evaluate_route_cpu
+            return _evaluate_route_cpu(nl, backend.snapshot)
         return backend.evaluate_route(nl)
     return _chk_route_list_cpu(nl, data)
 
@@ -59,8 +76,12 @@ def _chk_route_list(nl, data):
 def evaluate_route_batch(routes, data):
     backend = getattr(data, "backend", None)
     if backend is not None:
+        if getattr(data, "in_initialization", False) and backend.name == "GpuProxyBackend":
+            from .compute_backend import _evaluate_route_cpu
+            return [_evaluate_route_cpu(route, backend.snapshot) for route in routes]
         return backend.evaluate_routes(routes)
     return [_chk_route_list_cpu(route, data) for route in routes]
+
 
 
 def chk_nl_node_pos_O_n(nl, inserted_node: int, pos: int, data):
@@ -117,26 +138,13 @@ def eval_move(s, m, data) -> bool:
     ori_cost = s.get(r_indice[0]).cal_cost(data)
 
     if not data.O_1_evl:
-        target_n_l = []
-        for i in range(m.len_1):
-            seq = m.seqList_1[i]
-            source_n_l = s.get(seq.r_index).node_list
-            for index in range(seq.start_point, seq.end_point + 1):
-                target_n_l.append(source_n_l[index])
+        target_n_l = _materialize_sequences(s, m.seqList_1, m.len_1, data)
         flag, new_cost = _chk_route_list(target_n_l, data)
         if not flag:
             return False
 
         if len(r_indice) == 2:
-            target_n_l_2 = []
-            for i in range(m.len_2):
-                seq = m.seqList_2[i]
-                if seq.r_index == -1:
-                    target_n_l_2.append(data.DC)
-                    continue
-                source_n_l = s.get(seq.r_index).node_list
-                for index in range(seq.start_point, seq.end_point + 1):
-                    target_n_l_2.append(source_n_l[index])
+            target_n_l_2 = _materialize_sequences(s, m.seqList_2, m.len_2, data)
             if r_indice[1] != -1:
                 ori_cost += s.get(r_indice[1]).cal_cost(data)
             flag, cost = _chk_route_list(target_n_l_2, data)
@@ -152,7 +160,7 @@ def eval_move(s, m, data) -> bool:
         return False
     new_cost = 0.0
     if tmp_attr_1.num_cus != 0:
-        new_cost += data.vehicle.d_cost + tmp_attr_1.dist * data.vehicle.unit_cost
+        new_cost += FITNESS_VEHICLE_WEIGHT + tmp_attr_1.dist * FITNESS_DISTANCE_WEIGHT
     if len(r_indice) == 2:
         tmp_attr_2 = Attr()
         if not eval_route(s, m.seqList_2, m.len_2, tmp_attr_2, data):
@@ -160,7 +168,7 @@ def eval_move(s, m, data) -> bool:
         if r_indice[1] != -1:
             ori_cost += s.get(r_indice[1]).cal_cost(data)
         if tmp_attr_2.num_cus != 0:
-            new_cost += data.vehicle.d_cost + tmp_attr_2.dist * data.vehicle.unit_cost
+            new_cost += FITNESS_VEHICLE_WEIGHT + tmp_attr_2.dist * FITNESS_DISTANCE_WEIGHT
     m.delta_cost = new_cost - ori_cost
 
     return True

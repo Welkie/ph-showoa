@@ -110,6 +110,7 @@ class GpuEngine:
 
     def _allocate_buffers(self):
         P, R, L, N, num_islands = self.P, self.R, self.L, self.N, self.num_islands
+        max_iter = int(getattr(self.data, "max_iter", 1000))
 
         if self.is_cuda:
             pop_nodes = cuda.device_array((P, R, L), dtype=np.int32)
@@ -147,6 +148,9 @@ class GpuEngine:
             scratch_unrouted = cuda.device_array((P, N + 1), dtype=np.int32)
             scratch_flags = cuda.device_array((P, N + 1), dtype=np.int32)
             scratch_scores = cuda.device_array((P, N + 1), dtype=np.float64)
+
+            rng_states = cuda.device_array((P, 4), dtype=np.uint32)
+            run_log = cuda.device_array((max_iter, 2), dtype=np.float64)
 
             # Upload problem data to device
             prob_device = (
@@ -193,6 +197,9 @@ class GpuEngine:
             scratch_flags = np.zeros((P, N + 1), dtype=np.int32)
             scratch_scores = np.zeros((P, N + 1), dtype=np.float64)
 
+            rng_states = np.zeros((P, 4), dtype=np.uint32)
+            run_log = np.zeros((max_iter, 2), dtype=np.float64)
+
             prob_device = self.prob_data
 
         return (
@@ -202,20 +209,9 @@ class GpuEngine:
             ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
             gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
             scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
+            rng_states, run_log,
             prob_device
         )
-
-    def _init_rng(self, seed: int):
-        P = self.P
-        rng = np.zeros((P, 4), dtype=np.uint32)
-        for s in range(P):
-            rng[s, 0] = np.uint32((seed + s * 1337) & 0xFFFFFFFF) | 1
-            rng[s, 1] = np.uint32((seed + s * 2749 + 362436069) & 0xFFFFFFFF) | 1
-            rng[s, 2] = np.uint32((seed + s * 5171 + 521288629) & 0xFFFFFFFF) | 1
-            rng[s, 3] = np.uint32((seed + s * 7919 + 88675123) & 0xFFFFFFFF) | 1
-        if self.is_cuda:
-            return cuda.to_device(rng)
-        return rng
 
     def run_solve(self, best_s: Solution):
         total_runs = int(getattr(self.data, "runs", 30))
@@ -228,7 +224,11 @@ class GpuEngine:
         base_seed = int(getattr(self.data, "seed", 42))
 
         backend_label = "Numba CUDA" if self.is_cuda else "Numba CPU Reference"
-        print(f"[GpuEngine] Running pure {backend_label} solver (P={self.P}, islands={self.num_islands})", flush=True)
+        print(f"================================================================================", flush=True)
+        print(f"[PH-SHOWOA] Full-GPU Solver Engine (SA-RCRS-GRASP) Initializing...", flush=True)
+        print(f"CPU_PREP: Allocating GPU device buffers, uploading dataset & config, building execution graph", flush=True)
+        print(f"  Population Size P={self.P}, Islands={self.num_islands}, Max Iterations={max_iter}, Backend={backend_label}", flush=True)
+        print(f"================================================================================", flush=True)
 
         start_total = time.perf_counter()
         completed_runs = 0
@@ -242,6 +242,7 @@ class GpuEngine:
             ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
             gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
             scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
+            rng_states, run_log,
             prob_device
         ) = buffers
 
@@ -258,9 +259,8 @@ class GpuEngine:
 
         for run in range(1, total_runs + 1):
             run_seed = base_seed + run * 100003
-            rng_states = self._init_rng(run_seed)
 
-            print(f"---------------------------------Run {run} (100% Pure {backend_label} Engine)---------------------------", flush=True)
+            print(f"---------------------------------Run {run} (100% Full-GPU Solver)---------------------------", flush=True)
             if self.is_cuda:
                 try:
                     free_b, total_b = cuda.current_context().get_memory_info()
@@ -271,19 +271,13 @@ class GpuEngine:
             else:
                 print(f"  Run {run} [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P={self.P}, islands={self.num_islands})", flush=True)
 
-            print(f"  Run {run} CPU_PREP: seed/config ready; launching on {backend_label}", flush=True)
+            print(f"  Run {run} CPU_PREP: run_id={run}, seed={run_seed} passed to GPU execution graph", flush=True)
             print(f"  Run {run} RUN_GPU_BEGIN", flush=True)
 
-            # Reset ibest and gbest
+            # 1. Khởi tạo trạng thái trên GPU
             if self.is_cuda:
-                ibest_nr.copy_to_device(np.zeros(self.num_islands, dtype=np.int32))
-                gbest_nr.copy_to_device(np.zeros(1, dtype=np.int32))
-            else:
-                ibest_nr.fill(0)
-                gbest_nr.fill(0)
-
-            # 1. Initialization kernel
-            if self.is_cuda:
+                k["init_device_rng"][self.blocks, self.threads_per_block](rng_states, run_seed)
+                k["reset_run_state"][1, 1](ibest_nr, gbest_nr, run_log)
                 k["init_population"][self.blocks, self.threads_per_block](
                     pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                     scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
@@ -300,6 +294,8 @@ class GpuEngine:
                     self.num_islands
                 )
             else:
+                k["init_device_rng"](rng_states, run_seed)
+                k["reset_run_state"](ibest_nr, gbest_nr, run_log)
                 k["init_population"](
                     pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                     scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
@@ -316,7 +312,7 @@ class GpuEngine:
                     self.num_islands
                 )
 
-            # 2. Main Generation Loop (ZERO CPU SYNC)
+            # 2. Vòng thế hệ trên GPU (ZERO CPU-GPU SYNC)
             cur_pop = (pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost)
             nxt_pop = (next_nodes, next_rlen, next_nr, next_dist, next_cost)
 
@@ -325,7 +321,7 @@ class GpuEngine:
                 a, p_hybrid = _dynamic_parameters(iter_idx, max_iter)
                 p_mode = _mode_probability(p_hybrid, self.data)
 
-                # SHO / WOA update
+                # SHO / WOA
                 if self.is_cuda:
                     k["update_population"][self.blocks, self.threads_per_block](
                         cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
@@ -348,7 +344,7 @@ class GpuEngine:
                 # Ping-pong swap
                 cur_pop, nxt_pop = nxt_pop, cur_pop
 
-                # Periodic route elimination and deep local search
+                # Periodic local search
                 if gen % ls_interval == 0:
                     if self.is_cuda:
                         k["route_elimination"][self.blocks, self.threads_per_block](
@@ -369,7 +365,7 @@ class GpuEngine:
                             scratch_route, scratch_route2, prob_device, 2
                         )
 
-                # Periodic Stagnation Diversification
+                # Periodic diversification
                 if gen % stag_interval == 0:
                     if self.is_cuda:
                         k["stagnation_diversify"][self.isl_blocks, self.threads_per_block](
@@ -384,7 +380,7 @@ class GpuEngine:
                             prob_device, rng_states, self.num_islands, self.island_size
                         )
 
-                # Periodic Island Migration
+                # Periodic migration
                 if self.num_islands > 1 and gen % migr_interval == 0:
                     if self.is_cuda:
                         k["island_migration"][1, 1](
@@ -411,6 +407,7 @@ class GpuEngine:
                         gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
                         self.num_islands
                     )
+                    k["record_log"][1, 1](run_log, gbest_nr, gbest_dist, gen)
                 else:
                     k["update_island_bests"](
                         cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
@@ -422,17 +419,7 @@ class GpuEngine:
                         gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
                         self.num_islands
                     )
-
-                out_interval = int(getattr(self.data, "output_per_gens", 25))
-                if gen % out_interval == 0 or gen == 1 or gen == max_iter:
-                    if self.is_cuda:
-                        b_nv = int(gbest_nr.copy_to_host()[0])
-                        b_td = float(gbest_dist.copy_to_host()[0])
-                    else:
-                        b_nv = int(gbest_nr[0])
-                        b_td = float(gbest_dist[0])
-                    dev_tag = f"[GPU {d_name}]" if self.is_cuda else "[CPU]"
-                    print(f"{dev_tag} Gen: {gen}. a {a:.4f}, p_hybrid {p_mode:.4f}. Best NV {b_nv}, Best TD {b_td:.4f}", flush=True)
+                    k["record_log"](run_log, gbest_nr, gbest_dist, gen)
 
             if self.is_cuda:
                 cuda.synchronize()
@@ -440,19 +427,33 @@ class GpuEngine:
             else:
                 print(f"  Run {run} RUN_CPU_END", flush=True)
 
-            # 3. CPU_DECODE (Single sync at end of run)
+            # 3. CPU_DECODE (Single batch sync at end of run)
+            print(f"  Run {run} CPU_DECODE: Receiving gbest and telemetry log from GPU...", flush=True)
             if self.is_cuda:
                 h_gbest_nodes = gbest_nodes.copy_to_host()
                 h_gbest_rlen = gbest_rlen.copy_to_host()
                 h_gbest_nr = gbest_nr.copy_to_host()
                 h_gbest_dist = gbest_dist.copy_to_host()
                 h_gbest_cost = gbest_cost.copy_to_host()
+                h_run_log = run_log.copy_to_host()
             else:
                 h_gbest_nodes = gbest_nodes
                 h_gbest_rlen = gbest_rlen
                 h_gbest_nr = gbest_nr
                 h_gbest_dist = gbest_dist
                 h_gbest_cost = gbest_cost
+                h_run_log = run_log
+
+            # Display generation telemetry from GPU log buffer
+            out_interval = int(getattr(self.data, "output_per_gens", 25))
+            dev_tag = f"[GPU {d_name}]" if self.is_cuda else "[CPU]"
+            for g in range(1, max_iter + 1):
+                if g % out_interval == 0 or g == 1 or g == max_iter:
+                    log_nv = int(h_run_log[g - 1, 0])
+                    log_td = float(h_run_log[g - 1, 1])
+                    g_a, g_p = _dynamic_parameters(g - 1, max_iter)
+                    g_pm = _mode_probability(g_p, self.data)
+                    print(f"  {dev_tag} Gen: {g}. a {g_a:.4f}, p_hybrid {g_pm:.4f}. Best NV {log_nv}, Best TD {log_td:.4f}", flush=True)
 
             run_nv = int(h_gbest_nr[0])
             run_dist = float(h_gbest_dist[0])

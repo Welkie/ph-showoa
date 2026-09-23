@@ -352,91 +352,89 @@ def build_kernel_bundle(is_cuda: bool = False):
     def route_elimination_single(nodes, rlen, nr, dist, cost, s,
                                  scratch_route, scratch_unrouted, scratch_flags,
                                  prob_data, passes=10):
+        max_elim_len = max(20, int(prob_data[14]) // 3)
         for p_iter in range(passes):
             num_r = nr[s]
             if num_r <= 1:
                 break
 
-            min_len = 99999
-            min_r = -1
-            for r in range(num_r):
-                l = rlen[s, r]
-                if 2 < l < min_len:
-                    min_len = l
-                    min_r = r
-
-            max_elim_len = max(18, int(prob_data[14]) // 3)
-            if min_r == -1 or min_len > max_elim_len:
-                break
-
-            num_ejected = min_len - 2
-            for i in range(num_ejected):
-                scratch_unrouted[s, i] = nodes[s, min_r, i + 1]
-
-            all_inserted = True
-            for e_idx in range(num_ejected):
-                c = scratch_unrouted[s, e_idx]
-                best_delta = 1e12
-                best_target_r = -1
-                best_target_p = -1
-
-                for r in range(num_r):
-                    if r == min_r:
-                        continue
-                    l = rlen[s, r]
-                    ok_old, old_d = eval_route(nodes[s, r, :l], l, prob_data)
-                    for pos in range(1, l):
-                        for k in range(pos):
-                            scratch_route[s, k] = nodes[s, r, k]
-                        scratch_route[s, pos] = c
-                        for k in range(pos, l):
-                            scratch_route[s, k + 1] = nodes[s, r, k]
-                        ok_new, new_d = eval_route(scratch_route[s, :l+1], l + 1, prob_data)
-                        if ok_new:
-                            delta = new_d - old_d
-                            if delta < best_delta:
-                                best_delta = delta
-                                best_target_r = r
-                                best_target_p = pos
-
-                if best_target_r != -1:
-                    l = rlen[s, best_target_r]
-                    for k in range(l, best_target_p, -1):
-                        nodes[s, best_target_r, k] = nodes[s, best_target_r, k - 1]
-                    nodes[s, best_target_r, best_target_p] = c
-                    rlen[s, best_target_r] = l + 1
-                    scratch_flags[s, e_idx] = best_target_r
-                else:
-                    all_inserted = False
-                    # Rollback all previously inserted customers from this elimination attempt
-                    for undo_idx in range(e_idx):
-                        undo_r = scratch_flags[s, undo_idx]
-                        undo_c = scratch_unrouted[s, undo_idx]
-                        lr = rlen[s, undo_r]
-                        found_p = -1
-                        for p in range(1, lr - 1):
-                            if nodes[s, undo_r, p] == undo_c:
-                                found_p = p
-                                break
-                        if found_p != -1:
-                            for p in range(found_p, lr - 1):
-                                nodes[s, undo_r, p] = nodes[s, undo_r, p + 1]
-                            rlen[s, undo_r] = lr - 1
+            eliminated_any = False
+            for target_len in range(3, max_elim_len + 1):
+                num_r = nr[s]
+                if num_r <= 1:
                     break
+                for target_r in range(num_r):
+                    if rlen[s, target_r] == target_len:
+                        num_ejected = target_len - 2
+                        for i in range(num_ejected):
+                            scratch_unrouted[s, i] = nodes[s, target_r, i + 1]
 
-            if not all_inserted:
+                        all_inserted = True
+                        for e_idx in range(num_ejected):
+                            c = scratch_unrouted[s, e_idx]
+                            best_delta = 1e12
+                            best_target_r = -1
+                            best_target_p = -1
+
+                            for r in range(num_r):
+                                if r == target_r:
+                                    continue
+                                l = rlen[s, r]
+                                ok_old, old_d = eval_route(nodes[s, r, :l], l, prob_data)
+                                for pos in range(1, l):
+                                    for k in range(pos):
+                                        scratch_route[s, k] = nodes[s, r, k]
+                                    scratch_route[s, pos] = c
+                                    for k in range(pos, l):
+                                        scratch_route[s, k + 1] = nodes[s, r, k]
+                                    ok_new, new_d = eval_route(scratch_route[s, :l+1], l + 1, prob_data)
+                                    if ok_new:
+                                        delta = new_d - old_d
+                                        if delta < best_delta:
+                                            best_delta = delta
+                                            best_target_r = r
+                                            best_target_p = pos
+
+                            if best_target_r != -1:
+                                l = rlen[s, best_target_r]
+                                for k in range(l, best_target_p, -1):
+                                    nodes[s, best_target_r, k] = nodes[s, best_target_r, k - 1]
+                                nodes[s, best_target_r, best_target_p] = c
+                                rlen[s, best_target_r] = l + 1
+                                scratch_flags[s, e_idx] = best_target_r
+                            else:
+                                all_inserted = False
+                                for undo_idx in range(e_idx):
+                                    undo_r = scratch_flags[s, undo_idx]
+                                    undo_c = scratch_unrouted[s, undo_idx]
+                                    lr = rlen[s, undo_r]
+                                    found_p = -1
+                                    for p in range(1, lr - 1):
+                                        if nodes[s, undo_r, p] == undo_c:
+                                            found_p = p
+                                            break
+                                    if found_p != -1:
+                                        for p in range(found_p, lr - 1):
+                                            nodes[s, undo_r, p] = nodes[s, undo_r, p + 1]
+                                        rlen[s, undo_r] = lr - 1
+                                break
+
+                        if all_inserted:
+                            for r in range(target_r, num_r - 1):
+                                rlen[s, r] = rlen[s, r + 1]
+                                for i in range(rlen[s, r]):
+                                    nodes[s, r, i] = nodes[s, r + 1, i]
+                            rlen[s, num_r - 1] = 0
+                            nr[s] = num_r - 1
+                            ok, n_act, t_dist, t_cost = eval_solution(nodes, rlen, nr, s, prob_data)
+                            dist[s] = t_dist
+                            cost[s] = t_cost
+                            eliminated_any = True
+                            break
+                if eliminated_any:
+                    break
+            if not eliminated_any:
                 break
-            else:
-                # Successfully inserted all ejected customers! Remove min_r by shifting
-                for r in range(min_r, num_r - 1):
-                    rlen[s, r] = rlen[s, r + 1]
-                    for i in range(rlen[s, r]):
-                        nodes[s, r, i] = nodes[s, r + 1, i]
-                rlen[s, num_r - 1] = 0
-                nr[s] = num_r - 1
-                ok, n_act, t_dist, t_cost = eval_solution(nodes, rlen, nr, s, prob_data)
-                dist[s] = t_dist
-                cost[s] = t_cost
 
     # -------------------------------------------------------------------------
     # 5. Simulated Annealing Warmup (5 Neighborhood Operators)
@@ -968,6 +966,12 @@ def build_kernel_bundle(is_cuda: bool = False):
                                       scratch_route, scratch_unrouted, scratch_flags,
                                       a_param, prob_data, rng_states)
 
+        # Compact candidate routes and apply quick local improvement
+        route_elimination_single(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
+                                 scratch_route, scratch_unrouted, scratch_flags, prob_data, passes=2)
+        deep_local_search_single(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
+                                 scratch_route, scratch_route2, prob_data, max_passes=1)
+
         # Evaluate candidate validity
         ok, act_r, t_d, t_c = eval_solution(cand_nodes, cand_rlen, cand_nr, s, prob_data)
         if not ok:
@@ -993,7 +997,8 @@ def build_kernel_bundle(is_cuda: bool = False):
                 accepted = True
             else:
                 temp = 1.0 - float(iteration) / float(max_iter) if max_iter > 0 else 0.0
-                prob = math.exp(-delta / (1e-6 + temp * abs(old_dist)))
+                t_eff = 5.0 * temp + 1e-6
+                prob = math.exp(-delta / t_eff)
                 if rand_u01(rng_states, s) < prob:
                     accepted = True
 
@@ -1203,6 +1208,31 @@ def build_kernel_bundle(is_cuda: bool = False):
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states)
 
+        @k_fn
+        def init_device_rng_kernel(rng_states, seed):
+            s = cuda.grid(1)
+            if s < rng_states.shape[0]:
+                rng_states[s, 0] = np.uint32((seed + s * 1337) & 0xFFFFFFFF) | np.uint32(1)
+                rng_states[s, 1] = np.uint32((seed + s * 2749 + 362436069) & 0xFFFFFFFF) | np.uint32(1)
+                rng_states[s, 2] = np.uint32((seed + s * 5171 + 521288629) & 0xFFFFFFFF) | np.uint32(1)
+                rng_states[s, 3] = np.uint32((seed + s * 7919 + 88675123) & 0xFFFFFFFF) | np.uint32(1)
+
+        @k_fn
+        def reset_run_state_kernel(ibest_nr, gbest_nr, run_log):
+            if cuda.grid(1) == 0:
+                for i in range(ibest_nr.shape[0]):
+                    ibest_nr[i] = 0
+                gbest_nr[0] = 0
+                for i in range(run_log.shape[0]):
+                    run_log[i, 0] = 0.0
+                    run_log[i, 1] = 0.0
+
+        @k_fn
+        def record_log_kernel(run_log, gbest_nr, gbest_dist, gen):
+            if cuda.grid(1) == 0:
+                run_log[gen - 1, 0] = float(gbest_nr[0])
+                run_log[gen - 1, 1] = float(gbest_dist[0])
+
     else:
         # CPU Mode
         @k_fn
@@ -1250,7 +1280,7 @@ def build_kernel_bundle(is_cuda: bool = False):
 
         @k_fn
         def local_search_kernel(nodes, rlen, nr, dist, cost,
-                                scratch_route, scratch_route2, prob_data, max_passes):
+                                 scratch_route, scratch_route2, prob_data, max_passes):
             for s in range(nodes.shape[0]):
                 deep_local_search_single(nodes, rlen, nr, dist, cost, s,
                                          scratch_route, scratch_route2, prob_data, max_passes)
@@ -1307,6 +1337,25 @@ def build_kernel_bundle(is_cuda: bool = False):
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states)
 
+        @k_fn
+        def init_device_rng_kernel(rng_states, seed):
+            for s in range(rng_states.shape[0]):
+                rng_states[s, 0] = np.uint32((seed + s * 1337) & 0xFFFFFFFF) | np.uint32(1)
+                rng_states[s, 1] = np.uint32((seed + s * 2749 + 362436069) & 0xFFFFFFFF) | np.uint32(1)
+                rng_states[s, 2] = np.uint32((seed + s * 5171 + 521288629) & 0xFFFFFFFF) | np.uint32(1)
+                rng_states[s, 3] = np.uint32((seed + s * 7919 + 88675123) & 0xFFFFFFFF) | np.uint32(1)
+
+        @k_fn
+        def reset_run_state_kernel(ibest_nr, gbest_nr, run_log):
+            ibest_nr.fill(0)
+            gbest_nr.fill(0)
+            run_log.fill(0.0)
+
+        @k_fn
+        def record_log_kernel(run_log, gbest_nr, gbest_dist, gen):
+            run_log[gen - 1, 0] = float(gbest_nr[0])
+            run_log[gen - 1, 1] = float(gbest_dist[0])
+
     return {
         "init_population": init_population_kernel,
         "update_population": update_population_kernel,
@@ -1316,4 +1365,7 @@ def build_kernel_bundle(is_cuda: bool = False):
         "update_global_best": update_global_best_kernel,
         "island_migration": island_migration_kernel,
         "stagnation_diversify": stagnation_diversify_kernel,
+        "init_device_rng": init_device_rng_kernel,
+        "reset_run_state": reset_run_state_kernel,
+        "record_log": record_log_kernel,
     }

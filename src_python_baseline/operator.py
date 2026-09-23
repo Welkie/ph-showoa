@@ -9,10 +9,12 @@ from .config import (
     RCRS,
     TD,
 )
+from .compute_backend import njit, _evaluate_insertions_cpu
 from .eval import chk_nl_node_pos_O_n, eval_move, evaluate_route_batch
 from .move import Move, Seq
 from .solution import Route, make_tmp_nl
 from .util import argsort, rand, randint
+import numpy as np
 
 TMP_MOVE = Move()
 
@@ -22,15 +24,7 @@ def _cuda_batches_enabled(data) -> bool:
     return backend is not None and getattr(backend, "is_cuda", False)
 
 
-def _build_insertion_sequences(route_nodes, nodes):
-    sequences = []
-    meta = []
-    route_len = len(route_nodes)
-    for node_index, node in enumerate(nodes):
-        for pos in range(1, route_len):
-            sequences.append(route_nodes[:pos] + [node] + route_nodes[pos:])
-            meta.append((node_index, pos))
-    return sequences, meta
+
 
 
 def maintain_unrouted(i, node, index, unrouted, unrouted_d, unrouted_p, data):
@@ -110,66 +104,132 @@ def criterion(r, data, node, pos, unrouted_d, unrouted_p):
     return rcrs
 
 
+@njit(nogil=True, fastmath=True)
+def _cal_score_numba_core(
+    index, r_len, feasible_arr, candidate_nodes, route_nodes,
+    unrouted_d, unrouted_p, capacity, delivery, pickup, dist,
+    all_delivery, all_pickup, is_td, lambda_gamma, max_dist, min_dist, DC
+):
+    best_scores = np.full(index, np.inf)
+    best_positions = np.full(index, -1, dtype=np.int32)
+    count = 0
+    
+    new_len = r_len + 1
+    tmp = np.zeros(new_len, dtype=np.int32)
+    load = np.zeros(new_len, dtype=np.float64)
+    cd = np.zeros(new_len, dtype=np.float64)
+    cp = np.zeros(new_len, dtype=np.float64)
+    rd = np.zeros(new_len, dtype=np.float64)
+    rp = np.zeros(new_len, dtype=np.float64)
+
+    for i in range(index):
+        node = candidate_nodes[i]
+        for pos in range(1, r_len):
+            if not feasible_arr[i * r_len + pos]:
+                continue
+            count += 1
+            
+            pre = route_nodes[pos - 1]
+            suc = route_nodes[pos]
+            td = dist[pre, node] + dist[node, suc] - dist[pre, suc]
+            
+            if is_td:
+                utility = td
+            else:
+                for j in range(pos):
+                    tmp[j] = route_nodes[j]
+                tmp[pos] = node
+                for j in range(pos, r_len):
+                    tmp[j + 1] = route_nodes[j]
+                    
+                route_d = 0.0
+                route_p = 0.0
+                for j in range(1, new_len - 1):
+                    route_d += delivery[tmp[j]]
+                    route_p += pickup[tmp[j]]
+                    
+                load[0] = route_d
+                for j in range(1, new_len):
+                    curr = tmp[j]
+                    load[j] = load[j - 1] - delivery[curr] + pickup[curr]
+                    cd[j] = cd[j - 1] + dist[tmp[j - 1], curr]
+                    
+                cp[new_len - 1] = 0.0
+                for j in range(new_len - 1, 0, -1):
+                    cp[j - 1] = cp[j] + dist[tmp[j - 1], tmp[j]]
+                    
+                rd[0] = capacity - route_d
+                rp[new_len - 2] = capacity - route_p
+                
+                for j in range(1, new_len - 1):
+                    rd[j] = min(rd[j - 1], capacity - load[j])
+                    rp[new_len - 2 - j] = min(rp[new_len - 1 - j], capacity - load[new_len - 2 - j])
+                    
+                rdt_u = 0.0
+                rdt_d = 0.0
+                rpt_u = 0.0
+                rpt_d = 0.0
+                for j in range(new_len - 1):
+                    rdt_u += rd[j] * cd[j + 1]
+                    rdt_d += cd[j + 1]
+                    rpt_u += rp[j] * cp[j]
+                    rpt_d += cp[j]
+                    
+                rdt = rdt_u / rdt_d if rdt_d > 0 else 0.0
+                rpt = rpt_u / rpt_d if rpt_d > 0 else 0.0
+                
+                tc = (unrouted_d / all_delivery) * (1.0 - rdt / capacity) + \
+                     (unrouted_p / all_pickup) * (1.0 - rpt / capacity)
+                     
+                rs = dist[DC, node] + dist[node, DC]
+                utility = td + lambda_gamma[0] * tc * (2.0 * max_dist - min_dist) - lambda_gamma[1] * rs
+            
+            if utility - best_scores[i] < -0.001:  # PRECISION
+                best_scores[i] = utility
+                best_positions[i] = pos
+                
+    return count, best_scores, best_positions
+
 def cal_score(feasible_pos, unrouted, score, index, r, unrouted_d, unrouted_p, data):
     if index == 0:
         return False
     r_len = len(r.node_list)
 
-    if _cuda_batches_enabled(data):
-        candidate_nodes = [unrouted[i][0] for i in range(index)]
-        candidate_routes, candidate_meta = _build_insertion_sequences(r.node_list, candidate_nodes)
-        if len(candidate_routes) == 0:
-            return False
-        results = evaluate_route_batch(candidate_routes, data)
-        best_scores = [float("inf") for _ in range(index)]
-        best_positions = [-1 for _ in range(index)]
-        count = 0
-        for i in range(index):
-            for pos in range(1, r_len):
-                feasible_pos[i * MAX_NODE_IN_ROUTE + pos] = False
-        for (node_idx, pos), (flag, _cost) in zip(candidate_meta, results):
-            feasible_pos[node_idx * MAX_NODE_IN_ROUTE + pos] = flag
-            if not flag:
-                continue
-            count += 1
-            node = unrouted[node_idx][0]
-            utility = criterion(r, data, node, pos, unrouted_d, unrouted_p)
-            if utility - best_scores[node_idx] < -PRECISION:
-                best_scores[node_idx] = utility
-                best_positions[node_idx] = pos
-        if count == 0:
-            return False
-        for i in range(index):
-            score[i] = best_scores[i]
-            unrouted[i][1] = best_positions[i]
-        return True
+    candidate_nodes = np.array([unrouted[i][0] for i in range(index)], dtype=np.int32)
+    if getattr(data, "in_initialization", False):
+        feasible_arr, _cost_arr = _evaluate_insertions_cpu(r.node_list, candidate_nodes, data.backend.snapshot)
+    else:
+        feasible_arr, _cost_arr = data.backend.evaluate_insertions(r.node_list, candidate_nodes)
 
-    count = 0
-    for i in range(index):
-        node = unrouted[i][0]
-        for pos in range(1, r_len):
-            flag, _ = chk_nl_node_pos_O_n(r.node_list, node, pos, data)
-            if not flag:
-                feasible_pos[i * MAX_NODE_IN_ROUTE + pos] = False
-            else:
-                feasible_pos[i * MAX_NODE_IN_ROUTE + pos] = True
-                count += 1
+    route_nodes_arr = np.array(r.node_list, dtype=np.int32)
+
+    count, best_scores, best_positions = _cal_score_numba_core(
+        index, r_len, feasible_arr, candidate_nodes, route_nodes_arr,
+        float(unrouted_d), float(unrouted_p),
+        float(data.vehicle.capacity),
+        data.backend.snapshot.delivery,
+        data.backend.snapshot.pickup,
+        data.backend.snapshot.dist,
+        float(data.all_delivery),
+        float(data.all_pickup),
+        bool(data.n_insert == TD),
+        np.array(data.lambda_gamma, dtype=np.float64),
+        float(data.max_dist),
+        float(data.min_dist),
+        int(data.DC)
+    )
+
     if count == 0:
         return False
 
     for i in range(index):
-        node = unrouted[i][0]
-        best_score = float("inf")
-        best_pos = -1
         for pos in range(1, r_len):
-            if not feasible_pos[i * MAX_NODE_IN_ROUTE + pos]:
-                continue
-            utility = criterion(r, data, node, pos, unrouted_d, unrouted_p)
-            if utility - best_score < -PRECISION:
-                best_score = utility
-                best_pos = pos
-        unrouted[i][1] = best_pos
-        score[i] = best_score
+            feasible_pos[i * MAX_NODE_IN_ROUTE + pos] = bool(feasible_arr[i * r_len + pos])
+
+    for i in range(index):
+        score[i] = best_scores[i]
+        unrouted[i][1] = best_positions[i]
+
     return True
 
 
@@ -964,7 +1024,14 @@ def find_local_optima(s, data):
             break
 
 
-def do_local_search(s, data):
+def _local_search_worker(task):
+    index, s, data = task
+    find_local_optima(s, data)
+    s.cal_cost(data)
+    return index, s
+
+
+def do_local_search(s, data, executor=None):
     if len(data.small_opts) == 0:
         print("No small stepsize operator used, directly return.")
         return
@@ -988,12 +1055,21 @@ def do_local_search(s, data):
         perturb(s_vector, data)
         best_index = -1
         best_cost = float("inf")
-        for i in range(tmp_solution_num):
-            find_local_optima(s_vector[i], data)
-            s_vector[i].cal_cost(data)
-            if s_vector[i].cost - best_cost < -PRECISION:
-                best_index = i
-                best_cost = s_vector[i].cost
+        if executor is not None and tmp_solution_num > 1:
+            tasks = [(i, s_vector[i], data) for i in range(tmp_solution_num)]
+            results = list(executor.map(_local_search_worker, tasks))
+            for i, new_s in results:
+                s_vector[i].copy_from(new_s)
+                if new_s.cost - best_cost < -PRECISION:
+                    best_index = i
+                    best_cost = new_s.cost
+        else:
+            for i in range(tmp_solution_num):
+                find_local_optima(s_vector[i], data)
+                s_vector[i].cal_cost(data)
+                if s_vector[i].cost - best_cost < -PRECISION:
+                    best_index = i
+                    best_cost = s_vector[i].cost
         if s_vector[best_index].cost - s.cost < -PRECISION:
             s.copy_from(s_vector[best_index])
             no_improve = 0

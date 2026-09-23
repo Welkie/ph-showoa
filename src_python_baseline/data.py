@@ -57,10 +57,9 @@ from .config import (
     RUNS,
     TD,
     TOURNAMENT,
-    V_NUM_RELAX,
 )
 from .move import Move
-from .util import argsort, chk_p_square, rand, randint, split, trim
+from .util import argsort, rand, randint, split, trim
 from .compute_backend import create_backend
 
 
@@ -110,10 +109,18 @@ class Data:
         self.if_output = DEFAULT_IF_OUTPUT
         self.output = " "
         self.tmax = NO_LIMIT
+        self.paper_flags = parser.exists("paper_flags")
         self.g_1 = G_1
         self.max_iter = DEFAULT_MAX_ITER
         self.runs = RUNS
         self.p_size = P_SIZE
+        if self.paper_flags:
+            # The experimental protocol in Table 2.  Explicit CLI values below
+            # always take precedence over these profile defaults.
+            self.g_1 = 1000
+            self.max_iter = 1000
+            self.runs = 30
+            self.p_size = 30
         self.parallel_workers = DEFAULT_PARALLEL_WORKERS
         self.local_search_interval = DEFAULT_LOCAL_SEARCH_INTERVAL
         self.stagnation_interval = DEFAULT_STAGNATION_INTERVAL
@@ -128,6 +135,12 @@ class Data:
         self.bks = -1.0
         self.rng = random.Random()
         self.init = DEFAULT_INIT
+        if self.paper_flags:
+            self.init = "sa"
+        self.sa_t0 = 100.0
+        self.sa_alpha = 0.95
+        self.sa_tmin = 0.1
+        self.sa_itermax = 100
         self.cross_repair = DEFAULT_CROSSOVER
         self.lambda_gamma = (0.0, 0.0)
         self.latin = []
@@ -208,7 +221,7 @@ class Data:
                     self.pm.append(list(tmp_v_2))
             elif key == "VEHICLES":
                 print(line)
-                self.vehicle.max_num = int(value) + V_NUM_RELAX
+                self.vehicle.max_num = int(value)
             elif key == "DISPATCHINGCOST":
                 print(line)
                 self.vehicle.d_cost = float(value)
@@ -316,19 +329,26 @@ class Data:
 
         if parser.exists("runs"):
             self.runs = int(parser.retrieve("runs"))
+        if self.runs <= 0:
+            raise SystemExit("Expect runs to be positive")
         print("Runs: %d" % self.runs)
 
         if parser.exists("g_1"):
             self.g_1 = int(parser.retrieve("g_1"))
         print("g_1: %d" % self.g_1)
 
-        self.max_iter = self.g_1
+        if parser.exists("g_1"):
+            self.max_iter = self.g_1
         if parser.exists("max_iter"):
             self.max_iter = int(parser.retrieve("max_iter"))
+        if self.max_iter < 0:
+            raise SystemExit("Expect max_iter to be non-negative")
         print("Max PH-SHOWOA iterations: %d" % self.max_iter)
 
         if parser.exists("pop_size"):
             self.p_size = int(parser.retrieve("pop_size"))
+        if self.p_size <= 0:
+            raise SystemExit("Expect pop_size to be positive")
         print("Population size: %d" % self.p_size)
 
         if parser.exists("workers"):
@@ -383,10 +403,9 @@ class Data:
             raise SystemExit(-1)
         print("Compute backend: %s" % self.compute_backend)
 
-        if not chk_p_square(self.p_size):
-            print("Expect popsize to be perfect squrare number")
-            raise SystemExit(-1)
-        sr = int(math.sqrt(float(self.p_size)))
+        # RCRS used a square Latin grid historically.  PH-SHOWOA specifies a
+        # population of 30, so make a sufficiently large grid and take P points.
+        sr = int(math.ceil(math.sqrt(float(self.p_size))))
         if sr == 1:
             self.latin.append((0.5, 0.5))
         else:
@@ -397,9 +416,12 @@ class Data:
                     gamma_val = min(1.0, step * j)
                     self.latin.append((lambda_val, gamma_val))
             self.rng.shuffle(self.latin)
+            self.latin = self.latin[: self.p_size]
 
         if parser.exists("init"):
             self.init = parser.retrieve("init")
+        if self.paper_flags:
+            self.init = "sa"
         print("Insertion for initialization: %s" % self.init)
         if parser.exists("k_init"):
             self.k_init = int(parser.retrieve("k_init"))
@@ -531,6 +553,22 @@ class Data:
         if parser.exists("bks"):
             self.bks = float(parser.retrieve("bks"))
 
+        if self.paper_flags:
+            print("Paper flags: enabled (SA initialization & Targeted Feasibility-Repair)")
+
+        for field, name, cast in (
+            ("sa_t0", "sa_t0", float),
+            ("sa_alpha", "sa_alpha", float),
+            ("sa_tmin", "sa_tmin", float),
+            ("sa_itermax", "sa_itermax", int),
+        ):
+            if parser.exists(name):
+                setattr(self, field, cast(parser.retrieve(name)))
+        if (self.sa_t0 <= 0 or self.sa_tmin <= 0 or self.sa_tmin >= self.sa_t0
+                or not 0 < self.sa_alpha < 1 or self.sa_itermax < 0):
+            raise SystemExit("Expect SA parameters: T0 > Tmin > 0, 0 < alpha < 1, itermax >= 0")
+
+
         c_num = self.customer_num
         for i in range(c_num + 1):
             for j in range(c_num + 1):
@@ -540,7 +578,7 @@ class Data:
         self.backend = create_backend(self, self.compute_backend)
         print("Compute backend requested: %s" % self.compute_backend)
         print("Compute backend selected: %s" % self.backend.name)
-        if self.backend.is_cuda and self.parallel_workers != 1:
+        if self.backend.is_cuda and not getattr(self.backend, "multi_process_safe", False) and self.parallel_workers != 1:
             print(
                 "CUDA backend uses a single process. Forcing workers from %d to 1"
                 % self.parallel_workers

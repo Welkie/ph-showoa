@@ -251,7 +251,7 @@ class Route:
         for i in range(1, length):
             node = nl[i]
             load = load - data.node[node].delivery + data.node[node].pickup
-            if load > capacity:
+            if load < 0 or load > capacity:
                 smaller_ca = False
                 print(
                     "Load %f > capacity %f at %d th node: %d, with delivery %f and pickup %f"
@@ -388,6 +388,9 @@ class Solution:
     def check(self, data) -> bool:
         total_cost = 0.0
         length = self.len()
+        if length > data.vehicle.max_num:
+            print("Vehicle limit exceeded: %d > %d" % (length, data.vehicle.max_num))
+            return False
         record = set()
         for i in range(length):
             route = self.get(i)

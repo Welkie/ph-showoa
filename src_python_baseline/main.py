@@ -77,6 +77,12 @@ def main(argv=None):
     parser.add_argument("--rd_removal_insertion")
     parser.add_argument("--bks", 1)
     parser.add_argument("--random_seed", 1)
+    parser.add_argument("--paper_flags")
+    parser.add_argument("--sa_t0", 1)
+    parser.add_argument("--sa_alpha", 1)
+    parser.add_argument("--sa_tmin", 1)
+    parser.add_argument("--sa_itermax", 1)
+
 
     parser.parse(argv)
     data = Data(parser)

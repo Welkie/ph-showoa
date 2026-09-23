@@ -39,6 +39,8 @@ RCRS = "rcrs"
 RCRS_RANDOM = "rcrs_random"
 TD = "td"
 REGRET = "regret"
+SA = "sa"
+
 
 DEFAULT_INIT = RCRS
 DEFAULT_CROSSOVER = RCRS
