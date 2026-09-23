@@ -1,6 +1,6 @@
 """Run with NUMBA_ENABLE_CUDASIM=1, or on a real CUDA GPU to test capture/replay.
 
-The oracle is the previous host schedule using the unchanged CUDA operators.
+The oracle is an independent host schedule using the same CUDA operators.
 Simulator tests exercise device logic but do NOT validate CUDA Graph APIs/JIT.
 """
 
@@ -32,11 +32,13 @@ def tiny_data(mode="ph_showoa", iterations=6, population=4, islands=2):
         local_search_interval=2, stagnation_interval=3, migration_interval=2,
         grasp_alpha_lo=0.1, grasp_alpha_hi=0.4, hybrid_mode=mode,
         compute_backend="cuda", seed=42, output_per_gens=2,
+        sa_t0=2.0, sa_tmin=0.5, sa_alpha=0.5, sa_itermax=3,
+        sho_mutation_prob=0.35, diversify_ratio=0.4,
     )
 
 
-def old_cuda_schedule(engine, buffers, seed):
-    """Independent oracle: original launch order, host parameters and host RNG."""
+def reference_cuda_schedule(engine, buffers, seed):
+    """Independent host implementation of the base-aligned scheduling rules."""
     pop, nxt, cand = buffers[:5], buffers[5:10], buffers[10:15]
     ibest, gbest = buffers[15:20], buffers[20:25]
     route, route2, unrouted, flags, scores = buffers[25:30]
@@ -44,6 +46,9 @@ def old_cuda_schedule(engine, buffers, seed):
     rng = engine._init_rng(seed)
     ibest[2].copy_to_device(np.zeros(engine.num_islands, dtype=np.int32))
     gbest[2].copy_to_device(np.zeros(1, dtype=np.int32))
+    for group in (ibest, gbest):
+        for arr in group[3:5]:
+            arr.copy_to_device(np.full(arr.shape, np.inf, dtype=np.float64))
     k = engine.kernels
 
     def launch(name, args, blocks=None, threads=None):
@@ -54,22 +59,31 @@ def old_cuda_schedule(engine, buffers, seed):
         launch("update_island_bests", (*pop, *ibest, engine.num_islands, engine.island_size), engine.isl_blocks)
         launch("update_global_best", (*ibest, *gbest, engine.num_islands), 1, 1)
 
-    launch("init_population", (*pop, route, route2, unrouted, flags, scores, problem, 0.1, 0.4, rng))
+    launch("init_population", (*pop, *nxt, *cand, route, route2, unrouted, flags, scores, problem, 0.1, 0.4, rng))
     bests()
     history = []
+    no_improve = 0
     for gen in range(1, engine.data.max_iter + 1):
+        previous_best = gbest[4].copy_to_host()[0]
         a, p = _dynamic_parameters(gen - 1, engine.data.max_iter)
         p = _mode_probability(p, engine.data)
         launch("update_population", (*pop, *nxt, *cand, *ibest,
                route, route2, unrouted, flags, problem, a, p, gen - 1,
                engine.data.max_iter, rng, engine.island_size))
         pop, nxt = nxt, pop
-        if gen % engine.data.local_search_interval == 0:
-            launch("route_elimination", (*pop, route, unrouted, flags, problem, 5))
-            launch("local_search", (*pop, route, route2, problem, 2))
-        if gen % engine.data.stagnation_interval == 0:
-            launch("stagnation_diversify", (*pop, route, unrouted, flags, problem,
+        bests()
+        if (gen - 1) % engine.data.local_search_interval == 0:
+            launch("route_elimination", (*gbest, route, unrouted, flags, problem, 5), 1, 1)
+            launch("local_search", (*gbest, route, route2, problem, 0), 1, 1)
+        launch("publish_global_best", (*gbest, *ibest, engine.num_islands), 1, 1)
+        if gbest[4].copy_to_host()[0] < previous_best - 0.001:
+            no_improve = 0
+        else:
+            no_improve += 1
+        if no_improve >= engine.data.stagnation_interval:
+            launch("stagnation_diversify", (*pop, *cand, *ibest, route, unrouted, flags, problem,
                    rng, engine.num_islands, engine.island_size), engine.isl_blocks)
+            no_improve = 0
         if engine.num_islands > 1 and gen % engine.data.migration_interval == 0:
             launch("island_migration", (*pop, *ibest, engine.num_islands, engine.island_size), 1, 1)
         bests()
@@ -101,7 +115,7 @@ requires_cuda = pytest.mark.skipif(not cuda.is_available(), reason="Requires CUD
     ("ph_showoa", 6, 2, 4), ("sho", 3, 2, 4), ("woa", 4, 1, 4),
     ("ph_showoa", 0, 2, 4), ("ph_showoa", 2, 2, 34),
 ])
-def test_replay_matches_original_operators_and_rng(mode, iterations, islands, population):
+def test_replay_matches_reference_schedule_and_rng(mode, iterations, islands, population):
     engine = GpuEngine(tiny_data(mode, iterations, population, islands), is_cuda=True)
     actual, expected = engine._allocate_buffers(), engine._allocate_buffers()
     graph = CudaSearchGraph(engine, actual)
@@ -113,7 +127,7 @@ def test_replay_matches_original_operators_and_rng(mode, iterations, islands, po
             graph.prepare_run(seed)
             graph.launch()
             graph.synchronize()
-            rng, history, old_pop = old_cuda_schedule(engine, expected, seed)
+            rng, history, old_pop = reference_cuda_schedule(engine, expected, seed)
             np.testing.assert_array_equal(graph.rng.copy_to_host(), rng)
             np.testing.assert_allclose(graph.read_history(), history, rtol=1e-12, atol=1e-10)
             assert graph.generation.copy_to_host()[0] == iterations + 1
@@ -163,3 +177,25 @@ def test_explicit_cuda_never_silently_falls_back(monkeypatch):
     monkeypatch.setattr(module, "cuda", None)
     with pytest.raises(RuntimeError, match="refusing CPU fallback"):
         GpuEngine(tiny_data(), is_cuda=True)
+
+
+@requires_cuda
+def test_stagnation_counts_non_improving_generations_and_resets_on_improvement():
+    engine = GpuEngine(tiny_data(iterations=1), is_cuda=True)
+    graph = CudaSearchGraph(engine, engine._allocate_buffers())
+    try:
+        step = next(step for step in graph.steps if step.name == 'stagnation')
+        best, previous, count, due, interval = step.args
+        count.copy_to_device(np.zeros(1, dtype=np.int64))
+        previous.copy_to_device(np.array([6100.0]))
+        for value, expected_count, expected_due in [
+            (6100.0, 1, 0), (6100.0, 2, 0), (6090.0, 0, 0),
+            (6100.0, 1, 0), (6100.0, 2, 0), (6100.0, 0, 1),
+        ]:
+            best.copy_to_device(np.array([value]))
+            step.kernel[1, 1, graph.stream](*step.args)
+            graph.synchronize()
+            assert count.copy_to_host()[0] == expected_count
+            assert due.copy_to_host()[0] == expected_due
+    finally:
+        graph.close()

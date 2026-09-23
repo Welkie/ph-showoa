@@ -148,7 +148,7 @@ class Data:
         self.sa_itermax = 100
         self.grasp_alpha_lo = DEFAULT_GRASP_ALPHA_LO
         self.grasp_alpha_hi = DEFAULT_GRASP_ALPHA_HI
-        self.sa_iterations = DEFAULT_SA_ITERATIONS
+        self.sa_iterations = self.sa_itermax
         self.num_islands = 6
         self.migration_interval = 20
         self.cross_repair = DEFAULT_CROSSOVER
@@ -572,10 +572,17 @@ class Data:
             if parser.exists(name):
                 setattr(self, field, cast(parser.retrieve(name)))
 
-        self.paper_flags = False
-        self.objective = "lexicographic"
+        # GPU core follows the paper-mode operators in src_python. Construction
+        # and island migration remain independent extensions.
+        self.paper_flags = True
+        if not parser.exists("sa_iterations"):
+            self.sa_iterations = self.sa_itermax
+        self.objective = "scalar"
         if parser.exists("objective"):
-            self.objective = parser.retrieve("objective")
+            requested_objective = parser.retrieve("objective")
+            if requested_objective not in {"scalar", "lexicographic"}:
+                raise ValueError("objective must be scalar (legacy alias: lexicographic)")
+            # Accept old command lines, but all decisions now use Eq. 6.
         print("Objective mode: %s" % self.objective)
 
         # This package is the Python/PyTorch CUDA implementation.
@@ -590,7 +597,7 @@ class Data:
 
         is_sa_rcrs_grasp = getattr(self, "init", "") in {"sa_rcrs_grasp", "rcrs_grasp", "rcg"}
         if parser.exists("paper_flags") or is_sa_rcrs_grasp:
-            print("Paper flags: enabled (2opt, 2opt*, oropt_single, 2exchange, related_removal, regret_insertion, lexicographic)")
+            print("GPU core: base paper operators, scalar objective; RCRS-GRASP/islands retained")
             self.paper_flags = True
             self.pruning = True
             self.O_1_evl = True
@@ -603,7 +610,7 @@ class Data:
             self.ex_len = 2
             self.related_removal = True
             self.regret_insertion = True
-            self.objective = "lexicographic"
+            self.objective = "scalar"
             if not parser.exists("init") and not is_sa_rcrs_grasp:
                 self.init = "sa"
 

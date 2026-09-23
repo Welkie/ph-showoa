@@ -7,7 +7,10 @@ import os
 import multiprocessing
 import numpy as np
 
-import torch
+try:
+    import torch
+except ImportError:  # The active Numba solver does not require Torch.
+    torch = None
 
 try:
     from numba import cuda, njit  # type: ignore
@@ -934,16 +937,19 @@ class TorchComputeBackend(BaseComputeBackend):
             batch_t[i, :l] = candidate_routes_list[i][:l]
         return self.evaluate_routes_gpu(batch_t, lengths_t)
 
-    def compute_lexicographic_scores(
+    def compute_scalar_scores(
         self, feas: torch.Tensor, v_counts: torch.Tensor, total_dists: torch.Tensor
     ) -> torch.Tensor:
         """
-        Strict lexicographic ordering: NV primary (1e8 multiplier), TD secondary.
-        Infeasible solutions receive a huge penalty (1e15).
+        Scalar paper objective, 2000 * NV + TD.
+        Infeasible solutions receive infinity.
         """
-        scores = v_counts.to(torch.float64) * 1_000_000_000.0 + total_dists.to(torch.float64)
+        scores = v_counts.to(torch.float64) * 2000.0 + total_dists.to(torch.float64)
         infeasible = torch.full((), float("inf"), device=self.device, dtype=torch.float64)
         return torch.where(feas, scores, infeasible)
+
+    # Compatibility alias for the retired tensor prototype and older callers.
+    compute_lexicographic_scores = compute_scalar_scores
 
     def evaluate_insertions(self, route_nodes: Sequence[int], candidate_nodes: Sequence[int]) -> Tuple[np.ndarray, np.ndarray]:
         if self.strict_full_gpu:

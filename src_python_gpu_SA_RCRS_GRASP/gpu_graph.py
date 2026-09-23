@@ -88,6 +88,9 @@ class CudaSearchGraph:
         self.host_seed = cuda.pinned_array(1, dtype=np.int64)
         self.generation = cuda.device_array(1, dtype=np.int64)
         self.parameters = cuda.device_array(2, dtype=np.float64)
+        self.no_improve = cuda.device_array(1, dtype=np.int64)
+        self.previous_best = cuda.device_array(1, dtype=np.float64)
+        self.diversify_due = cuda.device_array(1, dtype=np.int32)
         self.history = cuda.device_array((max(1, self.max_iter), 4), dtype=np.float64)
         self.host_history = cuda.pinned_array(self.history.shape, dtype=np.float64)
         self.steps = self._make_steps(engine, buffers, ls, stag, migr)
@@ -118,9 +121,11 @@ class CudaSearchGraph:
                 (*ibest, *gbest, engine.num_islands), 1)
 
         add("reset", g["reset"], engine.blocks,
-            (self.rng, self.seed, self.generation, self.parameters, ibest[2], gbest[2]))
+            (self.rng, self.seed, self.generation, self.parameters, ibest[2], gbest[2],
+             ibest[3], ibest[4], gbest[3], gbest[4],
+             self.no_improve, self.previous_best, self.diversify_due))
         add("init", k["init_population"], engine.blocks,
-            (*pop, route, route2, unrouted, flags, scores, problem,
+            (*pop, *nxt, *cand, route, route2, unrouted, flags, scores, problem,
              float(getattr(engine.data, "grasp_alpha_lo", 0.10)),
              float(getattr(engine.data, "grasp_alpha_hi", 0.40)), self.rng))
         bests(pop)
@@ -130,19 +135,26 @@ class CudaSearchGraph:
         # executed during graph replay. Pointer parity is fixed at construction.
         for _ in range(self.max_iter):
             add("parameters", g["parameters"], 1,
-                (self.generation, self.parameters, self.max_iter, mode), 1)
+                (self.generation, self.parameters, self.max_iter, mode,
+                 gbest[4], self.previous_best), 1)
             add("update", g["update"], engine.blocks,
                 (*pop, *nxt, *cand, *ibest, route, route2, unrouted, flags,
                  problem, self.parameters, self.generation, self.max_iter,
                  self.rng, engine.island_size))
             pop, nxt = nxt, pop
-            add("eliminate", g["eliminate"], engine.blocks,
-                (*pop, route, unrouted, flags, problem, self.generation, ls))
-            add("search", g["search"], engine.blocks,
-                (*pop, route, route2, problem, self.generation, ls))
+            # Record every accepted best before a destructive diversification.
+            bests(pop)
+            add("eliminate", g["eliminate"], 1,
+                (*gbest, route, unrouted, flags, problem, self.generation, ls), 1)
+            add("search", g["search"], 1,
+                (*gbest, route, route2, problem, self.generation, ls), 1)
+            add("publish_best", k["publish_global_best"], 1,
+                (*gbest, *ibest, engine.num_islands), 1)
+            add("stagnation", g["stagnation"], 1,
+                (gbest[4], self.previous_best, self.no_improve, self.diversify_due, stag), 1)
             add("diversify", g["diversify"], engine.isl_blocks,
-                (*pop, route, unrouted, flags, problem, self.rng,
-                 engine.num_islands, engine.island_size, self.generation, stag))
+                (*pop, *cand, *ibest, route, unrouted, flags, problem, self.rng,
+                 engine.num_islands, engine.island_size, self.diversify_due))
             add("migrate", g["migrate"], 1,
                 (*pop, *ibest, engine.num_islands, engine.island_size,
                  self.generation, migr), 1)

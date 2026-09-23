@@ -94,20 +94,12 @@ def update_best_solution(s, best_s, used, run, gen, data):
     if not quick_check_feasibility(s, data):
         return False
 
-    is_better = False
-    if best_s.len() == 0 or best_s.cost == float("inf") or len(best_s.route_list) == 0:
-        is_better = True
-    else:
-        objective = getattr(data, "objective", "lexicographic")
-        if objective == "lexicographic":
-            if s.len() < best_s.len():
-                is_better = True
-            elif s.len() == best_s.len():
-                if s.cost < best_s.cost - PRECISION:
-                    is_better = True
-        else:
-            if s.cost - best_s.cost < -PRECISION:
-                is_better = True
+    is_better = (
+        best_s.len() == 0
+        or best_s.cost == float("inf")
+        or len(best_s.route_list) == 0
+        or s.cost - best_s.cost < -PRECISION
+    )
 
     if is_better:
         best_s.copy_from(s)
@@ -1343,7 +1335,7 @@ def _sa_accept(
     delta = new_solution.cost - current_fit
     scale = abs(current_fit)
 
-    if delta <= 0.001:
+    if delta < 0.0:
         return True
     temperature = 1.0 - (float(iteration) / float(max_iter)) if max_iter > 0 else 0.0
     denominator = 1e-6 + temperature * scale
@@ -1567,7 +1559,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
         feas, costs, v_counts, total_dists = backend.evaluate_population_tensor(
             pop_routes, pop_lengths, pop_route_counts
         )
-        scores = backend.compute_lexicographic_scores(feas, v_counts, total_dists)
+        scores = backend.compute_scalar_scores(feas, v_counts, total_dists)
         run_best_idx = torch.argmin(scores)
         run_best_score = scores[run_best_idx]
         run_best_routes = pop_routes[run_best_idx].clone()
@@ -1636,18 +1628,15 @@ def gpu_pure_tensor_search_framework(data, best_s):
             )
 
             c_feas, c_costs, c_vcnts, c_dists = backend.evaluate_population_tensor(cand_t, cand_lens, cand_cnts)
-            c_scores = backend.compute_lexicographic_scores(c_feas, c_vcnts, c_dists)
+            c_scores = backend.compute_scalar_scores(c_feas, c_vcnts, c_dists)
 
-            # 5. Strict Lexicographic Acceptance on GPU
+            # 5. Algorithm 1: SA acceptance on TC = 2000 * NV + TD.
             temp = 1.0 - (float(iteration_index) / float(data.max_iter)) if data.max_iter > 0 else 0.0
-            better_nv = c_feas & (c_vcnts < v_counts)
-            same_nv = c_feas & (c_vcnts == v_counts)
-            delta_d = c_dists - total_dists
-            better_d = same_nv & (delta_d < -1e-4)
-            denom = 1e-6 + temp * total_dists.abs()
-            sa_prob = torch.exp(-delta_d.clamp(min=0.0) / denom)
-            sa_accept = same_nv & (torch.rand(P, device=device) < sa_prob)
-            accept = (better_nv | better_d | sa_accept) & c_feas
+            delta = c_costs - costs
+            denom = 1e-6 + temp * costs.abs()
+            sa_prob = torch.exp(-delta.clamp(min=0.0) / denom)
+            sa_accept = torch.rand(P, device=device) < sa_prob
+            accept = ((delta < 0.0) | sa_accept) & c_feas
 
             pop_routes = torch.where(accept.view(P, 1, 1), cand_t, pop_routes)
             pop_lengths = torch.where(accept.view(P, 1), cand_lens, pop_lengths)
@@ -1715,12 +1704,12 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 pop_routes = torch.where(ls_better.view(P, 1, 1), ls_routes, pop_routes)
                 pop_lengths = torch.where(ls_better.view(P, 1), ls_lengths, pop_lengths)
                 pop_route_counts = torch.where(ls_better, ls_counts, pop_route_counts)
-                scores = torch.where(ls_better, backend.compute_lexicographic_scores(ls_feas, ls_nv, ls_dist), scores)
+                scores = torch.where(ls_better, backend.compute_scalar_scores(ls_feas, ls_nv, ls_dist), scores)
                 v_counts = torch.where(ls_better, ls_nv, v_counts)
                 total_dists = torch.where(ls_better, ls_dist, total_dists)
                 feas = torch.where(ls_better, ls_feas, feas)
                 costs = torch.where(ls_better, ls_costs, costs)
-                ls_scores = backend.compute_lexicographic_scores(ls_feas, ls_nv, ls_dist)
+                ls_scores = backend.compute_scalar_scores(ls_feas, ls_nv, ls_dist)
                 ls_best_score, ls_best_idx = torch.min(ls_scores, dim=0)
                 ls_improves_global = ls_best_score < global_best_score_t
                 global_best_routes_t = torch.where(
@@ -1766,7 +1755,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                         global_best_count_t = d_c
                         global_best_nv_t = d_nv[0]
                         global_best_dist_t = d_dist[0]
-                        global_best_score_t = backend.compute_lexicographic_scores(d_feas, d_nv, d_dist)[0]
+                        global_best_score_t = backend.compute_scalar_scores(d_feas, d_nv, d_dist)[0]
 
                 worst_idx = torch.argmax(scores)
                 replace_elite = global_best_score_t < scores[worst_idx]
@@ -1853,7 +1842,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 pop_routes = torch.where(replace_mask.view(P, 1, 1), div_routes, pop_routes)
                 pop_lengths = torch.where(replace_mask.view(P, 1), div_lengths, pop_lengths)
                 pop_route_counts = torch.where(replace_mask, div_counts, pop_route_counts)
-                scores = torch.where(replace_mask, backend.compute_lexicographic_scores(f_d, v_d, d_d), scores)
+                scores = torch.where(replace_mask, backend.compute_scalar_scores(f_d, v_d, d_d), scores)
                 feas = torch.where(replace_mask, f_d, feas)
                 costs = torch.where(replace_mask, c_d, costs)
                 v_counts = torch.where(replace_mask, v_d, v_counts)
@@ -1889,7 +1878,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                 global_best_count_t = d_c
                 global_best_nv_t = v_pol[0]
                 global_best_dist_t = d_pol[0]
-                global_best_score_t = backend.compute_lexicographic_scores(f_pol, v_pol, d_pol)[0]
+                global_best_score_t = backend.compute_scalar_scores(f_pol, v_pol, d_pol)[0]
 
         if backend.is_cuda:
             vram_mb = torch.cuda.memory_allocated(device) / (1024 * 1024)
@@ -1929,9 +1918,17 @@ def gpu_pure_tensor_search_framework(data, best_s):
 
 
 def search_framework(data, best_s):
+    # Main execution path: delegates to GpuEngine (Numba CUDA Graph path).
+    # The PyTorch tensor code below (gpu_pure_tensor_search_framework) is a
+    # prototype/dead code — it is never reached because run_solver() handles
+    # all three backends (CUDA Graph / Numba / CPU fallback) internally.
     from .gpu_engine import run_solver
     return run_solver(data, best_s)
 
+    # =========================================================================
+    # DEAD CODE: gpu_pure_tensor_search_framework (PyTorch tensor path)
+    # This code is unreachable. Kept for reference only.
+    # =========================================================================
     pop = [Solution(data) for _ in range(data.p_size)]
     pop_fit = [0.0 for _ in range(data.p_size)]
     pop_argrank = [0 for _ in range(data.p_size)]

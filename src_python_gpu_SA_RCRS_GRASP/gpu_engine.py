@@ -33,7 +33,8 @@ def _dynamic_parameters(iter_idx: int, max_iter: int) -> Tuple[float, float]:
     if max_iter <= 0:
         return 0.0, 0.0
     a = 2.0 - 2.0 * (float(iter_idx) / float(max_iter))
-    p_hybrid = 0.5 * (1.0 + math.cos(math.pi * float(iter_idx) / float(max_iter)))
+    ratio = min(max(float(iter_idx) / float(max_iter), 0.0), 1.0)
+    p_hybrid = max(0.15, 0.5 * (1.0 - ratio))
     return a, p_hybrid
 
 
@@ -81,11 +82,34 @@ def prepare_problem_data(data: Any):
 class GpuEngine:
     def __init__(self, data: Any, is_cuda: bool = False):
         self.data = data
+        if int(data.DC) != 0:
+            raise ValueError("GPU encoding requires depot 0 and customer IDs 1..N")
+        if int(data.customer_num) < 1:
+            raise ValueError("At least one customer is required")
+        if int(getattr(data, "max_iter", 1000)) < 0:
+            raise ValueError("max_iter must be nonnegative")
+        for name, default in (("runs", 30), ("local_search_interval", 25),
+                              ("stagnation_interval", 50), ("migration_interval", 20),
+                              ("output_per_gens", 25)):
+            if int(getattr(data, name, default)) <= 0:
+                raise ValueError(name + " must be positive")
         self.is_cuda = is_cuda and (cuda is not None and (cuda.is_available() or os.environ.get("NUMBA_ENABLE_CUDASIM") == "1"))
         if is_cuda and not self.is_cuda:
             raise RuntimeError("CUDA was requested but is unavailable; refusing CPU fallback")
         self.prob_data = prepare_problem_data(data)
-        self.kernels = build_kernel_bundle(self.is_cuda)
+        sa_t0 = float(getattr(data, "sa_t0", 100.0))
+        sa_alpha = float(getattr(data, "sa_alpha", 0.95))
+        sa_tmin = float(getattr(data, "sa_tmin", 0.1))
+        sa_itermax = int(getattr(data, "sa_iterations", getattr(data, "sa_itermax", 100)))
+        mutation = float(getattr(data, "sho_mutation_prob", 0.35))
+        diversify = float(getattr(data, "diversify_ratio", 0.40))
+        if not (0 < sa_tmin < sa_t0 and 0 < sa_alpha < 1 and sa_itermax >= 0):
+            raise ValueError("Invalid SA initialization parameters")
+        if not (0 <= mutation <= 1 and 0 <= diversify <= 1):
+            raise ValueError("Mutation/diversification probabilities must be in [0, 1]")
+        self.kernels = build_kernel_bundle(self.is_cuda, int(data.customer_num),
+                                           sa_t0, sa_alpha, sa_tmin, sa_itermax,
+                                           mutation, diversify)
 
         self.P = int(getattr(data, "p_size", 36))
         self.num_islands = int(getattr(data, "num_islands", 6))
@@ -96,7 +120,7 @@ class GpuEngine:
         self.island_size = self.P // self.num_islands
 
         self.N = int(data.customer_num)
-        self.R = min(self.N + 5, 105)
+        self.R = max(1, self.N)  # At most one non-empty route per customer.
         self.L = self.N + 2
 
         self.threads_per_block = 32
@@ -266,9 +290,7 @@ class GpuEngine:
                     print(f"Warning: Run {run} solution check returned False", flush=True)
                 is_better = (
                     best_s.len() == 0 or best_s.cost == float("inf")
-                    or run_best_sol.len() < best_s.len()
-                    or (run_best_sol.len() == best_s.len()
-                        and run_best_sol.cost < best_s.cost - PRECISION)
+                    or run_best_sol.cost < best_s.cost - PRECISION
                 )
                 if is_valid and is_better:
                     best_s.copy_from(run_best_sol)
@@ -338,10 +360,16 @@ class GpuEngine:
             # Reset ibest and gbest
             ibest_nr.fill(0)
             gbest_nr.fill(0)
+            ibest_dist.fill(math.inf)
+            ibest_cost.fill(math.inf)
+            gbest_dist.fill(math.inf)
+            gbest_cost.fill(math.inf)
 
             # 1. Initialization kernel
             k["init_population"](
                 pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
+                next_nodes, next_rlen, next_nr, next_dist, next_cost,
+                cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                 scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                 prob_device, alpha_lo, alpha_hi, rng_states
             )
@@ -360,7 +388,9 @@ class GpuEngine:
             cur_pop = (pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost)
             nxt_pop = (next_nodes, next_rlen, next_nr, next_dist, next_cost)
 
+            no_improve = 0
             for gen in range(1, max_iter + 1):
+                previous_best = gbest_cost[0]
                 iter_idx = gen - 1
                 a, p_hybrid = _dynamic_parameters(iter_idx, max_iter)
                 p_mode = _mode_probability(p_hybrid, self.data)
@@ -378,24 +408,34 @@ class GpuEngine:
                 # Ping-pong swap
                 cur_pop, nxt_pop = nxt_pop, cur_pop
 
-                # Periodic route elimination and deep local search
-                if gen % ls_interval == 0:
+                # Save accepted improvements before local search/diversification.
+                k["update_island_bests"](
+                    *cur_pop, ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
+                    self.num_islands, self.island_size)
+                k["update_global_best"](
+                    ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
+                    gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, self.num_islands)
+                if iter_idx % ls_interval == 0:
                     k["route_elimination"](
-                        cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
-                        scratch_route, scratch_unrouted, scratch_flags, prob_device, 5
-                    )
+                        gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
+                        scratch_route, scratch_unrouted, scratch_flags, prob_device, 5)
                     k["local_search"](
-                        cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
-                        scratch_route, scratch_route2, prob_device, 2
-                    )
-
-                # Periodic Stagnation Diversification
-                if gen % stag_interval == 0:
+                        gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
+                        scratch_route, scratch_route2, prob_device, 0)
+                k["publish_global_best"](
+                    gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
+                    ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, self.num_islands)
+                if gbest_cost[0] < previous_best - PRECISION:
+                    no_improve = 0
+                else:
+                    no_improve += 1
+                if no_improve >= stag_interval:
                     k["stagnation_diversify"](
-                        cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
+                        *cur_pop, cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
+                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                         scratch_route, scratch_unrouted, scratch_flags,
-                        prob_device, rng_states, self.num_islands, self.island_size
-                    )
+                        prob_device, rng_states, self.num_islands, self.island_size)
+                    no_improve = 0
 
                 # Periodic Island Migration
                 if self.num_islands > 1 and gen % migr_interval == 0:
@@ -455,9 +495,7 @@ class GpuEngine:
             is_better = False
             if best_s.len() == 0 or best_s.cost == float("inf") or len(best_s.route_list) == 0:
                 is_better = True
-            elif run_best_sol.len() < best_s.len():
-                is_better = True
-            elif run_best_sol.len() == best_s.len() and run_best_sol.cost < best_s.cost - PRECISION:
+            elif run_best_sol.cost < best_s.cost - PRECISION:
                 is_better = True
 
             if is_better and is_valid:
@@ -476,7 +514,8 @@ class GpuEngine:
         print("------------Summary-----------", flush=True)
         print(f"Total {completed_runs} runs, total consumed {total_time} sec", flush=True)
         best_s.output(self.data)
-        best_s.check(self.data)
+        if not best_s.check(self.data):
+            raise RuntimeError("No feasible final solution passed CPU verification")
         sys.stdout.flush()
         return True
 

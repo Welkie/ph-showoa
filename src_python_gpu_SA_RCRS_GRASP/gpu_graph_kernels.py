@@ -18,7 +18,9 @@ def build_graph_kernels(kernels):
     migrate = cuda.jit(device=True)(kernels["island_migration"].py_func)
 
     @cuda.jit
-    def reset(rng, seed, generation, parameters, ibest_nr, gbest_nr):
+    def reset(rng, seed, generation, parameters, ibest_nr, gbest_nr,
+              ibest_dist, ibest_cost, gbest_dist, gbest_cost,
+              no_improve, previous_best, diversify_due):
         s = cuda.grid(1)
         if s < rng.shape[0]:
             # Identical four uint32 words to the original host _init_rng.
@@ -29,24 +31,36 @@ def build_graph_kernels(kernels):
             rng[s, 3] = np.uint32((value + s * 7919 + 88675123) & 0xFFFFFFFF) | np.uint32(1)
         if s < ibest_nr.size:
             ibest_nr[s] = 0
+            ibest_dist[s] = math.inf
+            ibest_cost[s] = math.inf
         if s == 0:
             gbest_nr[0] = 0
+            gbest_dist[0] = math.inf
+            gbest_cost[0] = math.inf
             generation[0] = 1
             parameters[0] = 0.0
             parameters[1] = 0.0
+            no_improve[0] = 0
+            previous_best[0] = math.inf
+            diversify_due[0] = 0
 
     @cuda.jit
-    def parameters_kernel(generation, parameters, max_iter, mode):
+    def parameters_kernel(generation, parameters, max_iter, mode, gbest_cost, previous_best):
         if cuda.grid(1) == 0:
             iteration = generation[0] - 1
-            a = 2.0 - 2.0 * (float(iteration) / float(max_iter))
-            p = 0.5 * (1.0 + math.cos(math.pi * float(iteration) / float(max_iter)))
+            ratio = float(iteration) / float(max_iter)
+            if ratio > 1.0:
+                ratio = 1.0
+            a = 2.0 - 2.0 * ratio
+            p_val = 0.5 * (1.0 - ratio)
+            p = p_val if p_val >= 0.15 else 0.15
             if mode == 1:
                 p = 1.0
             elif mode == 2:
                 p = 0.0
             parameters[0] = a
             parameters[1] = p
+            previous_best[0] = gbest_cost[0]
 
     @cuda.jit
     def update_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -67,23 +81,38 @@ def build_graph_kernels(kernels):
     def elimination_kernel(nodes, rlen, nr, dist, cost, scratch_route,
                            scratch_unrouted, scratch_flags, prob_data,
                            generation, interval):
-        if generation[0] % interval == 0:
+        if (generation[0] - 1) % interval == 0:
             eliminate(nodes, rlen, nr, dist, cost, scratch_route,
                       scratch_unrouted, scratch_flags, prob_data, 5)
 
     @cuda.jit
     def search_kernel(nodes, rlen, nr, dist, cost, scratch_route,
                       scratch_route2, prob_data, generation, interval):
-        if generation[0] % interval == 0:
+        if (generation[0] - 1) % interval == 0:
             search(nodes, rlen, nr, dist, cost, scratch_route, scratch_route2,
-                   prob_data, 2)
+                   prob_data, 0)
 
     @cuda.jit
-    def diversify_kernel(nodes, rlen, nr, dist, cost, scratch_route,
+    def stagnation_kernel(gbest_cost, previous_best, no_improve, diversify_due, interval):
+        if cuda.grid(1) == 0:
+            if gbest_cost[0] < previous_best[0] - 0.001:
+                no_improve[0] = 0
+            else:
+                no_improve[0] += 1
+            diversify_due[0] = 1 if no_improve[0] >= interval else 0
+            if diversify_due[0]:
+                no_improve[0] = 0
+
+    @cuda.jit
+    def diversify_kernel(nodes, rlen, nr, dist, cost,
+                         cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
+                         ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, scratch_route,
                          scratch_unrouted, scratch_flags, prob_data, rng_states,
-                         num_islands, island_size, generation, interval):
-        if generation[0] % interval == 0:
-            diversify(nodes, rlen, nr, dist, cost, scratch_route,
+                         num_islands, island_size, diversify_due):
+        if diversify_due[0]:
+            diversify(nodes, rlen, nr, dist, cost,
+                      cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
+                      ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, scratch_route,
                       scratch_unrouted, scratch_flags, prob_data, rng_states,
                       num_islands, island_size)
 
@@ -112,6 +141,7 @@ def build_graph_kernels(kernels):
         "update": update_kernel,
         "eliminate": elimination_kernel,
         "search": search_kernel,
+        "stagnation": stagnation_kernel,
         "diversify": diversify_kernel,
         "migrate": migration_kernel,
         "finish": finish_generation,

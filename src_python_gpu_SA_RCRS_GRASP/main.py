@@ -3,7 +3,7 @@ import sys
 
 from .argparse_util import ArgumentParser
 from .data import Data
-from .search_framework import search_framework
+from .gpu_engine import run_solver as search_framework
 from . import state
 
 
@@ -56,6 +56,10 @@ def main(argv=None):
     parser.add_argument("--grasp_alpha_lo", 1)
     parser.add_argument("--grasp_alpha_hi", 1)
     parser.add_argument("--sa_iterations", 1)
+    parser.add_argument("--sa_t0", 1)
+    parser.add_argument("--sa_alpha", 1)
+    parser.add_argument("--sa_tmin", 1)
+    parser.add_argument("--sa_itermax", 1)
     parser.add_argument("--num_islands", 1)
     parser.add_argument("--migration_interval", 1)
     parser.add_argument("--k_init", 1)

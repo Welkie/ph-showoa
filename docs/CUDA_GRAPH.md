@@ -10,11 +10,12 @@ The CPU reference backend is separate; CUDA errors never fall back to it.
 1. CPU: read the problem, allocate problem/population/scratch/RNG/log buffers,
    compile and load kernels, capture and instantiate the graph.
 2. Before each run: copy one seed scalar to the existing device buffer.
-3. GPU: initialize RNG, reset bests and generation, then run the existing
-   RCRS-GRASP, SA warmup, route elimination and local search initialization.
+3. GPU: initialize RNG, reset bests and generation, then run RCRS-GRASP and
+   the base-aligned configurable SA initialization.
 4. GPU, for each generation: calculate parameters, SHO/WOA and acceptance,
-   periodic elimination then local search, periodic diversification, periodic
-   migration, island bests, global best, record log and increment generation.
+   periodic route elimination plus combined local search on the global best,
+   stagnation-triggered diversification, retained island migration, best
+   tracking, logging and generation increment.
 5. CPU, after completion: copy the run best and log, print buffered progress,
    decode, check feasibility and update the best across valid runs.
 6. CPU: output and verify the final best.
@@ -27,18 +28,18 @@ orders all graph nodes; it preserves the original order when multiple
 scheduled operations coincide. Ping-pong population pointers are wired into
 the graph, including odd/even generation parity.
 
-This graph has `4 + 9 * max_iter` kernel nodes and a `max_iter * 4` float64 log
+This graph has `4 + 13 * max_iter` kernel nodes and a `max_iter * 4` float64 log
 (one reserved row when max_iter is zero). Construction and graph memory scale
 with the generation limit. Buffers and graph are reused across runs; changing
 the problem, population, iteration limit or schedule requires rebuilding.
 
-## Preserved algorithm
+## Base-aligned algorithm
 
-The wrappers call the existing CUDA operators as device functions. RNG words,
-SA warmup (the existing hardcoded 20 iterations), elimination/local-search
-passes, feasibility, acceptance and lexicographic best selection are unchanged.
-This change does not tensorize additional inner loops or change search quality
-intentionally. GPU evaluation of cosine can differ slightly from the CPU math
+The device operators follow `src_python` paper mode for feasibility and repair,
+the five-neighbourhood SA initializer, guided SHO crossover and mutation,
+route-wise WOA, scalar objective/acceptance, combined local search and
+stagnation detection. RCRS-GRASP construction and island migration remain GPU
+extensions. GPU evaluation of cosine can differ slightly from the CPU math
 library; identical seeds are not a universal bitwise-equivalence guarantee on
 different hardware. Compare quality over multiple seeds and measure elapsed
 time separately from first-use compilation/capture.
@@ -73,7 +74,7 @@ NUMBA_ENABLE_CUDASIM=1 python -m pytest tests/test_gpu_search_graph.py -q
 ```
 
 Tests compare the full active population, island/global bests, RNG and NV/TD
-trace with the previous host schedule; cover all modes, coincident schedules,
+trace with an independent host schedule; cover all modes, coincident schedules,
 odd/even and zero generations, replay/reset, uint32 seed wrapping, and CPU
 decode/feasibility checking. Simulation does not validate driver capture,
 device compilation or performance; run the suite on Kaggle before benchmarking.
