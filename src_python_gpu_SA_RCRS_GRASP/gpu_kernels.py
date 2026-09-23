@@ -17,7 +17,7 @@ from .gpu_base_operators import build_base_operators
 def scalar_sa_probability(new_cost, current_cost, iteration, max_iter):
     """Algorithm 1: Boltzmann acceptance using the complete scalar objective."""
     delta = new_cost - current_cost
-    if delta < 0.0:
+    if delta <= 0.001:
         return 1.0
     temperature = 1.0 - float(iteration) / float(max_iter) if max_iter > 0 else 0.0
     return math.exp(-delta / (1e-6 + temperature * abs(current_cost)))
@@ -34,7 +34,8 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
                         sa_t0: float = 100.0, sa_alpha: float = 0.95,
                         sa_tmin: float = 0.1, sa_itermax: int = 100,
                         mutation_probability: float = 0.35,
-                        diversify_ratio: float = 0.40):
+                        diversify_ratio: float = 0.40,
+                        enable_two_opt_star: bool = True):
     """Builds a bundle of Numba device functions and kernels for CUDA or CPU."""
     seen_size = int(customer_count) + 1
     if is_cuda:
@@ -208,7 +209,8 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
 
     base = build_base_operators(dev_fn, eval_route, eval_solution, copy_solution,
                                 rand_u01, randint, shuffle_ints, sa_t0, sa_alpha,
-                                sa_tmin, sa_itermax, mutation_probability, diversify_ratio)
+                                sa_tmin, sa_itermax, mutation_probability, diversify_ratio,
+                                enable_two_opt_star)
     compact = base['compact']
     refresh = base['refresh']
     repair = base['repair']
@@ -771,7 +773,7 @@ def build_kernel_bundle(is_cuda: bool = False, customer_count: int = 100,
         new_cost = cand_cost[s]
         old_cost = cur_cost[s]
 
-        if new_cost < old_cost:
+        if new_cost - old_cost <= 0.001:
             accepted = True
         else:
             prob = sa_probability(new_cost, old_cost, iteration, max_iter)

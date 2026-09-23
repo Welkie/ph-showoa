@@ -20,6 +20,7 @@ from test_gpu_search_graph import tiny_data
 def engine():
     data = tiny_data(population=4, islands=1)
     data.paper_flags = True
+    data.gpu_2opt_star = False  # Test base neighborhoods, excluding the GPU extension.
     return GpuEngine(data, is_cuda=False)
 
 

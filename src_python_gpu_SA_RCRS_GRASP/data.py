@@ -125,7 +125,7 @@ class Data:
             self.g_1 = 1000
             self.max_iter = 1000
             self.runs = 30
-            self.p_size = 30
+            self.p_size = 32  # GPU experiment population; base paper default is 30.
         self.parallel_workers = DEFAULT_PARALLEL_WORKERS
         self.local_search_interval = DEFAULT_LOCAL_SEARCH_INTERVAL
         self.stagnation_interval = DEFAULT_STAGNATION_INTERVAL
@@ -149,7 +149,9 @@ class Data:
         self.grasp_alpha_lo = DEFAULT_GRASP_ALPHA_LO
         self.grasp_alpha_hi = DEFAULT_GRASP_ALPHA_HI
         self.sa_iterations = self.sa_itermax
-        self.num_islands = 6
+        self.num_islands = 4
+        self.gpu_2opt_star = True
+        self.gpu_ls_scope = "island"
         self.migration_interval = 20
         self.cross_repair = DEFAULT_CROSSOVER
         self.lambda_gamma = (0.0, 0.0)
@@ -431,6 +433,15 @@ class Data:
             self.sa_iterations = int(parser.retrieve("sa_iterations"))
         if parser.exists("num_islands"):
             self.num_islands = int(parser.retrieve("num_islands"))
+        if parser.exists("gpu_2opt_star"):
+            value = parser.retrieve("gpu_2opt_star")
+            if value not in {"0", "1"}:
+                raise ValueError("gpu_2opt_star must be 0 or 1")
+            self.gpu_2opt_star = value == "1"
+        if parser.exists("gpu_ls_scope"):
+            self.gpu_ls_scope = parser.retrieve("gpu_ls_scope")
+        if self.gpu_ls_scope not in {"global", "island"}:
+            raise ValueError("gpu_ls_scope must be global or island")
         if parser.exists("migration_interval"):
             self.migration_interval = int(parser.retrieve("migration_interval"))
         if parser.exists("k_init"):

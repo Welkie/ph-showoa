@@ -107,6 +107,9 @@ class CudaSearchGraph:
         route, route2, unrouted, flags, scores = buffers[25:30]
         problem = buffers[30]
         k = engine.kernels
+        search_best = ibest if engine.ls_scope == "island" else gbest
+        search_blocks = engine.isl_blocks if engine.ls_scope == "island" else 1
+        search_threads = engine.threads_per_block if engine.ls_scope == "island" else 1
         g = build_graph_kernels(k)
         steps = []
         threads = engine.threads_per_block
@@ -144,10 +147,12 @@ class CudaSearchGraph:
             pop, nxt = nxt, pop
             # Record every accepted best before a destructive diversification.
             bests(pop)
-            add("eliminate", g["eliminate"], 1,
-                (*gbest, route, unrouted, flags, problem, self.generation, ls), 1)
-            add("search", g["search"], 1,
-                (*gbest, route, route2, problem, self.generation, ls), 1)
+            add("eliminate", g["eliminate"], search_blocks,
+                (*search_best, route, unrouted, flags, problem, self.generation, ls), search_threads)
+            add("search", g["search"], search_blocks,
+                (*search_best, route, route2, problem, self.generation, ls), search_threads)
+            add("global_best", k["update_global_best"], 1,
+                (*ibest, *gbest, engine.num_islands), 1)
             add("publish_best", k["publish_global_best"], 1,
                 (*gbest, *ibest, engine.num_islands), 1)
             add("stagnation", g["stagnation"], 1,

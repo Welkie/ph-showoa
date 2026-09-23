@@ -14,7 +14,7 @@ from src_python_gpu_SA_RCRS_GRASP.gpu_kernels import scalar_sa_probability
     (3, 100, 2, 3000, 50, 100),  # Fewer vehicles can still cost more.
     (2, 3000, 3, 100, 50, 100),  # More vehicles can cost less.
     (2, 100, 2, 100, 100, 100),
-    (2, 100, 2, 100.0005, 100, 100),  # No unconditional epsilon acceptance.
+    (2, 100, 2, 100.0005, 100, 100),  # Base accepts deltas within PRECISION.
     (2, 100, 3, 100, 100, 100),
     (2, 100, 3, 100, 0, 0),
 ])
@@ -22,21 +22,31 @@ def test_scalar_sa_matches_paper(old_nv, old_td, new_nv, new_td, iteration, max_
     old_cost = 2000.0 * old_nv + old_td
     new_cost = 2000.0 * new_nv + new_td
     temperature = 1.0 - iteration / max_iter if max_iter else 0.0
-    expected = (1.0 if new_cost < old_cost else
+    expected = (1.0 if new_cost - old_cost <= 0.001 else
                 math.exp(-(new_cost - old_cost) / (1e-6 + temperature * abs(old_cost))))
     assert scalar_sa_probability(new_cost, old_cost, iteration, max_iter) == pytest.approx(expected)
 
 
-def test_python_fallback_accepts_extra_vehicle_and_rejects_tiny_increase_when_cold():
+def test_python_fallback_accepts_extra_vehicle_and_tiny_increase_when_cold():
     pytest.importorskip("torch")
     from src_python_gpu_SA_RCRS_GRASP.search_framework import _sa_accept
 
     rng = SimpleNamespace(random=lambda: 0.25)
     assert _sa_accept(SimpleNamespace(cost=6100.0), None, 4100.0, 0, 100, rng)
-    assert not _sa_accept(SimpleNamespace(cost=4100.0005), None, 4100.0, 100, 100, rng)
+    assert _sa_accept(SimpleNamespace(cost=4100.0005), None, 4100.0, 100, 100, rng)
 
 
 def test_numba_compiled_sa_probability():
     numba = pytest.importorskip("numba")
     compiled = numba.njit(scalar_sa_probability)
     assert compiled(6100.0, 4100.0, 0, 100) == pytest.approx(math.exp(-2000 / (1e-6 + 4100)))
+
+
+@pytest.mark.parametrize('delta', [-1., 0., .0005, .002, 100.])
+@pytest.mark.parametrize('draw', [0., .25, .99999999])
+def test_acceptance_matches_base_near_precision(delta, draw):
+    from src_python.search_framework import _sa_accept
+    old, new = 4100., 4100. + delta
+    expected = _sa_accept(SimpleNamespace(cost=new), None, old, 99, 100,
+                          SimpleNamespace(random=lambda: draw))
+    assert (draw < scalar_sa_probability(new, old, 99, 100)) == expected

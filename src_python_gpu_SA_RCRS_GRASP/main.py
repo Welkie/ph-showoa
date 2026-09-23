@@ -61,6 +61,8 @@ def main(argv=None):
     parser.add_argument("--sa_tmin", 1)
     parser.add_argument("--sa_itermax", 1)
     parser.add_argument("--num_islands", 1)
+    parser.add_argument("--gpu_2opt_star", 1)
+    parser.add_argument("--gpu_ls_scope", 1)
     parser.add_argument("--migration_interval", 1)
     parser.add_argument("--k_init", 1)
     parser.add_argument("--no_crossover")

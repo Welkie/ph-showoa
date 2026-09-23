@@ -1335,7 +1335,7 @@ def _sa_accept(
     delta = new_solution.cost - current_fit
     scale = abs(current_fit)
 
-    if delta < 0.0:
+    if delta <= PRECISION:
         return True
     temperature = 1.0 - (float(iteration) / float(max_iter)) if max_iter > 0 else 0.0
     denominator = 1e-6 + temperature * scale

@@ -9,7 +9,8 @@ import math
 
 def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solution,
                          uniform, randint, shuffle, sa_t0, sa_alpha, sa_tmin,
-                         sa_itermax, mutation_probability, diversify_ratio):
+                         sa_itermax, mutation_probability, diversify_ratio,
+                         enable_two_opt_star=True):
     @dev_fn
     def compact(nodes, lengths, counts, s):
         write = 0
@@ -408,6 +409,53 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
                         break
                 if improved:
                     break
+            if improved:
+                continue
+            # GPU extension: exchange non-empty tails after exhausting the
+            # base neighborhoods. Keep both vehicles; validate both new routes.
+            if enable_two_opt_star:
+                for r1 in range(counts[s]):
+                    l1 = lengths[s, r1]
+                    _, old1 = evaluate_route(nodes[s, r1], l1, problem)
+                    for r2 in range(r1 + 1, counts[s]):
+                        l2 = lengths[s, r2]
+                        _, old2 = evaluate_route(nodes[s, r2], l2, problem)
+                        for i in range(2, l1 - 1):
+                            for j in range(2, l2 - 1):
+                                n1, n2 = i + l2 - j, j + l1 - i
+                                if n1 > nodes.shape[2] or n2 > nodes.shape[2]:
+                                    continue
+                                dm = problem[10]
+                                delta = (dm[nodes[s, r1, i - 1], nodes[s, r2, j]]
+                                         + dm[nodes[s, r2, j - 1], nodes[s, r1, i]]
+                                         - dm[nodes[s, r1, i - 1], nodes[s, r1, i]]
+                                         - dm[nodes[s, r2, j - 1], nodes[s, r2, j]])
+                                if delta * problem[4] >= -0.001:
+                                    continue
+                                for k in range(i):
+                                    scratch[s, k] = nodes[s, r1, k]
+                                for k in range(j, l2):
+                                    scratch[s, i + k - j] = nodes[s, r2, k]
+                                for k in range(j):
+                                    scratch2[s, k] = nodes[s, r2, k]
+                                for k in range(i, l1):
+                                    scratch2[s, j + k - i] = nodes[s, r1, k]
+                                ok1, new1 = evaluate_route(scratch[s], n1, problem)
+                                ok2, new2 = evaluate_route(scratch2[s], n2, problem)
+                                if ok1 and ok2 and (new1 + new2 - old1 - old2) * problem[4] < -0.001:
+                                    for k in range(n1):
+                                        nodes[s, r1, k] = scratch[s, k]
+                                    for k in range(n2):
+                                        nodes[s, r2, k] = scratch2[s, k]
+                                    lengths[s, r1], lengths[s, r2] = n1, n2
+                                    improved = True
+                                    break
+                            if improved:
+                                break
+                        if improved:
+                            break
+                    if improved:
+                        break
             if not improved:
                 break
         refresh(nodes, lengths, counts, distances, costs, s, problem)

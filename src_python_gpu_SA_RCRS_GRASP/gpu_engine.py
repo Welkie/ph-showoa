@@ -109,15 +109,20 @@ class GpuEngine:
             raise ValueError("Mutation/diversification probabilities must be in [0, 1]")
         self.kernels = build_kernel_bundle(self.is_cuda, int(data.customer_num),
                                            sa_t0, sa_alpha, sa_tmin, sa_itermax,
-                                           mutation, diversify)
+                                           mutation, diversify,
+                                           bool(getattr(data, "gpu_2opt_star", True)))
 
-        self.P = int(getattr(data, "p_size", 36))
-        self.num_islands = int(getattr(data, "num_islands", 6))
+        self.P = int(getattr(data, "p_size", 32))
+        self.num_islands = int(getattr(data, "num_islands", 4))
         if self.P <= 0 or self.num_islands <= 0:
             raise ValueError("Population size and number of islands must be positive")
         if self.P % self.num_islands != 0:
+            print(f"[GpuEngine] P={self.P} is not divisible by requested islands={self.num_islands}; using one island", flush=True)
             self.num_islands = 1
         self.island_size = self.P // self.num_islands
+        self.ls_scope = getattr(data, "gpu_ls_scope", "island")
+        if self.ls_scope not in {"global", "island"}:
+            raise ValueError("gpu_ls_scope must be global or island")
 
         self.N = int(data.customer_num)
         self.R = max(1, self.N)  # At most one non-empty route per customer.
@@ -126,6 +131,10 @@ class GpuEngine:
         self.threads_per_block = 32
         self.blocks = (self.P + self.threads_per_block - 1) // self.threads_per_block
         self.isl_blocks = (self.num_islands + self.threads_per_block - 1) // self.threads_per_block
+        self.search_description = (
+            f"[GpuEngine] SA_RCRS_GRASP: P={self.P}, islands={self.num_islands}, "
+            f"SA iterations={sa_itermax}, local_search={self.ls_scope}, "
+            f"2opt_star={bool(getattr(data, 'gpu_2opt_star', True))}; cost=2000*NV+TD")
 
     def _allocate_buffers(self):
         P, R, L, N, num_islands = self.P, self.R, self.L, self.N, self.num_islands
@@ -312,6 +321,7 @@ class GpuEngine:
         return True
 
     def run_solve(self, best_s: Solution):
+        print(self.search_description, flush=True)
         if self.is_cuda:
             return self._run_cuda_solve(best_s)
         return self._run_reference_solve(best_s)
@@ -416,12 +426,18 @@ class GpuEngine:
                     ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
                     gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, self.num_islands)
                 if iter_idx % ls_interval == 0:
+                    search_best = ((ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost)
+                                   if self.ls_scope == "island" else
+                                   (gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost))
                     k["route_elimination"](
-                        gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
+                        *search_best,
                         scratch_route, scratch_unrouted, scratch_flags, prob_device, 5)
                     k["local_search"](
-                        gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
+                        *search_best,
                         scratch_route, scratch_route2, prob_device, 0)
+                    k["update_global_best"](
+                        ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost,
+                        gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, self.num_islands)
                 k["publish_global_best"](
                     gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost,
                     ibest_nodes, ibest_rlen, ibest_nr, ibest_dist, ibest_cost, self.num_islands)

@@ -73,8 +73,12 @@ def reference_cuda_schedule(engine, buffers, seed):
         pop, nxt = nxt, pop
         bests()
         if (gen - 1) % engine.data.local_search_interval == 0:
-            launch("route_elimination", (*gbest, route, unrouted, flags, problem, 5), 1, 1)
-            launch("local_search", (*gbest, route, route2, problem, 0), 1, 1)
+            target = ibest if engine.ls_scope == "island" else gbest
+            blocks = engine.isl_blocks if engine.ls_scope == "island" else 1
+            threads = engine.threads_per_block if engine.ls_scope == "island" else 1
+            launch("route_elimination", (*target, route, unrouted, flags, problem, 5), blocks, threads)
+            launch("local_search", (*target, route, route2, problem, 0), blocks, threads)
+            launch("update_global_best", (*ibest, *gbest, engine.num_islands), 1, 1)
         launch("publish_global_best", (*gbest, *ibest, engine.num_islands), 1, 1)
         if gbest[4].copy_to_host()[0] < previous_best - 0.001:
             no_improve = 0
@@ -111,12 +115,15 @@ requires_cuda = pytest.mark.skipif(not cuda.is_available(), reason="Requires CUD
 
 
 @requires_cuda
+@pytest.mark.parametrize("ls_scope", ["global", "island"])
 @pytest.mark.parametrize("mode,iterations,islands,population", [
     ("ph_showoa", 6, 2, 4), ("sho", 3, 2, 4), ("woa", 4, 1, 4),
     ("ph_showoa", 0, 2, 4), ("ph_showoa", 2, 2, 34),
 ])
-def test_replay_matches_reference_schedule_and_rng(mode, iterations, islands, population):
-    engine = GpuEngine(tiny_data(mode, iterations, population, islands), is_cuda=True)
+def test_replay_matches_reference_schedule_and_rng(mode, iterations, islands, population, ls_scope):
+    data = tiny_data(mode, iterations, population, islands)
+    data.gpu_ls_scope = ls_scope
+    engine = GpuEngine(data, is_cuda=True)
     actual, expected = engine._allocate_buffers(), engine._allocate_buffers()
     graph = CudaSearchGraph(engine, actual)
     snapshots = []
