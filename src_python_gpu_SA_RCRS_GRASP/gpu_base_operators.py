@@ -385,7 +385,7 @@ def build_base_operators(dev_fn, evaluate_route, evaluate_solution, copy_solutio
                         break
                 if improved:
                     break
-            if improved:
+            if improved and max_passes <= 0:
                 continue
             for r1 in range(counts[s]):
                 l1 = lengths[s, r1]

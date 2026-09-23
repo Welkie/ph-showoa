@@ -1,7 +1,4 @@
-Đây là thuật toán gốc của tác giả nằm ở src_python được trình bày trong paper: journal.pone.0343262.pdf . Bây giờ tui đang chạy cải tiến code đó thành fullGPU 100% và thay bước SA ở lúc khởi tạo thành SA_RCRS_grasp: thư mục src_python_gpu_SA_RCRS_GRASP. Tuy nhiên, code hiện giờ vẫn còn nhiều hạn chế và tối ưu chưa tốt nên kết quả khá tệ, về mặt thời gian thì nhanh hơn. 
-Tối ưu hóa tensor các điểm bên trong còn chưa tốt. Bạn tìm cách cải tiến các điểm chưa tốt để nâng cao kết quả, kết quả về mặt thời gian thì vẫn nhanh hơn nhưng chạy vẫn còn tệ về performance. Phải ưu tiên NV trước rồi sau đó đến TD theo công thức trong paper đề cập. Lẽ ra phải tốt về NV và TD như bản src_cpp_hybrid_SA_RCRS_GRASP (tham khảo ý tưởng, logic, mọi thứ) khác là bản đó chạy hybrid(cpu+gpu), còn tui muốn là full gpu
-
-Phải luôn đảm bảo 100% chạy trên GPU
+Đây là thuật toán gốc của tác giả nằm ở src_python được trình bày trong paper: journal.pone.0343262.pdf . Bây giờ tui đang chạy cải tiến code đó thành fullGPU 100% và thay bước SA ở lúc khởi tạo thành SA_RCRS_grasp: thư mục src_python_gpu_SA_RCRS_GRASP. 
 
 Tác giả paper đã code bằng java. Còn này tui code trên python thì sửa thành full gpu nhưng phải là trên python
 
