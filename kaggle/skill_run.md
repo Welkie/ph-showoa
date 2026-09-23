@@ -1,0 +1,3 @@
+Tui đang có 3 acc kaggle. Bạn thực hiện chạy tất cả các instance trong instances_benchmark_pop_size32_runs=30_iter1000.csv bằng dựa theo code `run_gpu_sa_rcrs_grasp.py` với các tham số sau:
+pop_size=32; max_iter=1000; runs=30. Trên 3 acc kaggle đó.
+Do kaggle có giới hạn quota. Nên bây giờ tui cần bạn set up chạy lần lượt các instance trên 3 acc kaggle (mỗi 1 acc kaggle thì kaggle cho chạy 2 version cùng lúc). Do quota có hạn nên bạn cứ set up chạy các instance lần lượt từng instance một rồi lưu kết quả vào file instances_benchmark_pop_size32_runs=30_iter1000.csv đã có sẵn. Chạy đc bao nhiêu instance hay bấy nhiêu

@@ -576,7 +576,7 @@ class Data:
             self.two_opt = True
             self.two_opt_star = True
             self.or_opt = True
-            self.or_opt_len = 2
+            self.or_opt_len = 3
             self.small_opts = ["2opt", "2opt*", "oropt_single", "2exchange"]
             self.two_exchange = True
             self.ex_len = 2

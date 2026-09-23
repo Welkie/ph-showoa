@@ -161,7 +161,7 @@ def build_kernel_bundle(is_cuda: bool = False):
             return True
         if nr_a < nr_b:
             return True
-        if nr_a == nr_b and dist_a < dist_b - 1e-4:
+        if nr_a == nr_b and dist_a < dist_b - 1e-3:
             return True
         return False
 
@@ -444,14 +444,14 @@ def build_kernel_bundle(is_cuda: bool = False):
     @dev_fn
     def sa_warmup_single(nodes, rlen, nr, dist, cost, s,
                          scratch_route, scratch_route2,
-                         prob_data, rng_states, sa_iters=25):
+                         prob_data, rng_states, sa_iters=100):
         temp = 100.0
-        cooling = 0.85
+        cooling = 0.95
         num_r = nr[s]
         if num_r == 0:
             return
 
-        while temp > 0.5:
+        while temp > 0.1:
             for _ in range(sa_iters):
                 num_r = nr[s]
                 if num_r == 0:
@@ -478,7 +478,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                         if ok:
                             _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
                             delta = new_d - old_d
-                            if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-4)):
+                            if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
                                 for k in range(l):
                                     nodes[s, r, k] = scratch_route[s, k]
                                 dist[s] += delta
@@ -507,7 +507,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                             if ok:
                                 _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
                                 delta = new_d - old_d
-                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-4)):
+                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
                                     for k in range(l):
                                         nodes[s, r, k] = scratch_route[s, k]
                                     dist[s] += delta
@@ -541,7 +541,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                 _, old_d1 = eval_route(nodes[s, r1, :l1], l1, prob_data)
                                 _, old_d2 = eval_route(nodes[s, r2, :l2], l2, prob_data)
                                 delta = (new_d1 + new_d2) - (old_d1 + old_d2)
-                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-4)):
+                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
                                     for k in range(l1 - 1):
                                         nodes[s, r1, k] = scratch_route[s, k]
                                     nodes[s, r1, l1 - 1] = 0
@@ -575,7 +575,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                 _, old_d1 = eval_route(nodes[s, r1, :l1], l1, prob_data)
                                 _, old_d2 = eval_route(nodes[s, r2, :l2], l2, prob_data)
                                 delta = (new_d1 + new_d2) - (old_d1 + old_d2)
-                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-4)):
+                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
                                     nodes[s, r1, i] = scratch_route[s, i]
                                     nodes[s, r2, j] = scratch_route2[s, j]
                                     dist[s] += delta
@@ -614,7 +614,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                         ok, new_d = eval_route(scratch_route[s, :l], l, prob_data)
                         if ok:
                             _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
-                            if new_d < old_d - 1e-4:
+                            if new_d < old_d - 1e-3:
                                 for k in range(l):
                                     nodes[s, r, k] = scratch_route[s, k]
                                 dist[s] += (new_d - old_d)
@@ -643,7 +643,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                         ok, new_d = eval_route(scratch_route[s, :l], l, prob_data)
                         if ok:
                             _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
-                            if new_d < old_d - 1e-4:
+                            if new_d < old_d - 1e-3:
                                 for k in range(l):
                                     nodes[s, r, k] = scratch_route[s, k]
                                 dist[s] += (new_d - old_d)
@@ -674,7 +674,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                 continue
                             delta_d = (dist_matrix[u1, v2] + dist_matrix[u2, v1] -
                                        dist_matrix[u1, v1] - dist_matrix[u2, v2])
-                            if delta_d < -1e-4:
+                            if delta_d < -1e-3:
                                 for k in range(p1):
                                     scratch_route[s, k] = nodes[s, r1, k]
                                 for k in range(p2, len2):
@@ -689,7 +689,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                     if ok2:
                                         _, old_d1 = eval_route(nodes[s, r1, :len1], len1, prob_data)
                                         _, old_d2 = eval_route(nodes[s, r2, :len2], len2, prob_data)
-                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-4:
+                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-3:
                                             for k in range(new_len1):
                                                 nodes[s, r1, k] = scratch_route[s, k]
                                             for k in range(new_len1, len1):
@@ -734,7 +734,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                             prev_v = nodes[s, r2, j - 1]
                             next_v = nodes[s, r2, j]
                             cost_ins = (dist_matrix[prev_v, u] + dist_matrix[u, next_v]) - dist_matrix[prev_v, next_v]
-                            if cost_rem + cost_ins < -1e-4:
+                            if cost_rem + cost_ins < -1e-3:
                                 k_idx = 0
                                 for k in range(len1):
                                     if k != i:
@@ -751,7 +751,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                     if ok2:
                                         _, old_d1 = eval_route(nodes[s, r1, :len1], len1, prob_data)
                                         _, old_d2 = eval_route(nodes[s, r2, :len2], len2, prob_data)
-                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-4:
+                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-3:
                                             for k in range(len1 - 1):
                                                 nodes[s, r1, k] = scratch_route[s, k]
                                             nodes[s, r1, len1 - 1] = 0
