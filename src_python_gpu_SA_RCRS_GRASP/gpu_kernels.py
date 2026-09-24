@@ -446,12 +446,12 @@ def build_kernel_bundle(is_cuda: bool = False):
                          scratch_route, scratch_route2,
                          prob_data, rng_states, sa_iters=25):
         temp = 100.0
-        cooling = 0.85
+        cooling = 0.95
         num_r = nr[s]
         if num_r == 0:
             return
 
-        while temp > 0.5:
+        while temp > 0.1:
             for _ in range(sa_iters):
                 num_r = nr[s]
                 if num_r == 0:
@@ -1103,7 +1103,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                      prob_data, alpha, rng_states)
                 sa_warmup_single(nodes, rlen, nr, dist, cost, s,
                                  scratch_route, scratch_route2,
-                                 prob_data, rng_states, sa_iters=20)
+                                 prob_data, rng_states, sa_iters=25)
                 route_elimination_single(nodes, rlen, nr, dist, cost, s,
                                          scratch_route, scratch_unrouted, scratch_flags,
                                          prob_data, passes=5)
@@ -1241,7 +1241,7 @@ def build_kernel_bundle(is_cuda: bool = False):
                                      prob_data, alpha, rng_states)
                 sa_warmup_single(nodes, rlen, nr, dist, cost, s,
                                  scratch_route, scratch_route2,
-                                 prob_data, rng_states, sa_iters=20)
+                                 prob_data, rng_states, sa_iters=25)
                 route_elimination_single(nodes, rlen, nr, dist, cost, s,
                                          scratch_route, scratch_unrouted, scratch_flags,
                                          prob_data, passes=5)
