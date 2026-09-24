@@ -446,12 +446,12 @@ def build_kernel_bundle(is_cuda: bool = False):
                          scratch_route, scratch_route2,
                          prob_data, rng_states, sa_iters=25):
         temp = 100.0
-        cooling = 0.95
+        cooling = 0.85
         num_r = nr[s]
         if num_r == 0:
             return
 
-        while temp > 0.1:
+        while temp > 0.5:
             for _ in range(sa_iters):
                 num_r = nr[s]
                 if num_r == 0:

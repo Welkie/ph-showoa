@@ -808,8 +808,8 @@ def tensor_sa_warmup(
     data,
     sa_iters: int = 25,
     temp_init: float = 100.0,
-    temp_min: float = 0.1,
-    cooling: float = 0.95,
+    temp_min: float = 0.5,
+    cooling: float = 0.85,
     cuda_rng: Optional[torch.Generator] = None
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
