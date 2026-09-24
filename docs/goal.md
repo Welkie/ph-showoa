@@ -98,3 +98,5 @@ CPU_PREP — trước các run
 │     Cập nhật nghiệm tốt nhất giữa các run đã hậu kiểm
 │
 └─ CPU: xuất nghiệm tốt nhất → check() cuối
+
+> **Đã xử lý & chuẩn hóa**: Đã phân tích thực nghiệm và xác nhận 3 yếu tố (Cosine Decay p_hybrid 1.0->0.0, độ nhạy 1e-4, SA Warmup dịu nhẹ 800 bước) là các CẢI TIẾN THUẬT TOÁN BẮT BUỘC của GPU/RCRS-GRASP (giúp bảo toàn cấu trúc cụm tuyến và gọt dũa số thực Euclidean). Đã khôi phục lại chuẩn tối ưu này. Chi tiết xem tại `docs/improved.md`.

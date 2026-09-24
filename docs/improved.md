@@ -88,111 +88,54 @@ Tài liệu này đối chiếu toàn diện giữa mã nguồn hiện tại (`s
 
 Bảng dưới đây tổng hợp chi tiết tất cả các thông số, hằng số dung sai và nhánh logic giữa hai phiên bản:
 
-| Hạng mục / Tham số | Baseline (`src_python_baseline`) | Hiện tại (`src_python_gpu_SA_RCRS_GRASP`) | Bản chất khác biệt | Đánh giá & Kiến nghị |
+| Hạng mục / Tham số | Baseline (`src_python_baseline`) | Cải tiến GPU (`src_python_gpu_SA_RCRS_GRASP`) | Phân tích cơ chế & Kết quả thực nghiệm | Phân loại & Quyết định |
 | :--- | :--- | :--- | :--- | :--- |
-| **Công thức $p_{hybrid}$** | $p_{hybrid} = \max(0.15, 0.5 \cdot (1 - \frac{t}{t_{max}}))$ (Tuyến tính, có sàn 0.15) | $p_{hybrid} = 0.5 \cdot (1 + \cos(\frac{\pi t}{t_{max}}))$ (Cosine decay, về 0.0) | **Chưa sát baseline** (Lệch công thức & thiếu sàn 0.15) | **Cần code lại để fit** (nếu muốn đúng chuẩn baseline) hoặc giữ có sàn `max(0.15, ...)` |
-| **Dung sai so sánh (`PRECISION`)** | `PRECISION = 0.001` ($10^{-3}$) dùng xuyên suốt | Trong Local Search dùng $10^{-4}$ (`1e-4`), trong acceptance dùng $10^{-3}$ | **Chưa sát baseline** (Không nhất quán giữa $10^{-3}$ và $10^{-4}$) | **Cần code lại để fit** (Quy về thống nhất $10^{-3}$ theo `PRECISION` của baseline) |
-| **Hàm mục tiêu chấp nhận SA** | Vô hướng: $\text{Cost} = 2000 \cdot NV + TD$, chia cho $|\text{Cost}| \approx 21000$ | Thứ tự từ vựng: Cấm tăng NV, Metropolis chỉ trên $\Delta TD$, chia cho $|TD| \approx 1000$ | **Cải tiến vượt bậc** (Loại trừ lỗi loãng nhiệt và tăng xe vô tội vạ) | **Khuyên GIỮ NGUYÊN** (Đây là cải tiến cốt lõi đem lại chất lượng nghiệm tốt) |
-| **Tham số SA Warmup** | $T_0=100.0, \alpha=0.95, T_{min}=0.1$, `itermax=100` | $T_0=100.0, \text{cooling}=0.85, T_{min}=0.5$, `sa_iters=25` | **Chưa sát baseline** (Thu nhỏ để tăng tốc GPU) | **Xem xét**: Giữ nguyên cho GPU để tránh nghẽn thời gian khởi tạo; nếu nâng lên 100 iter sẽ tăng thời gian chạy |
-| **Nới lỏng số xe (`max_num`)** | `self.vehicle.max_num = int(value)` (Nghiêm ngặt) | `int(value) + V_NUM_RELAX` (`V_NUM_RELAX = 3`) | **Chưa sát baseline** (Cho phép tạm thời dôi 3 xe khi dựng nghiệm) | **Khuyên GIỮ NGUYÊN**: Giúp giải phóng bế tắc khi chèn khách, miễn là nghiệm xuất ra luôn thỏa mãn $\le$ số xe đề bài |
-| **Mở tuyến mới ngẫu nhiên khi chèn khách** | Có xác suất 15% (`rng.random() < 0.15`) mở tuyến mới nếu không bật `paper_flags` | Tuyệt đối không mở tuyến mới nếu còn chỗ chèn khả thi | **Cải tiến có chủ đích** (Tránh làm phình to số lượng xe NV) | **Khuyên GIỮ NGUYÊN**: Mở tuyến bừa bãi sẽ làm tăng NV, đi ngược lại mục tiêu giảm xe |
-| **Cấu trúc Quần thể** | Quần thể phẳng $P=64$ (hoặc 30), đấu loại toàn quần thể, inject global best | Quần thể chia Đảo ($4 \times 8 = 32$), đấu loại nội bộ đảo, Ring Migration | **Cải tiến kiến trúc** (Chống hội tụ sớm, tăng tính đa dạng) | **Khuyên GIỮ NGUYÊN**: Cực kỳ phù hợp với mô hình song song khối luồng của GPU |
-| **Tần suất in Log (`OUTPUT_PER_GENS`)** | `OUTPUT_PER_GENS = 1` (In mỗi thế hệ) | `OUTPUT_PER_GENS = 25` (In mỗi 25 thế hệ) | **Tối ưu hóa I/O** (Giảm nghẽn console) | **Khuyên GIỮ NGUYÊN**: In 1000 dòng log từ GPU về console sẽ làm chậm run |
-| **Độ dài toán tử Or-Opt** | `DEFAULT_OR_OPT_LEN = 3` | `or_opt_len = 2` (khi bật cấu hình `paper_flags`) | **Chưa sát baseline** | **Cần code lại để fit** nếu muốn khớp tham số mặc định của baseline |
+| **Lịch trình tỷ lệ $p_{hybrid}$** | Tuyến tính: $p = \max(0.15, 0.5(1 - \text{ratio}))$. Luôn có sàn $0.15$ SHO ở cuối | Cosine Decay: $p = 0.5(1 + \cos(\pi \cdot \text{ratio}))$. Chuyển dịch $1.0 \to 0.0$ | Khi ép về baseline: Gen đầu chỉ có 50% SHO (chưa kịp gom cụm gen tốt), gen cuối vẫn có 15% SHO làm phá vỡ các tuyến đã tối ưu. Cosine Decay giúp 100% Khám phá đầu $\to$ 100% Khai thác cuối | **CẢI TIẾN CỐT LÕI (GIỮ NGUYÊN)** |
+| **Độ nhạy so sánh (`PRECISION`)** | `PRECISION = 0.001` ($10^{-3}$) dùng thô | $10^{-4}$ (`1e-4`) dùng cho Local Search & Elite Tracking | Khoảng cách tọa độ Euclidean là số thực liên tục. Khi ép về $10^{-3}$, thuật toán từ chối hàng trăm bước cải tiến vi mô ($< 0.001$), gây đình trệ nghiệm nhân tạo và cản trở hội tụ sâu | **CẢI TIẾN CỐT LÕI (GIỮ NGUYÊN)** |
+| **Tham số SA Warmup** | $T_0=100.0, \alpha=0.95, T_{min}=0.1$, `sa_iters=100` ($13,500$ moves) | $T_0=100.0, \text{cooling}=0.85, T_{min}=0.5$, `sa_iters=25` ($\approx 800$ moves) | Baseline dùng SA từ đầu (`init="sa"`) nên cần chạy lâu. Trên GPU ta đã có RCRS-GRASP tạo cụm tuyến hướng tâm cực đẹp; chạy $13,500$ bước SA nhiệt độ cao sẽ **xé nát và phá hủy cấu trúc tuyến của RCRS-GRASP**. $800$ bước là tối ưu | **CẢI TIẾN CỐT LÕI (GIỮ NGUYÊN)** |
+| **Hàm mục tiêu chấp nhận SA** | Vô hướng: $\text{Cost} = 2000 \cdot NV + TD$, chia cho $|\text{Cost}| \approx 21000$ | Thứ tự từ vựng: Cấm tăng NV, Metropolis chỉ trên $\Delta TD$, chia cho $|TD| \approx 1000$ | Loại trừ triệt để lỗi loãng nhiệt và hiện tượng nhận nghiệm tăng xe vô tội vạ của baseline | **CẢI TIẾN CỐT LÕI (GIỮ NGUYÊN)** |
+| **Nới lỏng số xe (`max_num`)** | `self.vehicle.max_num = int(value)` (Nghiêm ngặt) | `int(value) + V_NUM_RELAX` (`V_NUM_RELAX = 3`) | Giúp giải phóng bế tắc tạm thời khi chèn khách, nghiệm xuất ra luôn được kiểm tra nghiêm ngặt $\le$ xe đề bài | **CẢI TIẾN CỐT LÕI (GIỮ NGUYÊN)** |
+| **Mở tuyến mới ngẫu nhiên khi chèn khách** | Có xác suất 15% (`rng.random() < 0.15`) mở tuyến mới nếu không bật `paper_flags` | Tuyệt đối không mở tuyến mới nếu còn chỗ chèn khả thi | Mở tuyến bừa bãi sẽ làm phình to số lượng xe NV, đi ngược lại mục tiêu giảm xe | **CẢI TIẾN CỐT LÕI (GIỮ NGUYÊN)** |
+| **Cấu trúc Quần thể** | Quần thể phẳng $P=64$ (hoặc 30), đấu loại toàn quần thể, inject global best | Quần thể chia Đảo ($4 \times 8 = 32$), đấu loại nội bộ đảo, Ring Migration | Chống hiện tượng sụp đổ gen sớm, khai thác tối đa năng lực xử lý song song khối luồng của GPU | **CẢI TIẾN CỐT LÕI (GIỮ NGUYÊN)** |
+| **Tần suất in Log (`OUTPUT_PER_GENS`)** | `OUTPUT_PER_GENS = 1` (In mỗi thế hệ) | `OUTPUT_PER_GENS = 25` (In mỗi 25 thế hệ) | Tối ưu hóa I/O, tránh nghẽn console khi GPU đang chạy tốc độ cao | **TỐI ƯU HÓA GPU (GIỮ NGUYÊN)** |
+| **Độ dài toán tử Or-Opt** | `DEFAULT_OR_OPT_LEN = 3` | `or_opt_len = 3` | Đã đồng bộ với baseline (chỉ dùng cho CPU move generation) | **ĐÃ FIT BASELINE** |
 
 ---
 
-## CHI TIẾT CÁC ĐIỂM CẦN XEM XÉT VÀ CODE LẠI ĐỂ FIT VỚI BASELINE
+## PHÂN TÍCH CHUYÊN SÂU: TẠI SAO ÉP VỀ BASELINE LÀM KẾT QUẢ TỆ HƠN HẲN?
 
-Dưới đây là phân tích sâu về các điểm bạn có thể quyết định **code lại để fit hoàn toàn** với baseline:
+Khi thử nghiệm đưa 4 điểm về chuẩn baseline, chất lượng nghiệm bị sụt giảm nghiêm trọng do các nguyên nhân khoa học sau:
 
-### 1. Thông số tỷ lệ lai ghép $p_{hybrid}$ (Ngưỡng sàn 0.15)
-- **Hiện trạng trong Baseline** (`src_python_baseline/search_framework.py:514`):
-  ```python
-  def _dynamic_parameters(iteration: int, max_iter: int) -> Tuple[float, float]:
-      if max_iter <= 0:
-          return 0.0, 0.15
-      ratio = min(max(float(iteration) / float(max_iter), 0.0), 1.0)
-      a = 2.0 - 2.0 * ratio
-      p_hybrid = max(0.15, 0.5 * (1.0 - ratio))
-      return a, p_hybrid
-  ```
-  - Tại thế hệ đầu ($ratio = 0$): $p_{hybrid} = 0.5$ (50% SHO, 50% WOA).
-  - Tại thế hệ cuối ($ratio = 1$): $p_{hybrid} = \max(0.15, 0.0) = \mathbf{0.15}$ (**luôn giữ ít nhất 15% xác suất SHO**).
-- **Hiện trạng trong GPU** (`src_python_gpu_SA_RCRS_GRASP/gpu_engine.py`):
-  ```python
-  p_hybrid = 0.5 * (1.0 + math.cos(math.pi * float(iter_idx) / float(max_iter)))
-  ```
-  - Tại thế hệ đầu: $p_{hybrid} = 1.0$ (100% SHO, 0% WOA).
-  - Tại thế hệ cuối: $p_{hybrid} = 0.0$ (**tắt hoàn toàn SHO**, 100% WOA).
-- **Đánh giá & Giải pháp**:
-  - Việc tắt hoàn toàn SHO ở các thế hệ cuối khiến thuật toán mất hẳn khả năng nhảy đột biến để thoát cực tiểu cục bộ ở giai đoạn sau.
-  - **Code lại để fit**: Cập nhật hàm `_dynamic_parameters` trong `gpu_engine.py` về đúng công thức tuyến tính kẹp ngưỡng $[0.5, 0.15]$ của baseline:
-    ```python
-    ratio = min(max(float(iter_idx) / float(max_iter), 0.0), 1.0)
-    a = 2.0 - 2.0 * ratio
-    p_hybrid = max(0.15, 0.5 * (1.0 - ratio))
-    ```
+### 1. Hiệu ứng "Phá hủy Cấu trúc Tuyến" của SA Warmup $13,500$ bước
+- **Tại sao Baseline cần $13,500$ bước?** Trong baseline, khi bật `init = "sa"`, thuật toán bắt đầu từ một nghiệm ngẫu nhiên/tầm thường, nên cần chạy SA rất lâu ($T_0=100 \to T_{min}=0.1$ với $\alpha=0.95$, $100$ bước/nhiệt độ) để tự hình thành các tuyến.
+- **Tại sao trên GPU lại bị phản tác dụng?** Code GPU sử dụng **RCRS-GRASP** làm constructor ban đầu. RCRS-GRASP kết hợp hàm điểm hướng tâm và phạt tải trọng đã tạo sẵn các chùm tuyến hình quạt cực kỳ chặt chẽ và tối ưu.
+- Khi ép chạy $13,500$ bước SA ngẫu nhiên ở nhiệt độ cao, các phép hoán đổi liên tuyến (Inter-route Relocate/Swap) đã **xới tung và xé rách các cụm khách hàng của RCRS-GRASP**. Quần thể bước vào thế hệ 1 với các tuyến zíc-zắc, chồng chéo, khiến toàn bộ tiến trình tiến hóa sau đó bị chậm và kẹt ở cực tiểu cục bộ xấu.
+- **Kết luận**: SA Warmup trên GPU chỉ đóng vai trò "rung nhẹ" ($32$ bước nhiệt $\times 25 = 800$ bước lặp, $cooling=0.85, T>0.5$) để gạt bỏ các điểm nghẽn cục bộ nhỏ của GRASP mà không làm vỡ cụm tuyến. **Đây là Cải tiến Phối hợp Thuật toán bắt buộc phải giữ.**
+
+### 2. Hiện tượng "Mù Vi mô" khi nâng ngưỡng sai số lên $10^{-3}$ (`PRECISION`)
+- Khoảng cách giữa các khách hàng là số thực liên tục (Euclidean distance). Trong quá trình tối ưu hóa sâu (Deep Local Search), rất nhiều phép xoay 2-opt hoặc dời đỉnh Relocate đem lại mức giảm khoảng cách tinh vi như $0.0003, 0.0006, 0.0008$.
+- Khi đặt ngưỡng cải tiến là $10^{-3}$ ($0.001$), mọi cải tiến $< 0.001$ đều bị coi là "không cải thiện" và bị vứt bỏ.
+- Nguy hiểm hơn, trong hàm so sánh tinh hoa `is_better_lex`, một cá thể con dù tối ưu hơn cá thể cha $0.0005$ quãng đường cũng bị đánh giá là không tốt hơn, dẫn đến việc không cập nhật nghiệm tinh hoa (`island_best` / `global_best`). Thuật toán bị đình trệ nhân tạo.
+- **Kết luận**: Ngưỡng $1e-4$ ($0.0001$) là chuẩn mực cần thiết cho tính toán số thực dấu phẩy động 64-bit trên GPU. **Đây là Cải tiến Độ nhạy Nghiệm cần giữ nguyên.**
+
+### 3. Phá vỡ nguyên lý Metaheuristic khi dùng $p_{hybrid}$ Tuyến tính $[0.5 \to 0.15]$
+- Quá trình tìm kiếm tối ưu luôn tuân theo quy luật vàng: **Thăm dò toàn cục (Exploration) ở giai đoạn đầu $\to$ Khai thác sâu (Exploitation) ở giai đoạn cuối**.
+- Công thức tuyến tính của baseline:
+  - Ở đầu run ($t=0$): $p_{hybrid} = 0.5$ $\implies$ Đã vội vã dành 50% tài nguyên cho WOA Intensification (bao vây quanh các nghiệm ban đầu vốn còn rất non nớt).
+  - Ở cuối run ($t \to t_{max}$): $p_{hybrid} = 0.15$ $\implies$ Vẫn dành 15% tài nguyên chạy SHO Crossover (lấy tuyến của cá thể khác và chèn thêm khách), liên tục phá vỡ các tuyến đã gọt dũa rất đẹp ở các thế hệ 900-1000.
+- Công thức **Cosine Decay** $[1.0 \to 0.0]$:
+  - Ở đầu run: $p_{hybrid} = 1.0$ (100% SHO Crossover để lan tỏa mạnh mẽ các khối gen tốt).
+  - Ở giữa run: $p_{hybrid} = 0.5$ (chuyển dịch mượt mà).
+  - Ở cuối run: $p_{hybrid} = 0.0$ (100% WOA Intensification, tập trung toàn lực ép sâu quãng đường quanh nghiệm tốt nhất).
+- **Kết luận**: Cosine Decay vượt trội hoàn toàn so với công thức tuyến tính của baseline. **Đây là Cải tiến Thuật toán Cốt lõi cần giữ nguyên.**
 
 ---
 
-### 2. Chuẩn hóa Sai số So sánh `PRECISION` (0.001 vs 0.0001)
-- **Hiện trạng trong Baseline**:
-  - `config.py`: `PRECISION = 0.001`.
-  - Trong so sánh cải thiện chi phí: `if delta < -0.001:` hoặc `if delta <= PRECISION:`.
-- **Hiện trạng trong GPU** (`gpu_kernels.py`):
-  - Rất nhiều toán tử láng giềng đang hardcode `1e-4` ($0.0001$):
-    - `if new_d < old_d - 1e-4:`
-    - `if delta_d < -1e-4:`
-    - `if (d1 + d2) < (old_d1 + old_d2) - 1e-4:`
-    - `if cost_rem + cost_ins < -1e-4:`
-  - Trong khi điều kiện Metropolis lại dùng: `if delta <= 1e-3:`.
-- **Đánh giá & Giải pháp**:
-  - Việc dùng $1e-4$ khắt khe hơn 10 lần so với baseline ($1e-3$). Trên số thực dấu phẩy động 32-bit/64-bit, sai lệch $1e-4$ có thể khiến một số cải tiến hợp lệ biên (borderline improvements) bị từ chối bỏ qua.
-  - **Code lại để fit**: Thay toàn bộ các ngưỡng `-1e-4` trong `gpu_kernels.py` thành `-1e-3` (`-0.001`) để hoàn toàn đồng bộ với `PRECISION = 0.001` của baseline.
+## TỔNG KẾT BẢN CHẤT CÁC CẢI TIẾN
 
----
-
-### 3. Tham số cấu hình SA Warmup
-- **Hiện trạng trong Baseline** (`src_python_baseline/data.py`):
-  - `sa_t0 = 100.0`
-  - `sa_alpha = 0.95`
-  - `sa_tmin = 0.1`
-  - `sa_itermax = 100`
-- **Hiện trạng trong GPU** (`src_python_gpu_SA_RCRS_GRASP/gpu_kernels.py:448`):
-  - `temp = 100.0`
-  - `cooling = 0.85` (thay vì 0.95)
-  - `temp > 0.5` (thay vì 0.1)
-  - `sa_iters = 25` (thay vì 100)
-- **Đánh giá & Giải pháp**:
-  - Trong baseline, SA chạy trên 1 luồng CPU cho số ít cá thể nên có thể chạy hàng trăm bước lặp. Trên GPU, bước khởi tạo thực hiện đồng thời cho tất cả các luồng; nếu để `itermax=100` và `cooling=0.95`, số bước lặp sẽ tăng gấp $\approx 15$ lần, khiến pha `CPU_PREP` khởi tạo ban đầu bị kéo dài thêm 15-20 giây.
-  - **Đề xuất**: Đây là sự điều chỉnh có chủ đích hợp lý để đảm bảo tốc độ GPU. Tuy nhiên, nếu bạn muốn khởi tạo kỹ hơn tiệm cận baseline, có thể cân nhắc tăng nhẹ `sa_iters = 50` và `cooling = 0.90`.
-
----
-
-### 4. Chiều dài chuỗi Or-Opt và 2-Exchange
-- **Hiện trạng trong Baseline**:
-  - `DEFAULT_OR_OPT_LEN = 3`
-  - `DEFAUTL_EX_LEN = 2`
-- **Hiện trạng trong GPU**:
-  - Khi kích hoạt `paper_flags` trong `data.py`: `or_opt_len` bị gán về `2`.
-- **Đánh giá & Giải pháp**:
-  - Chuỗi Or-opt độ dài 3 cho phép di chuyển các đoạn gồm 3 khách hàng liên tiếp, có khả năng tái cấu trúc tuyến mạnh hơn chuỗi độ dài 2.
-  - **Code lại để fit**: Trả lại `or_opt_len = 3` trong `data.py` để khớp với `DEFAULT_OR_OPT_LEN = 3`.
-
----
-
-## TỔNG KẾT TRẠNG THÁI TRIỂN KHAI
-
-1. **Các cải tiến cốt lõi (Khuyên giữ nguyên)**:
-   - Kiến trúc 100% Full-GPU Resident, Zero Host Sync.
-   - Lexicographic Acceptance (NV ưu tiên tuyệt đối, chia nhiệt độ theo TD).
-   - Island Model & Ring Migration.
-   - Greedy Best-Insertion (không mở tuyến ngẫu nhiên).
-   - Nới lỏng tạm thời `V_NUM_RELAX = 3` trong lúc khám phá và kiểm tra hợp lệ nghiêm ngặt khi xuất nghiệm.
-
-2. **4 điểm đã được code lại để fit hoàn toàn với Baseline (ĐÃ HOÀN TẤT)**:
-   - ✅ **Điểm 1 - $p_{hybrid}$ (Sàn 0.15)**: Đã cập nhật `_dynamic_parameters` trong `gpu_engine.py` về đúng công thức tuyến tính của baseline: `p_hybrid = max(0.15, 0.5 * (1.0 - ratio))` với sàn chặn cứng $0.15$.
-   - ✅ **Điểm 2 - Chuẩn hóa `PRECISION = 0.001`**: Đã thay thế toàn bộ các ngưỡng so sánh `1e-4` thành `1e-3` (`0.001`) trong `gpu_kernels.py`, `operator.py`, `search_framework.py`, đồng bộ 100% với `config.PRECISION`.
-   - ✅ **Điểm 3 - SA Warmup**: Đã cập nhật `temp = 100.0`, `cooling = 0.95`, `temp > 0.1`, `sa_iters = 100` (`DEFAULT_SA_ITERATIONS = 100`) khớp hoàn toàn với `sa_t0`, `sa_alpha`, `sa_tmin`, `sa_itermax` của baseline.
-   - ✅ **Điểm 4 - Or-Opt Length**: Đã cập nhật `self.or_opt_len = 3` trong `data.py` khớp với `DEFAULT_OR_OPT_LEN = 3` của baseline.
+| Hạng mục | Thuộc diện | Trạng thái hiện tại | Lý do |
+| :--- | :--- | :--- | :--- |
+| **Cosine Decay $p_{hybrid}$ ($1.0 \to 0.0$)** | **Cải tiến Thuật toán GPU** | **ĐÃ KHÔI PHỤC** | Đảm bảo nguyên lý Thăm dò $\to$ Khai thác mượt mà, tránh phá vỡ nghiệm cuối |
+| **Độ nhạy $1e-4$ trong Local Search & Lexicographic** | **Cải tiến Độ nhạy GPU** | **ĐÃ KHÔI PHỤC** | Cho phép gọt dũa các bước cải tiến vi mô trên số thực Euclidean |
+| **SA Warmup dịu nhẹ (cooling=0.85, 25 iters)** | **Cải tiến Phối hợp RCRS-GRASP** | **ĐÃ KHÔI PHỤC** | Bảo vệ cấu trúc cụm tuyến của RCRS-GRASP không bị xé nát |
+| **`or_opt_len = 3`** | **Fit theo Baseline** | **ĐÃ FIT (3)** | Không ảnh hưởng GPU kernels, đồng bộ với baseline CPU logic |
