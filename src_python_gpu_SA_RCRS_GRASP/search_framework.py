@@ -1650,7 +1650,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
             better_nv = c_feas & (c_vcnts < v_counts)
             same_nv = c_feas & (c_vcnts == v_counts)
             delta_d = c_dists - total_dists
-            better_d = same_nv & (delta_d < -1e-4)
+            better_d = same_nv & (delta_d < -1e-3)
             denom = 1e-6 + temp * total_dists.abs()
             sa_prob = torch.exp(-delta_d.clamp(min=0.0) / denom)
             sa_accept = same_nv & (torch.rand(P, device=device) < sa_prob)
@@ -1767,7 +1767,7 @@ def gpu_pure_tensor_search_framework(data, best_s):
                     d_feas, d_costs, d_nv, d_dist = backend.evaluate_population_tensor(
                         d_r.unsqueeze(0), d_l.unsqueeze(0), d_c.unsqueeze(0)
                     )
-                    if d_feas[0] and (d_nv[0] < global_best_nv_t or (d_nv[0] == global_best_nv_t and d_dist[0] < global_best_dist_t - 1e-4)):
+                    if d_feas[0] and (d_nv[0] < global_best_nv_t or (d_nv[0] == global_best_nv_t and d_dist[0] < global_best_dist_t - 1e-3)):
                         global_best_routes_t = d_r
                         global_best_lengths_t = d_l
                         global_best_count_t = d_c

@@ -169,7 +169,7 @@ def _intra_route_2_opt(nl: List[int], data) -> List[int]:
             for j in range(i + 1, length - 1):
                 new_nl = best_nl[:i] + best_nl[i:j+1][::-1] + best_nl[j+1:]
                 flag, cost = _chk_route_list(new_nl, data)
-                if flag and cost < best_cost - 1e-4:
+                if flag and cost < best_cost - 1e-3:
                     best_nl = new_nl
                     best_cost = cost
                     improved = True
@@ -1000,7 +1000,7 @@ def tensor_local_search_batch(
             (candidate_counts < vehicle_counts)
             | (
                 (candidate_counts == vehicle_counts)
-                & (candidate_distances < total_distances - 1e-4)
+                & (candidate_distances < total_distances - 1e-3)
             )
         )
         improves &= valid_move
@@ -1105,7 +1105,7 @@ def tensor_relocate_batch(
             (candidate_counts < vehicle_counts)
             | (
                 (candidate_counts == vehicle_counts)
-                & (candidate_distances < total_distances - 1e-4)
+                & (candidate_distances < total_distances - 1e-3)
             )
         )
         improves &= valid_move
@@ -1186,7 +1186,7 @@ def tensor_swap_batch(
             (cand_nv < vehicle_counts)
             | (
                 (cand_nv == vehicle_counts)
-                & (cand_dist < total_distances - 1e-4)
+                & (cand_dist < total_distances - 1e-3)
             )
         )
         current_routes = torch.where(improves.view(population, 1, 1), cand_pop, current_routes)
@@ -1559,7 +1559,7 @@ def tensor_2opt_route_gpu(route: List[int], backend, data) -> List[int]:
                     dist_mat[route[i - 1]][route[j]] + dist_mat[route[i]][route[j + 1]]
                     - (dist_mat[route[i - 1]][route[i]] + dist_mat[route[j]][route[j + 1]])
                 )
-                if delta_geom < -1e-4:
+                if delta_geom < -1e-3:
                     cand = route[:i] + list(reversed(route[i : j + 1])) + route[j + 1 :]
                     cands.append(cand)
                     cands_ij.append((i, j, cand, delta_geom))
@@ -1636,7 +1636,7 @@ def tensor_inter_route_relocate_gpu(
     new_totals = torch.where(f2, new_totals, torch.tensor(float('inf'), device=backend.device))
     best_d, best_k_t = torch.min(new_totals, dim=0)
 
-    if (best_d < orig_total - 1e-4).item():
+    if (best_d < orig_total - 1e-3).item():
         best_pos = cands_meta[best_k_t.item()]
         child_routes[r1] = nl1_cand
         child_routes[r2].insert(best_pos, node)
@@ -1678,7 +1678,7 @@ def tensor_inter_route_swap_gpu(
         orig_t[1, :len(nl2)] = torch.tensor(nl2, dtype=torch.long, device=backend.device)
         orig_lens = torch.tensor([len(nl1), len(nl2)], dtype=torch.long, device=backend.device)
         _, d_orig = backend.evaluate_routes_gpu(orig_t, orig_lens)
-        if (d[0].item() + d[1].item()) < (d_orig[0].item() + d_orig[1].item()) - 1e-4:
+        if (d[0].item() + d[1].item()) < (d_orig[0].item() + d_orig[1].item()) - 1e-3:
             child_routes[r1] = cand1
             child_routes[r2] = cand2
 
@@ -1744,7 +1744,7 @@ def tensor_inter_route_relocate_all(routes: List[List[int]], backend, data) -> L
                 d2_list = d2.tolist()
 
                 best_move = None
-                best_net_delta = -1e-4
+                best_net_delta = -1e-3
                 for k in range(M):
                     if f2_list[k]:
                         r2_idx, pos2 = cands_meta[k]
