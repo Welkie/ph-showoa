@@ -41,10 +41,9 @@ except ImportError:
 
 def _dynamic_parameters(iter_idx: int, max_iter: int) -> Tuple[float, float]:
     if max_iter <= 0:
-        return 0.0, 0.15
-    ratio = min(max(float(iter_idx) / float(max_iter), 0.0), 1.0)
-    a = 2.0 - 2.0 * ratio
-    p_hybrid = max(0.15, 0.5 * (1.0 - ratio))
+        return 0.0, 0.0
+    a = 2.0 - 2.0 * (float(iter_idx) / float(max_iter))
+    p_hybrid = 0.5 * (1.0 + math.cos(math.pi * float(iter_idx) / float(max_iter)))
     return a, p_hybrid
 
 
