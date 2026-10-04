@@ -1,0 +1,1787 @@
+=== PAGE 23 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+23 / 34
+Except for RCdp5001, PH-SHOWOA keeps the NV gap within [0, −1], while the TD gap remains negative (“–”), indicat­
+ing shorter total distances.
+Overall, PH-SHOWOA outperforms SHO and WOA, producing solutions that require fewer vehicles and yield shorter 
+routes across almost every small Solomon instance.
+5.2.2.  Performance comparison with SHO and WOA on medium-scale WC instances.  5.2.2.1.Experimental 
+results on medium-scale WC instances: This section compares the proposed PH-SHOWOA algorithm with the original 
+SHO and WOA on 56 medium-scale WC instances, focusing on the Type 1 and Type 2 cases. For Type 1 instances 
+(Rdp1, Cdp1, and Rcdp1), the detailed comparison is given in Table 4, which reports results for 29 WC instances. PH-
+SHOWOA achieves the best solution for both the NV and TD in 14 of these 29 instances (marked with two asterisks **). It 
+also provides the best NV alone in another 14 cases, highlighted in bold, while only one instance (marked with underline) 
+fails to deliver a competitive result for either NV or TD. These outcomes indicate that PH-SHOWOA performs strongly 
+against both SHO and WOA: in many instances, it reduces NV, shortens TD, or improves both simultaneously, highlighting 
+its effectiveness for medium-scale problems.
+Table 5 presents results for 27 Type 2 WC instances (Rdp2, Cdp2, RCdp2). PH-SHOWOA achieves the best solution 
+for both NV and TD in 25 of 27 cases (rows marked with two asterisks **). It secures the best TD alone in one additional 
+case (bold NV values), while only one instance (marked with underline) does not yield a competitive result for either met­
+ric. These findings highlight three key strengths of PH-SHOWOA:
+•	 Vehicle reduction: In nearly every instance, PH-SHOWOA cuts the fleet size by one vehicle compared with SHO and/or 
+WOA, directly lowering operational costs.
+•	 Route efficiency: TD improvements are substantial—often exceeding 15% relative to WOA and consistently outperform­
+ing SHO—showing more efficient routing.
+•	 Robustness: The algorithm maintains these gains across different problem structures (R, C, and RC types), demonstrat­
+ing strong adaptability to varying customer distributions and time-window constraints.
+Overall, the Type 2 results confirm that PH-SHOWOA delivers significant savings in vehicle requirements and travel 
+distance, reinforcing its advantage over the original SHO and WOA algorithms on medium-scale, more challenging bench­
+mark instances.
+The results in Tables 4 and 5 reveal clear performance patterns. First, PH-SHOWOA consistently reduces the NV com­
+pared with SHO and WOA. In nearly every instance, the NV gap is negative, showing that the hybrid method satisfies all 
+service constraints with fewer routes—directly lowering fleet-operation costs and improving resource utilization.
+Table 3.  Comparison of experimental results with SHO, WOA on small WC instances.
+Instance
+Size
+SHO
+WOA
+PH-SHOWOA
+GAP
+NV
+TD
+t(ms)
+NV
+TD
+t(ms)
+NV
+TD
+t(ms)
+NVSHO/WOA
+TDSHO/WOA(%)
+RCdp1001
+10
+2
+323.74
+24.42
+3
+365.25
+24.65
+3
+369.74
+97.30
+1/ 0
+14.21/ 1.23
+RCdp1004
+10
+2
+171.01
+17.50
+2
+216.69
+14.12
+2
+172.48
+79.42
+0/ 0
+0.86/ −20.40
+RCdp1007
+10
+3
+224.49
+22.46
+2
+246.27
+16.30
+2
+234.22
+102.70
+−1/ 0
+4.33/ −4.89
+RCdp2501
+25
+5
+652.16
+40.22
+6
+655.73
+37.87
+6
+648.15
+268.01
+1/ 0
+−0.61/ −1.16
+RCdp2504
+25
+5
+517.79
+50.63
+4
+537.45
+43.81
+5
+499.36
+368.53
+0/ 1
+−3.56/ 38.09
+RCdp2507
+25
+5
+619.33
+59.30
+5
+589.65
+48.56
+5
+536.28
+383.19
+0/ 0
+−13.41/ −9.05
+RCdp5001
+50
+11
+1364.51
+134.45
+10
+1325.36
+134.08
+10
+1099.61
+192.85
+−1/ 0
+−19.41/ −17.03
+RCdp5004
+50
+7
+980.21
+138.14
+7
+939.77
+124.97
+7
+737.47
+1748.13
+0/ 0
+−24.76/ −21.53
+RCdp5007
+50
+8
+990.23
+134.01
+8
+975.78
+124.56
+8
+954.15
+1449.33
+0/ 0
+−3.64/ −2.22
+https://doi.org/10.1371/journal.pone.0343262.t003
+=== PAGE 24 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+24 / 34
+Second, although TD improvements are not universal, PH-SHOWOA frequently delivers shorter or at least compara­
+ble routes. Negative TD gaps dominate the results, confirming that the algorithm reduces fleet size and enhances route 
+efficiency.
+Third, the few instances where PH-SHOWOA does not outperform both baselines tend to involve larger customer sets 
+or highly dispersed demand, suggesting that further parameter tuning could yield additional gains.
+Overall, these findings confirm that the hybridization of SHO and WOA successfully balances exploration and exploita­
+tion, enabling PH-SHOWOA to produce state-of-the-art solutions across a broad range of medium-scale VRPSPDTW 
+instances. The algorithm demonstrates robustness—consistently high-quality results—and scalability, maintaining strong 
+performance as problem size and complexity increase.
+5.2.2.2. Statistical validation on 56 benchmark instances (Rdp, Cdp, and Rcdp) Based on the results reported in 
+Tables 6–8, the proposed method demonstrates statistically supported and robust performance advantages over SHO 
+and WOA across the 56 benchmark instances. The Wilcoxon signed-rank tests (Table 8) confirm significant pairwise 
+Table 4.  Comparison of experimental results with SHO, WOA, PH-SHOWOA for Type 1 WC instances.
+Instance
+Size
+SHO
+WOA
+PH-SHOWOA
+GAP
+NV
+TD
+NV
+TD
+NV
+TD
+NVSHO/WOA
+TDSHO/WOA (%)
+Rdp101
+100
+22
+1339.10
+21
+1416.67
+19
+1398.29
+−3/ −2
+4.42/ −1.30(**)
+Rdp102
+100
+21
+1170.08
+20
+1428.84
+18
+1304.82
+−3/ −2
+11.52/ −8.68(**)
+Rdp103
+100
+19
+1182.31
+19
+1360.04
+15
+1134.12
+−4/ −4
+−4.08/ −16.61(**)
+Rdp104
+100
+15
+1015.38
+15
+1081.56
+13
+953.70
+−2/ −2
+−6.07/ −11.82(**)
+Rdp105
+100
+18
+1150.27
+18
+1306.28
+16
+1285.53
+−2/ −2
+11.76/ −1.59(**)
+Rdp106
+100
+17
+1047.52
+17
+1250.53
+16
+1156.19
+−1/ −1
+10.37/ −7.54(**)
+Rdp107
+100
+14
+967.75
+15
+1090.97
+13
+1043.86
+−1/ −2
+7.86/ −4.32(**)
+Rdp108
+100
+13
+887.04
+13
+945.34
+11
+1086.55
+−2/ −2
+22.49/ 14.94
+Rdp109
+100
+14
+1021.56
+14
+1144.57
+13
+1086.55
+−1/ −1
+6.36/ −5.07(**)
+Rdp110
+100
+14
+959.40
+15
+1163.89
+14
+1031.41
+0/ −1
+7.51/ −11.38(**)
+Rdp111
+100
+15
+962.42
+15
+1066.39
+14
+1068.53
+−1/ −1
+11.03/ 0.20
+Rdp112
+100
+11
+851.82
+11
+933.05
+11
+1086.19
+0/ 0
+27.51/ 16.41
+Cdp101
+100
+10
+509.44
+11
+567.77
+10
+596.72
+0/ −1
+17.13/ 5.10
+Cdp102
+100
+12
+866.23
+12
+913.52
+10
+807.82
+−2/ −2
+−6.74/ −11.57(**)
+Cdp103
+100
+12
+1061.86
+14
+1488.18
+10
+846.80
+−2/ −4
+−20.25/ −43.10(**)
+Cdp104
+100
+11
+866.37
+12
+1245.54
+10
+840.52
+−1/ −2
+−2.98/ −32.52(**)
+Cdp105
+100
+11
+569.12
+11
+638.23
+10
+650.97
+−1/ −1
+14.38/ 2.00
+Cdp106
+100
+11
+596.44
+11
+676.58
+10
+791.69
+−1/ −1
+32.74/ 17.01
+Cdp107
+100
+10
+555.69
+11
+654.65
+10
+773.24
+0/ −1
+39.15/ 18.12
+Cdp108
+100
+11
+616.50
+11
+664.49
+10
+762.48
+−1/ −1
+23.68/ 14.75
+Cdp109
+100
+10
+655.70
+11
+750.54
+10
+840.20
+0/ −1
+28.14/ 11.95
+RCdp101
+100
+18
+1293.53
+19
+1503.36
+17
+1519.18
+−1/ −2
+17.44/ 1.05
+RCdp102
+100
+16
+1051.94
+17
+1331.74
+15
+1307.44
+−1/ −2
+24.29/ −1.82(**)
+RCdp103
+100
+16
+1126.89
+16
+1200.24
+13
+1194.41
+−3/ −3
+5.99/ −0.49(**)
+RCdp104
+100
+15
+985.54
+14
+1102.84
+13
+1254.65
+−2/ −1
+27.31/ 13.77
+RCdp105
+100
+20
+1222.66
+19
+1400.91
+17
+1402.23
+−3/ −2
+14.69/ 0.09
+RCdp106
+100
+14
+1010.76
+15
+1195.02
+13
+1299.66
+−1/ −2
+28.58/ 8.76
+RCdp107
+100
+14
+969.13
+15
+1101.42
+13
+1204.90
+−1/ −2
+24.33/ 9.40
+RCdp108
+100
+13
+909.11
+13
+1019.61
+11
+1022.69
+−2/ −2
+12.49/ 0.30
+https://doi.org/10.1371/journal.pone.0343262.t004
+=== PAGE 25 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+25 / 34
+improvements in the number of vehicles (NV) with large effect sizes, while differences in total distance (TD) reveal a 
+balanced trade-off, where PH-SHOWOA significantly outperforms WOA but remains statistically comparable to SHO. 
+The Friedman tests (Table 6) further indicate consistent global ranking differences across all instance types (Rdp, Cdp, 
+and Rcdp), confirming that the observed performance patterns are not instance-specific. Finally, the Nemenyi post-hoc 
+analysis (Table 7) highlights that only the most pronounced differences remain significant under conservative correction, 
+reinforcing that PH-SHOWOA achieves systematic and reliable improvements rather than isolated or overfitted gains.
+5.2.3.  Performance comparison with Co-GA, MA-FIRD, ACO-DR on medium-scale WC 
+instances.  5.2.3.1.Experimental Results on Medium-Scale WC Instances: In this section, we compare the proposed 
+algorithm with three advanced methods for solving VRPSPDTW: Co-GA [23], MA-FIRD [29], and ACO-DR [14]. The 
+analysis in this section is mainly discussed separately from the customer location distribution of the WC instance. Black 
+text, gray shading, and yellow shading indicate results that are better than or equal to those of the competing algorithms.
+The results in Table 9 show that PH-SHOWOA remains competitive with three state-of-the-art algorithms—Co-GA [23], 
+MA-FIRD [29], and ACO-DR [14]—for randomly generated customer locations. Key observations include:
+Table 5.  Comparison of experimental results with SHO, WOA, PH-SHOWOA for Type 2 instances.
+Instance
+Size
+SHO
+WOA
+PH-SHOWOA
+GAP
+NV
+TD
+NV
+TD
+NV
+TD
+NVSHO/WOA
+TDSHO/WOA(%)
+Rdp201
+100
+5
+1454.15
+6
+1683.32
+5
+1405.02
+0/ −1
+−3.38/ −16.53(**)
+Rdp202
+100
+5
+1182.98
+6
+1369.85
+4
+1210.80
+−1/ −2
+2.35/ −11.61(**)
+Rdp203
+100
+5
+1160.89
+5
+1475.42
+4
+1088.77
+−1/ −1
+−6.21/ −26.21(**)
+Rdp204
+100
+4
+953.88
+5
+1104.72
+3
+889.94
+−1/ −2
+−6.70/ −19.44(**)
+Rdp205
+100
+4
+1197.58
+5
+1357.67
+4
+1163.93
+0/ −1
+−2.81/ −14.27(**)
+Rdp206
+100
+3
+1009.70
+4
+1112.73
+3
+1024.76
+0/ −1
+1.49/ −7.91(**)
+Rdp207
+100
+4
+1005.03
+4
+1098.98
+3
+917.30
+−1/ −1
+−8.73/ −16.53(**)
+Rdp208
+100
+3
+808.58
+4
+962.84
+3
+745.90
+0/ −1
+−7.75/ −22.53(**)
+Rdp209
+100
+5
+1058.35
+5
+1325.42
+4
+1008.11
+−1/ −1
+−4.75/ −23.94(**)
+Rdp210
+100
+5
+1123.57
+5
+1264.70
+4
+1026.23
+−1/ −1
+−8.66/ −18.86(**)
+Rdp211
+100
+3
+830.23
+3
+999.43
+3
+847.79
+0/ 0
+2.12/ −15.17
+Cdp201
+100
+3
+537.07
+3
+550.17
+3
+552.69
+0/ 0
+2.91/ 0.46
+Cdp202
+100
+4
+882.26
+5
+1023.44
+4
+847.19
+0/ −1
+−3.98/ −17.22(**)
+Cdp203
+100
+5
+810.19
+5
+984.71
+4
+769.17
+−1/ −1
+−5.06/ −21.89(**)
+Cdp204
+100
+4
+844.95
+5
+960.12
+4
+799.71
+0/ −1
+−5.35/ −16.71(**)
+Cdp205
+100
+4
+561.10
+5
+649.28
+3
+580.90
+−1/ −2
+3.53/ −10.53(**)
+Cdp206
+100
+4
+571.80
+5
+650.11
+3
+575.51
+−1/ −2
+0.65/ −11.47(**)
+Cdp207
+100
+4
+559.56
+5
+639.22
+3
+555.46
+−1/ −2
+−0.73/ −13.10(**)
+Cdp208
+100
+4
+546.09
+4
+632.35
+3
+546.89
+−1/ −1
+0.15/ −13.51(**)
+RCdp201
+100
+6
+1675.62
+6
+1928.98
+5
+1835.78
+−1/ −1
+9.56/ −4.83(**)
+RCdp202
+100
+5
+1467.21
+6
+1638.22
+5
+1306.71
+0/ −1
+−10.94/ −20.24(**)
+RCdp203
+100
+5
+1232.31
+5
+1492.94
+4
+1234.10
+−1/ −1
+0.15/ −17.34(**)
+RCdp204
+100
+5
+1053.74
+5
+1121.36
+4
+940.77
+−1/ −1
+−10.72/ −16.10(**)
+RCdp205
+100
+6
+1487.39
+6
+1785.38
+5
+1345.24
+−1/ −1
+−9.56/ −24.65(**)
+RCdp206
+100
+4
+1184.09
+5
+1406.46
+4
+1256.89
+0/ −1
+6.15/ −10.63(**)
+RCdp207
+100
+5
+1292.14
+5
+1548.52
+4
+1281.73
+−1/ −1
+−0.81/ −17.23(**)
+RCdp208
+100
+3
+903.08
+4
+1169.32
+3
+966.77
+0/ −1
+7.05/ −17.32(**)
+https://doi.org/10.1371/journal.pone.0343262.t005
+=== PAGE 26 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+26 / 34
+•	 Best overall solutions: PH-SHOWOA achieves the best result in both NV and TD for 1 of 23 instances (Rdp101, marked **).
+•	 Superior TD performance: In 8 of 23 cases, it delivers the shortest total distance even when NV is not the smallest (bold 
+TD values).
+•	 Equal NV performance: The algorithm matches the best NV in 6 instances (marked with underline), confirming its ability 
+to meet fleet-size minima established by Co-GA or ACO-DR.
+•	 Selective advantages: PH-SHOWOA provides a shorter TD than MA-FIRD in 2 instances and ACO-DR in 1 instance 
+(bold TD values).
+•	 Areas for improvement: About 5 of the 23 instances show neither NV nor TD gains, suggesting opportunities for param­
+eter tuning or further hybrid refinements.
+Table 8.  Wilcoxon Signed-Rank Tests (Detailed Pairwise Analysis).
+Comparison
+Metric
+Wilcoxon statistic (W)
+p-value
+Median Difference
+Effect Size (r)
+Interpretation
+PH-SHOWOA vs SHO
+TD
+245
+0.0021
++56.45
+0.38
+SHO better (medium)
+PH-SHOWOA vs WOA
+98
+<0.001
+−170.82
+0.62
+PH-SHOWOA better (large)
+SHO vs WOA
+36
+<0.001
+−227.27
+0.76
+SHO better (large)
+PH-SHOWOA vs SHO
+NV
+110
+<0.001
+−2.0
+0.60
+PH-SHOWOA better (large)
+PH-SHOWOA vs WOA
+45
+<0.001
+−3.0
+0.72
+PH-SHOWOA better (large)
+SHO vs WOA
+345
+0.118
+0.0
+0.20
+No difference (small)
+With Median difference is computed as (first algorithm – second algorithm). Negative values indicate improvement of the first algorithm; Effect size (r): 
+0.1 = small, 0.3 = medium, 0.5 = large (Cohen’s guidelines).
+https://doi.org/10.1371/journal.pone.0343262.t008
+Table 6.  Friedman Tests (Overall Algorithm Ranking).
+Instance Type
+Metric
+Friedman χ²
+p-value
+N
+Best Algorithm
+Average Ranks (SHO/WOA/PH-SHOWOA)
+Rdp
+NV
+32.3235
+9.57 × 10–8***
+23
+PH-SHOWOA
+2.09/2.30/1.61
+Cdp
+26.5283
+1.74 × 10–6***
+17
+PH-SHOWOA
+2.00/2.38/1.62
+RCdp
+24.9259
+3.87 × 10–6***
+16
+PH-SHOWOA
+2.13/2.34/1.53
+Rdp
+TD
+26.8696
+1.00 × 10–6***
+23
+SHO
+1.67/2.43/1.91
+Cdp
+11.7647
+0.002788**
+17
+SHO
+1.65/2.41/1.94
+RCdp
+15.5000
+0.000431***
+16
+PH-SHOWOA
+1.78/2.44/1.78
+With *** p < 0.001, ** p < 0.01, * p < 0.05, ns = not significant.
+https://doi.org/10.1371/journal.pone.0343262.t006
+Table 7.  Post-hoc Nemenyi Analysis (Pairwise Comparisons).
+Comparison
+Metric
+p-value (Nemenyi)
+Critical Distance
+Conclusion
+SHO vs WOA
+TD
+<0.001***
+0.912
+SHO significantly better
+PH-SHOWOA vs WOA
+<0.001***
+0.912
+PH-SHOWOA significantly better
+SHO vs PH-SHOWOA
+0.078ns
+0.912
+No significant difference
+PH-SHOWOA vs SHO
+NV
+<0.001***
+0.912
+PH-SHOWOA significantly better
+PH-SHOWOA vs WOA
+<0.001***
+0.912
+PH-SHOWOA significantly better
+SHO vs WOA
+0.215ns
+0.912
+No significant difference
+With Critical Distance: 0.912 for Nemenyi test (α = 0.05).
+https://doi.org/10.1371/journal.pone.0343262.t007
+=== PAGE 27 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+27 / 34
+Although PH-SHOWOA does not dominate every case, it demonstrates competitive—and frequently superior—routing 
+efficiency, particularly in reducing total travel distance. Comparing the overall experimental results of all algorithms reveals 
+that PH-SHOWOA obtains better TD outcomes than Co-GA, MA-FIRD, and ACO-DR in nine instances. Therefore, when 
+the primary goal is to minimize total distance and operational cost, PH-SHOWOA emerges as the strongest performer.
+Secondly, for the centralized-location (Cdp) instances, Table 10 compares PH-SHOWOA with Co-GA, MA-FIRD, and 
+ACO-DR. Key observations are:
+•	 Dominant performance: PH-SHOWOA attains the best or equal results in 14 of the 18 instances for both NV and TD. In 
+contrast, the other algorithms—Co-GA, MA-FIRD, and ACO-DR—match or surpass PH-SHOWOA in only three NV and 
+TD values.
+•	 Fleet size (NV): PH-SHOWOA reduces the required number of vehicles to 10 in every Cdp101–Cdp109 case, and to the 
+theoretical minimum of 3 vehicles in most Cdp2xx cases. These reductions directly imply lower fleet-operation costs.
+•	 Total distance (TD): TD improvements are substantial. For example, in Cdp101, the route length drops from 970.30 
+(best competitor) to 596.72, a reduction of over 38%. Similar double-digit percentage savings appear across nearly all 
+Cdp1xx instances.
+•	 Exceptions: Instances Cdp202–Cdp204 show slightly higher NV (4 vs. 3) and larger TD than the best competitors, indi­
+cating that these few centralized cases remain challenging for the hybrid method.
+Table 9.  Experimental results are compared with advanced algorithms for Rdp instance.
+Instance
+Size
+Co-GA
+MA-FIRD
+ACO-DR
+PH-SHOWOA
+NV
+TD
+NV
+TD
+NV
+TD
+NV
+TD
+Rdp101
+100
+19
+1653.53
+19
+1650.80
+20
+1650.06
+19
+1398.29(**)
+Rdp102
+100
+17
+1488.04
+17
+1486.12
+18
+1462.12
+18
+1304.82
+Rdp103
+100
+14
+1216.16
+13
+1294.64
+14
+1227.62
+15
+1134.12
+Rdp104
+100
+10
+1015.41
+9
+1026.42
+10
+1003.58
+13
+953.70
+Rdp105
+100
+15
+1375.31
+14
+1377.11
+14
+1383.06
+16
+1285.53
+Rdp106
+100
+13
+1255.48
+12
+1252.03
+12
+1281.52
+16
+1156.19
+Rdp107
+100
+11
+1087.95
+10
+1112.55
+11
+1092.64
+13
+1043.86
+Rdp108
+100
+10
+967.49
+9
+965.22
+10
+976.38
+11
+1086.55
+Rdp109
+100
+12
+1160.00
+11
+1194.73
+11
+1196.88
+13
+1086.55
+Rdp110
+100
+12
+1116.99
+10
+1121.46
+11
+1127.55
+14
+1031.41
+Rdp111
+100
+11
+1065.27
+10
+1098.84
+11
+1063.06
+14
+1068.53
+Rdp112
+100
+10
+974.03
+9
+997.27
+10
+1025.84
+11
+1086.19
+Rdp201
+100
+4
+1280.44
+4
+1252.37
+5
+1236.13
+5
+1405.02
+Rdp202
+100
+4
+1100.92
+3
+1191.70
+4
+1098.90
+4
+1210.80
+Rdp203
+100
+3
+950.79
+3
+939.50
+3
+946.77
+4
+1088.77
+Rdp204
+100
+3
+775.23
+2
+825.52
+3
+771.89
+3
+889.94
+Rdp205
+100
+3
+1064.43
+3
+994.43
+3
+1002.98
+4
+1163.93
+Rdp206
+100
+3
+961.32
+3
+906.14
+3
+927.11
+3
+1024.76
+Rdp207
+100
+3
+835.01
+2
+890.61
+3
+852.35
+3
+917.30
+Rdp208
+100
+3
+718.51
+2
+726.82
+2
+798.14
+3
+745.90
+Rdp209
+100
+3
+930.26
+3
+909.16
+4
+894.88
+4
+1008.11
+Rdp210
+100
+3
+983.75
+3
+939.37
+3
+978.89
+4
+1026.23
+Rdp211
+100
+3
+839.61
+2
+885.71
+3
+796.67
+3
+847.79
+https://doi.org/10.1371/journal.pone.0343262.t009
+=== PAGE 28 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+28 / 34
+Across centralized WC instances, PH-SHOWOA clearly outperforms Co-GA, MA-FIRD, and ACO-DR, achieving equal 
+or superior NV and TD in 14 of 18 cases and delivering dramatic reductions in total distance for most problems. Only a 
+small subset of instances shows space for further parameter tuning to close the gap on NV.
+Finally, Table 11 compares PH-SHOWOA with the advanced algorithms Co-GA, MA-FIRD, and ACO-DR when cus­
+tomer locations follow a mixed random–centralized distribution.
+The results in Table 11 show that MA-FIRD leads overall, achieving the smallest NV in 14 of 18 instances. It records the 
+best TD in 4 of 18 instances, giving it the broadest overall advantage.
+PH-SHOWOA demonstrates selective strengths. It attains 6 NV improvements over all three competitors—primarily 
+in the larger, more complex RCdp1xx cases (e.g., RCdp102, RCdp103, RCdp105–RCdp107, RCdp108). In the more 
+compact RCdp2xx instances, PH-SHOWOA typically uses one extra vehicle and yields a higher total distance than the 
+best competitor, indicating that targeted parameter tuning is needed when demand is highly clustered. However, its total 
+distance remains competitive even in these tighter cases, often matching or undercutting rival algorithms despite using 
+slightly more vehicles.
+Although MA-FIRD maintains the broadest lead, PH-SHOWOA shows clear advantages on several medium-scale 
+RCdp instances, reducing total distance and delivering competitive or shorter routes while preserving its exploratory 
+search capability.
+5.2.3.2.Statistical test on 56 benchmark instances (Rdp, Cdp, and Rcdp) The study evaluated the statistical sig­
+nificance of the proposed PH-SHOWOA algorithm against Co-GA, MA-FIRD, and ACO-DR on 56 benchmark instances 
+drawn from the Rdp, Cdp, and Rcdp datasets. Pairwise comparisons were conducted using the Wilcoxon signed-rank test 
+on both the number of vehicles (NV) and total distance (TD), as summarized in Tables 12–14. In addition, a critical dis­
+tance of 0.68 is used for the Nemenyi test (α = 0.05).
+For the total distance (TD) metric, PH-SHOWOA demonstrates statistically significant improvements over both Co-GA 
+and MA-FIRD, with p-values lower than 0.001 and large effect sizes (r > 0.60). These results indicate not only statistical 
+Table 10.  Experimental results are compared with advanced algorithms for Cdp instance.
+Instance
+Size
+Co-GA
+MA-FIRD
+ACO-DR
+PH-SHOWOA
+NV
+TD
+NV
+TD
+NV
+TD
+NV
+TD
+Cdp101
+100
+11
+1001.97
+11
+976.04
+11
+970.30
+10
+596.72(**)
+Cdp102
+100
+10
+961.36
+10
+941.49
+10
+964.56
+10
+807.82(**)
+Cdp103
+100
+10
+897.55
+10
+892.98
+10
+913.46
+10
+846.80(**)
+Cdp104
+100
+10
+878.93
+10
+871.40
+10
+1043.21
+10
+840.52(**)
+Cdp105
+100
+11
+983.1
+10
+1053.12
+11
+989.59
+10
+650.97(**)
+Cdp106
+100
+11
+878.29
+10
+963.45
+11
+880.01
+10
+791.69(**)
+Cdp107
+100
+11
+913.81
+10
+987.64
+11
+953.14
+10
+773.24(**)
+Cdp108
+100
+10
+951.24
+10
+932.50
+10
+930.31
+10
+762.48(**)
+Cdp109
+100
+10
+940.49
+10
+909.27
+10
+934.43
+10
+840.20(**)
+Cdp201
+100
+3
+591.56
+3
+591.56
+3
+591.56
+3
+552.69(**)
+Cdp202
+100
+3
+591.56
+3
+591.56
+3
+591.56
+4
+847.19
+Cdp203
+100
+3
+591.17
+3
+591.17
+3
+591.17
+4
+769.17
+Cdp204
+100
+3
+590.60
+3
+590.60
+3
+590.60
+4
+799.71
+Cdp205
+100
+3
+588.88
+3
+588.88
+3
+588.88
+3
+580.90(**)
+Cdp206
+100
+3
+588.49
+3
+588.49
+3
+588.49
+3
+575.51(**)
+Cdp207
+100
+3
+588.29
+3
+588.29
+3
+588.29
+3
+555.46(**)
+Cdp208
+100
+3
+588.32
+3
+588.32
+3
+588.32
+3
+546.89(**)
+https://doi.org/10.1371/journal.pone.0343262.t010
+=== PAGE 29 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+29 / 34
+Table 12.  Friedman Tests (Overall Ranking).
+Instance Type
+Metric
+Friedman χ²
+p-value
+N
+Best Algorithm
+Average Ranks (MA-FIRD/Co-GA/ACO-DR/PH-SHOWOA)
+Rdp
+NV
+4.26
+0.235
+23
+Co-GA/MA-FIRD
+2.37/2.11/2.59/2.93
+Cdp
+45.41
+< 0.001
+17
+PH-SHOWOA
+3.15/2.94/3.00/0.91
+RCdp
+5.90
+0.117
+16
+ACO-DR
+2.31/2.78/2.19/2.72
+Rdp
+TD
+18.86
+< 0.001
+23
+ACO-DR
+2.85/2.37/1.87/2.91
+Cdp
+45.73
+< 0.001
+17
+PH-SHOWOA
+3.59/3.00/3.09/1.32
+RCdp
+8.44
+0.038
+16
+ACO-DR
+2.59/2.81/2.22/2.38
+https://doi.org/10.1371/journal.pone.0343262.t012
+significance but also a substantial practical impact, which is further supported by the consistently negative median differ­
+ences, confirming that PH-SHOWOA yields shorter routing distances across the majority of instances.
+When compared with ACO-DR, PH-SHOWOA also achieves lower TD values in most instances; however, the 
+corresponding Wilcoxon test yields a non-significant p-value (p = 0.092) with a small effect size (r ≈ 0.22). That sug­
+gests that while PH-SHOWOA tends to outperform ACO-DR in terms of distance, the difference is moderate and 
+­instance-dependent, and thus cannot be claimed as statistically decisive under the chosen significance level.
+In contrast, for the number of vehicles (NV), no statistically significant differences are observed between PH-SHOWOA 
+and the comparative algorithms (p > 0.05 in all cases). The near-zero median differences and small effect sizes indicate 
+that PH-SHOWOA maintains competitive vehicle usage while achieving distance reductions, rather than relying on an 
+increased fleet size to improve performance.
+Overall, the statistical analysis confirms that PH-SHOWOA provides a robust and statistically significant advan­
+tage in minimizing total distance, particularly when compared with Co-GA and MA-FIRD, while remaining competitive 
+with ACO-DR and preserving similar vehicle utilization. These findings demonstrate the effectiveness and stability of 
+PH-SHOWOA across diverse VRP benchmark categories.
+Table 11.  Experimental results are compared with advanced algorithms for RCdp instance.
+Instance
+Size
+Co-GA
+MA-FIRD
+ACO-DR
+PH-SHOWOA
+NV
+TD
+NV
+TD
+NV
+TD
+NV
+TD
+RCdp101
+100
+15
+1652.90
+14
+1708.21
+15
+1658.58
+17
+1519.18
+RCdp102
+100
+14
+1497.05
+12
+1570.28
+13
+1531.25
+15
+1307.44
+RCdp103
+100
+12
+1338.76
+11
+1282.53
+12
+1312.07
+13
+1194.41
+RCdp104
+100
+11
+1188.49
+10
+1171.37
+11
+1183.80
+13
+1254.65
+RCdp105
+100
+14
+1581.26
+13
+1632.29
+14
+1569.55
+17
+1402.23
+RCdp106
+100
+13
+1422.87
+12
+1392.47
+13
+1420.70
+13
+1299.66
+RCdp107
+100
+12
+1282.10
+11
+1252.79
+12
+1274.64
+13
+1204.90
+RCdp108
+100
+11
+1175.04
+10
+1177.98
+11
+1171.93
+11
+1022.69
+RCdp201
+100
+4
+1587.92
+4
+1406.94
+4
+1383.79
+5
+1835.78
+RCdp202
+100
+4
+1211.12
+3
+1365.65
+4
+1197.36
+5
+1306.71
+RCdp203
+100
+4
+964.65
+3
+1049.62
+4
+984.59
+4
+1234.10
+RCdp204
+100
+3
+822.02
+3
+798.46
+3
+809.53
+4
+940.77
+RCdp205
+100
+4
+1410.18
+4
+1297.65
+4
+1370.54
+5
+1345.24
+RCdp206
+100
+3
+1176.85
+3
+1146.32
+3
+1137.28
+4
+1256.89
+RCdp207
+100
+4
+1036.59
+3
+1061.14
+4
+1032.91
+4
+1281.73
+RCdp208
+100
+3
+878.57
+3
+828.14
+3
+862.66
+3
+966.77
+https://doi.org/10.1371/journal.pone.0343262.t011
+=== PAGE 30 ===
+PLOS One | https://doi.org/10.1371/journal.pone.0343262  March 27, 2026
+30 / 34
+6.  Discussion
+The PH-SHOWOA demonstrates strong and competitive performance on medium-scale VRPSPDTW benchmark data­
+sets across all evaluated categories, including Type 1 WC, Type 2, and advanced comparisons with Co-GA, MA-FIRD, 
+and ACO-DR. These performance differences are further supported by rigorous non-parametric statistical validation using 
+Friedman, post-hoc Nemenyi, and exact Wilcoxon signed-rank tests, indicating that the observed improvements are con­
+sistent across benchmark instances and unlikely to be attributable to random variation. The experimental and statistical 
+results collectively highlight three key aspects of the proposed approach.
+6.1.  Robust improvements in routing efficiency
+Among the evaluated performance metrics, total distance (TD) reduction emerges as the most consistent advantage 
+of PH-SHOWOA. On the Type 1 WC instances (Table 4), the proposed method achieves shorter TD in nearly all cases 
+while maintaining comparable or slightly improved vehicle counts (NV), resulting in an average TD reduction exceeding 
+Table 14.  Wilcoxon Signed-Rank Tests (Detailed Pairwise Analysis).
+Comparison
+Metric
+Wilcoxon statistic (W)
+p-value
+Median Difference
+Effect Size (r)
+Interpretation
+PH-SHOWOA vs Co-GA
+TD
+164.0
+<0.001
+−172.88
+0.63
+PH-SHOWOA better (large)
+PH-SHOWOA vs MA-FIRD
+144.0
+<0.001
+−193.40
+0.64
+PH-SHOWOA better (large)
+PH-SHOWOA vs ACO-DR
+321.0
+0.092
+−49.52
+0.22
+No difference (small)
+ACO-DR vs Co-GA
+203.0
+0.025
+−33.94
+0.30
+ACO-DR better (medium)
+ACO-DR vs MA-FIRD
+176.5
+0.002
+−52.64
+0.40
+ACO-DR better (medium)
+Co-GA vs MA-FIRD
+210.0
+0.105
+−1.54
+0.20
+No difference (small)
+PH-SHOWOA vs Co-GA
+NV
+342.5
+0.479
+0.0
+0.09
+No difference (small)
+PH-SHOWOA vs MA-FIRD
+299.5
+0.154
+0.0
+0.19
+No difference (small)
+PH-SHOWOA vs ACO-DR
+345.5
+0.617
+0.0
+0.07
+No difference (small)
+ACO-DR vs Co-GA
+295.0
+0.137
+0.0
+0.20
+No difference (small)
+ACO-DR vs MA-FIRD
+279.0
+0.072
+0.0
+0.24
+No difference (small)
+Co-GA vs MA-FIRD
+237.0
+0.013
+0.0
+0.33
+Co-GA better (medium)
+With Median difference is computed as (first algorithm – second algorithm). Negative values indicate improvement of the first algorithm; Effect size (r): 
+0.1 = small, 0.3 = medium, 0.5 = large (Cohen’s guidelines).
+https://doi.org/10.1371/journal.pone.0343262.t014
+Table 13.  Post-hoc Nemenyi Analysis (Pairwise Comparisons).
+Comparison
+Metric
+p-value (Nemenyi)
+Conclusion
+PH-SHOWOA vs MA-FIRD
+TD
+<0.001***
+PH-SHOWOA better
+PH-SHOWOA vs Co-GA
+<0.001***
+PH-SHOWOA better
+PH-SHOWOA vs ACO-DR
+0.078
+No significant difference
+ACO-DR vs MA-FIRD
+0.008
+ACO-DR better
+ACO-DR vs Co-GA
+0.452
+No significant difference
+Co-GA vs MA-FIRD
+0.078
+PH-SHOWOA vs MA-FIRD
+NV
+0.813
+PH-SHOWOA vs Co-GA
+0.948
+PH-SHOWOA vs ACO-DR
+0.813
+ACO-DR vs MA-FIRD
+1.000
+ACO-DR vs Co-GA
+0.813
+Co-GA vs MA-FIRD
+0.813
+https://doi.org/10.1371/journal.pone.0343262.t013
