@@ -52,3 +52,15 @@ src_cpp/*.ilk
 src_cpp/*.lib
 src_cpp/*.exp
 src_cpp/*.log
+
+# Kaggle credentials & local run artifacts
+kaggle/account_*/
+kaggle/account_a/
+kaggle/account_b/
+kaggle/account_c/
+kaggle/**/kaggle.json
+**/kaggle.json
+kaggle/test_output/
+kaggle/runs/*/output/
+kaggle/runs/benchmark_state.json
+
