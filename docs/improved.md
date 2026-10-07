@@ -52,9 +52,23 @@ Dưới đây là các cải tiến kỹ thuật cốt lõi hiện có của phi
 ### 4. Mô hình Quần thể Đa Đảo (Island Model) & Di cư Vòng (Ring Migration)
 * **So với Baseline (Paper PH-SHOWOA, Algorithm 1, Trang 10)**:
   * *Baseline*: Quần thể phẳng (single flat population). Mỗi chu kỳ lại inject nghiệm toàn cục (`publish_global_best`) vào toàn bộ quần thể, khiến các cá thể nhanh chóng giống hệt nhau và bị hút vào cùng một hố cực tiểu cục bộ (hội tụ sớm).
-  * *Cải tiến GPU*: Quần thể được chia thành các Đảo độc lập (mặc định $P=30$, 6 đảo, mỗi đảo 5 cá thể; nếu $P$ không chia hết cho số đảo thì tự động dùng 1 đảo). Chọn cha mẹ (tournament 3 cá thể) và cập nhật nghiệm tốt nhất đều nằm trong nội bộ đảo. Không broadcast global best vào các đảo mỗi thế hệ. Các đảo chỉ trao đổi gen mỗi `migration_interval` = 20 thế hệ thông qua **Ring Migration** (best của đảo $i$ thay thế cá thể tệ nhất của đảo $i+1$, chỉ khi best đó tốt hơn theo thứ tự từ vựng).
+  * *Cải tiến GPU*: Quần thể được chia thành các Đảo độc lập (mặc định $P=30$, 6 đảo, mỗi đảo 5 cá thể; nếu $P$ không chia hết cho số đảo thì tự chọn ước của $P$ gần số đảo yêu cầu nhất, hoặc 1 đảo nếu không có ước phù hợp, kèm cảnh báo `[WARN]`). Chọn cha mẹ (tournament 3 cá thể) và cập nhật nghiệm tốt nhất đều nằm trong nội bộ đảo. Không broadcast global best vào các đảo mỗi thế hệ. Các đảo chỉ trao đổi gen mỗi `migration_interval` = 20 thế hệ thông qua **Ring Migration** (best của đảo $i$ thay thế cá thể tệ nhất của đảo $i+1$, chỉ khi best đó tốt hơn theo thứ tự từ vựng).
 * **Tại sao tốt hơn**:
   * Duy trì độ đa dạng di truyền lâu dài, chống hiện tượng sụp đổ gen sớm; khai thác tối đa tính song song của kiến trúc Warp/Block trên GPU.
+* **Kiểm chứng (ablation 1 đảo so với 6 đảo)**:
+  * *Thiết lập*: cùng cấu hình ($P=30$, 30 runs, 1000 thế hệ, `sa_rcrs_grasp`, đánh giá từ vựng, cùng seed gốc), chỉ đổi `--num_islands` (1 = quần thể phẳng, 6 = hiện tại). Chạy trên backend CPU (cùng thuật toán với bản GPU), 3 instance. Cost = $2000 \cdot NV + TD$.
+
+    | Instance | Đảo | NV TB | Số run đạt NV tối thiểu | Cost TB ± độ lệch chuẩn | Cost tốt nhất |
+    |---|---|---|---|---|---|
+    | cdp101 | 1 | 11.00 | 30/30 | 22988.6 ± 22.4 | 22923.8 |
+    | cdp101 | 6 | 11.00 | 30/30 | 22978.4 ± 24.7 | 22909.8 |
+    | rcdp104 | 1 | 11.40 | 18/30 | 24065.7 ± 1018.3 | 23208.8 |
+    | rcdp104 | 6 | 11.10 | 27/30 | 23438.7 ± 621.7 | 23130.5 |
+    | rdp210 | 1 | 3.00 | 30/30 | 6981.5 ± 30.3 | 6910.7 |
+    | rdp210 | 6 | 3.00 | 30/30 | 6915.1 ± 63.4 | 6735.5 |
+
+  * *Nhận xét*: 6 đảo tốt hơn hoặc ngang 1 đảo ở cả 3 instance, không instance nào 1 đảo thắng. cdp101 (dễ) gần như hòa (cost thấp hơn khoảng 10, $t \approx -1.7$). rcdp104 (khó nhất) cho thấy rõ nhất: 27/30 run đạt 11 xe so với 18/30, cost trung bình thấp hơn khoảng 627 ($t \approx -2.9$). rdp210 cost trung bình thấp hơn khoảng 66 ($t \approx -5.2$) và tìm được nghiệm tốt nhất 6735.5, nhưng độ lệch chuẩn của 6 đảo lớn gấp đôi (63 so với 30), tức kết quả dao động nhiều hơn.
+  * *Giới hạn*: chỉ 3 instance (cdp101 vốn dễ nên ít phân biệt), giá trị $t$ là ước lượng thô giả định phân phối gần chuẩn (cost của rcdp104 nhảy theo bước 2000 mỗi khi đổi số xe), và chưa chạy trên GPU/Kaggle. Đây là bằng chứng ủng hộ mô hình đa đảo chứ chưa phải kết luận chắc chắn; nên chạy lại trên nhiều instance hơn trước khi đưa vào bài báo. Hiệu quả của riêng migration (`migration_interval`) và kích thước đảo chưa được tách ra kiểm tra.
 
 ---
 

@@ -1085,7 +1085,24 @@ def build_kernel_bundle(is_cuda: bool = False):
                     rlen[s, new_r] = 3
                     nr[s] = new_r + 1
 
-            eval_solution(nodes, rlen, nr, s, prob_data)
+            # Compact away routes emptied by the ruin step, then refresh the cached nr/dist/cost
+            write_r = 0
+            for r in range(nr[s]):
+                l = rlen[s, r]
+                if l > 2:
+                    if write_r != r:
+                        for k in range(l):
+                            nodes[s, write_r, k] = nodes[s, r, k]
+                        rlen[s, write_r] = l
+                    write_r += 1
+            nr[s] = write_r
+            ok, n_act, t_dist, t_cost = eval_solution(nodes, rlen, nr, s, prob_data)
+            if ok:
+                dist[s] = t_dist
+                cost[s] = t_cost
+            else:
+                dist[s] = 1e12
+                cost[s] = 1e12
 
     # -------------------------------------------------------------------------
     # 9. Top-Level Kernels
