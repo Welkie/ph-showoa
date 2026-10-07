@@ -1193,15 +1193,30 @@ def build_kernel_bundle(is_cuda: bool = False):
                                       pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, worst_s)
 
         @k_fn
+        def island_stagnation_update_kernel(ibest_nr, ibest_dist, stag_state, num_islands):
+            # stag_state[isl] = (best_nr, best_dist, generations without improvement)
+            isl = cuda.grid(1)
+            if isl < num_islands and ibest_nr[isl] > 0:
+                if stag_state[isl, 0] <= 0.0 or is_better_lex(ibest_nr[isl], ibest_dist[isl],
+                                                              int(stag_state[isl, 0]), stag_state[isl, 1]):
+                    stag_state[isl, 0] = float(ibest_nr[isl])
+                    stag_state[isl, 1] = ibest_dist[isl]
+                    stag_state[isl, 2] = 0.0
+                else:
+                    stag_state[isl, 2] += 1.0
+
+        @k_fn
         def stagnation_diversify_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                                         scratch_route, scratch_unrouted, scratch_flags,
-                                        prob_data, rng_states, num_islands, island_size):
+                                        prob_data, rng_states, num_islands, island_size,
+                                        stag_state, stag_interval):
             isl = cuda.grid(1)
-            if isl < num_islands:
+            if isl < num_islands and stag_state[isl, 2] >= stag_interval:
                 diversify_island_single(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                                         isl, island_size,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states)
+                stag_state[isl, 2] = 0.0
 
         @k_fn
         def init_device_rng_kernel(rng_states, seed):
@@ -1323,14 +1338,29 @@ def build_kernel_bundle(is_cuda: bool = False):
                                       pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, worst_s)
 
         @k_fn
+        def island_stagnation_update_kernel(ibest_nr, ibest_dist, stag_state, num_islands):
+            for isl in range(num_islands):
+                if ibest_nr[isl] > 0:
+                    if stag_state[isl, 0] <= 0.0 or is_better_lex(ibest_nr[isl], ibest_dist[isl],
+                                                                  int(stag_state[isl, 0]), stag_state[isl, 1]):
+                        stag_state[isl, 0] = float(ibest_nr[isl])
+                        stag_state[isl, 1] = ibest_dist[isl]
+                        stag_state[isl, 2] = 0.0
+                    else:
+                        stag_state[isl, 2] += 1.0
+
+        @k_fn
         def stagnation_diversify_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                                         scratch_route, scratch_unrouted, scratch_flags,
-                                        prob_data, rng_states, num_islands, island_size):
+                                        prob_data, rng_states, num_islands, island_size,
+                                        stag_state, stag_interval):
             for isl in range(num_islands):
-                diversify_island_single(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                                        isl, island_size,
-                                        scratch_route, scratch_unrouted, scratch_flags,
-                                        prob_data, rng_states)
+                if stag_state[isl, 2] >= stag_interval:
+                    diversify_island_single(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
+                                            isl, island_size,
+                                            scratch_route, scratch_unrouted, scratch_flags,
+                                            prob_data, rng_states)
+                    stag_state[isl, 2] = 0.0
 
         @k_fn
         def init_device_rng_kernel(rng_states, seed):
@@ -1360,6 +1390,7 @@ def build_kernel_bundle(is_cuda: bool = False):
         "update_global_best": update_global_best_kernel,
         "island_migration": island_migration_kernel,
         "stagnation_diversify": stagnation_diversify_kernel,
+        "island_stagnation_update": island_stagnation_update_kernel,
         "init_device_rng": init_device_rng_kernel,
         "reset_run_state": reset_run_state_kernel,
         "record_log": record_log_kernel,

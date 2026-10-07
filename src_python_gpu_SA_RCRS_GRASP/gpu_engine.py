@@ -97,8 +97,18 @@ class GpuEngine:
 
         self.P = int(getattr(data, "p_size", 36))
         self.num_islands = int(getattr(data, "num_islands", 6))
-        if self.P % self.num_islands != 0:
+        if self.num_islands < 1:
             self.num_islands = 1
+        if self.P % self.num_islands != 0:
+            requested = self.num_islands
+            # Nearest divisor of P to the requested island count (>= 2 islands, >= 3 individuals each); ties go to the smaller count
+            divisors = [d for d in range(2, self.P // 3 + 1) if self.P % d == 0]
+            if divisors:
+                self.num_islands = min(divisors, key=lambda d: (abs(d - requested), d))
+            else:
+                self.num_islands = 1
+            print(f"[WARN] P={self.P} is not divisible by num_islands={requested}; "
+                  f"using {self.num_islands} island(s) of {self.P // self.num_islands} individuals", flush=True)
         self.island_size = self.P // self.num_islands
 
         self.N = int(data.customer_num)
@@ -249,6 +259,10 @@ class GpuEngine:
 
         k = self.kernels
 
+        # (best_nr, best_dist, stagnant generations) per island
+        stag_zero = np.zeros((self.num_islands, 3), dtype=np.float64)
+        stag_state = cuda.to_device(stag_zero) if self.is_cuda else stag_zero.copy()
+
         if self.is_cuda:
             try:
                 dev = cuda.get_current_device()
@@ -276,6 +290,10 @@ class GpuEngine:
             print(f"  Run {run} RUN_GPU_BEGIN", flush=True)
 
             # 1. Khởi tạo trạng thái trên GPU
+            if self.is_cuda:
+                stag_state.copy_to_device(stag_zero)
+            else:
+                stag_state[:] = 0.0
             if self.is_cuda:
                 k["init_device_rng"][self.blocks, self.threads_per_block](rng_states, run_seed)
                 k["reset_run_state"][1, 1](ibest_nr, gbest_nr, run_log)
@@ -366,21 +384,6 @@ class GpuEngine:
                             scratch_route, scratch_route2, prob_device, 2
                         )
 
-                # Periodic diversification
-                if gen % stag_interval == 0:
-                    if self.is_cuda:
-                        k["stagnation_diversify"][self.isl_blocks, self.threads_per_block](
-                            cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
-                            scratch_route, scratch_unrouted, scratch_flags,
-                            prob_device, rng_states, self.num_islands, self.island_size
-                        )
-                    else:
-                        k["stagnation_diversify"](
-                            cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
-                            scratch_route, scratch_unrouted, scratch_flags,
-                            prob_device, rng_states, self.num_islands, self.island_size
-                        )
-
                 # Periodic migration
                 if self.num_islands > 1 and gen % migr_interval == 0:
                     if self.is_cuda:
@@ -409,6 +412,16 @@ class GpuEngine:
                         self.num_islands
                     )
                     k["record_log"][1, 1](run_log, gbest_nr, gbest_dist, gen)
+                    # Per-island stagnation: only islands with no ibest improvement for stag_interval gens are ruined
+                    k["island_stagnation_update"][self.isl_blocks, self.threads_per_block](
+                        ibest_nr, ibest_dist, stag_state, self.num_islands
+                    )
+                    k["stagnation_diversify"][self.isl_blocks, self.threads_per_block](
+                        cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
+                        scratch_route, scratch_unrouted, scratch_flags,
+                        prob_device, rng_states, self.num_islands, self.island_size,
+                        stag_state, stag_interval
+                    )
                 else:
                     k["update_island_bests"](
                         cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
@@ -421,6 +434,13 @@ class GpuEngine:
                         self.num_islands
                     )
                     k["record_log"](run_log, gbest_nr, gbest_dist, gen)
+                    k["island_stagnation_update"](ibest_nr, ibest_dist, stag_state, self.num_islands)
+                    k["stagnation_diversify"](
+                        cur_pop[0], cur_pop[1], cur_pop[2], cur_pop[3], cur_pop[4],
+                        scratch_route, scratch_unrouted, scratch_flags,
+                        prob_device, rng_states, self.num_islands, self.island_size,
+                        stag_state, stag_interval
+                    )
 
             if self.is_cuda:
                 cuda.synchronize()

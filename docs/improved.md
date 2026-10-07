@@ -24,7 +24,7 @@ Dưới đây là các cải tiến kỹ thuật cốt lõi hiện có của phi
     1. *RCRS-GRASP Construction*: Dựng các chùm tuyến hình quạt có định hướng rõ rệt thông qua danh sách ứng viên ngẫu nhiên RCL ($\alpha \in [\alpha_{lo}, \alpha_{hi}]$) kết hợp hàm phạt góc lệch hướng tâm ($rs\_pen$) và phạt đầy tải ($rc\_pen$).
     2. *Feasibility Check & Auto Repair*: Tự động kiểm tra và sửa lỗi vi phạm ràng buộc trên device.
     3. *SA Warmup Dịu nhẹ*: Sau khi đã có chùm tuyến đẹp từ GRASP, SA Warmup trên GPU chỉ đóng vai trò "rung lắc nhẹ" ($T_0=100.0, \text{cooling}=0.85, T_{min}=0.5, 25\text{ iters} \approx 800$ phép thử) để gọt dũa các nút giao cắt nhỏ mà **bảo toàn nguyên vẹn khung tuyến hình quạt** vừa dựng.
-    4. *Route Elimination*: Thuật toán chuyên biệt quét tuần tự tìm và loại bỏ các tuyến ít khách, tái chèn khách sang các tuyến khác nhằm ép giảm số lượng xe ($NV$) ngay từ thế hệ 0 (Paper hoàn toàn không có bước này).
+    4. *Route Elimination*: Thuật toán chuyên biệt quét tuần tự tìm và loại bỏ các tuyến ít khách, tái chèn khách sang các tuyến khác nhằm ép giảm số lượng xe ($NV$) ngay từ thế hệ 0 (5 lượt; Paper hoàn toàn không có bước này). Bước này còn được chạy lại trên toàn quần thể mỗi `local_search_interval` = 25 thế hệ, ngay trước Local Search định kỳ.
     5. *Deep Local Search*: Quét 2 lượt tối ưu hóa sâu để làm mịn quãng đường trước khi bước vào thế hệ 1.
 * **Tại sao tốt hơn**:
   * Tạo ra các chùm tuyến hình quạt tối ưu ngay từ đầu thay vì trông cậy vào $13.500$ bước hoán đổi ngẫu nhiên kéo dài của baseline.
@@ -40,15 +40,10 @@ Dưới đây là các cải tiến kỹ thuật cốt lõi hiện có của phi
   * *Cải tiến GPU*: Phân cấp thứ tự từ vựng nghiêm ngặt: Số xe ($NV$) là ưu tiên tuyệt đối bậc 1, Quãng đường ($TD$) là ưu tiên bậc 2.
     * Nghiệm làm tăng số xe ($NV_{new} > NV_{old}$): **Bị từ chối 100%**.
     * Nghiệm làm giảm số xe ($NV_{new} < NV_{old}$): **Được chấp nhận 100%**.
-    * Khi cùng số xe: Metropolis chỉ xét trên độ chênh lệch quãng đường $\Delta TD$ và chia cho chính $|TD_{old}| \approx 1000$ (thay vì 21000).
-    2. Hiệu ứng "Lây nhiễm gen xấu" làm tuyệt chủng nghiệm tốt (Nguy hiểm nhất)
-Trong thuật toán bầy đàn (SHO-WOA), các cá thể liên tục giao phối và lai ghép chéo với nhau:
-
-Khi một cá thể tăng lên 11 xe, áp lực tải trọng của nó giảm hẳn (chia 100 khách cho 11 xe thì mỗi xe chở rất ít khách, thời gian cực kỳ thong thả so với xe chở khít khao của 10 xe).
-Vì quá thong thả, cá thể 11 xe này rất dễ gọt dũa quãng đường ngắn xuống và có vẻ ngoài "rất đẹp".
-Đến bước chọn cha mẹ để lai ghép (Crossover), cá thể 11 xe này được chọn và truyền cấu trúc 11 xe sang cho các con cháu.
-Chỉ sau 20 - 30 thế hệ, cả 30 cá thể trong quần thể đều bị lây nhiễm thành 11 hoặc 12 xe!
-Lúc này, bộ gen 10 xe ban đầu bị TUYỆT CHỦNG hoàn toàn. Trong toàn bộ quần thể không còn ai có cấu trúc 10 xe nữa, và thuật toán không còn cơ hội nào quay về 10 xe được nữa.
+    * Khi cùng số xe: Metropolis chỉ xét trên độ chênh lệch quãng đường $\Delta TD$ (chấp nhận ngay nếu $\Delta TD \le 10^{-3}$), với xác suất
+      $$P = \exp\left(-\frac{\Delta TD}{10^{-6} + T \cdot |TD_{old}|}\right),\quad T = 1 - \frac{iter}{max\_iter}$$
+      Mẫu số dựa trên $|TD_{old}| \approx 1000$ (thay vì $\approx 21000$ của baseline) và $T$ giảm tuyến tính về 0 theo thế hệ. Riêng bước SA Warmup khởi tạo dùng $P = \exp(-\Delta d / (T + 10^{-3}))$ trên chênh lệch quãng đường của từng phép dời.
+  * *Vì sao phải chặn tăng xe (lây nhiễm gen xấu)*: một cá thể tăng lên 11 xe sẽ có tải trọng mỗi xe nhẹ hơn, dễ rút ngắn quãng đường và trông "đẹp". Nếu được chọn làm cha mẹ ở Crossover, cấu trúc 11 xe lan sang con cháu; chỉ sau 20 - 30 thế hệ cả quần thể có thể thành 11 - 12 xe và bộ gen 10 xe bị tuyệt chủng, không thể quay lại.
 * **Tại sao tốt hơn**:
   * Loại trừ triệt để hiện tượng loãng nhiệt và lỗi nhận nghiệm tăng xe bừa bãi của baseline, luôn kiểm soát và ép chặt số lượng xe ở mức tối thiểu.
 
@@ -57,7 +52,7 @@ Lúc này, bộ gen 10 xe ban đầu bị TUYỆT CHỦNG hoàn toàn. Trong to�
 ### 4. Mô hình Quần thể Đa Đảo (Island Model) & Di cư Vòng (Ring Migration)
 * **So với Baseline (Paper PH-SHOWOA, Algorithm 1, Trang 10)**:
   * *Baseline*: Quần thể phẳng (single flat population). Mỗi chu kỳ lại inject nghiệm toàn cục (`publish_global_best`) vào toàn bộ quần thể, khiến các cá thể nhanh chóng giống hệt nhau và bị hút vào cùng một hố cực tiểu cục bộ (hội tụ sớm).
-  * *Cải tiến GPU*: Quần thể được chia thành các Đảo độc lập (mỗi đảo 5 - 8 cá thể). Đấu loại và cập nhật nghiệm nội bộ đảo. Không broadcast global best vào các đảo mỗi thế hệ. Các đảo chỉ trao đổi gen định kỳ thông qua **Ring Migration** (đảo $i$ chuyển cá thể tốt nhất sang thay thế cá thể tệ nhất của đảo $i+1$).
+  * *Cải tiến GPU*: Quần thể được chia thành các Đảo độc lập (mặc định $P=30$, 6 đảo, mỗi đảo 5 cá thể; nếu $P$ không chia hết cho số đảo thì tự động dùng 1 đảo). Chọn cha mẹ (tournament 3 cá thể) và cập nhật nghiệm tốt nhất đều nằm trong nội bộ đảo. Không broadcast global best vào các đảo mỗi thế hệ. Các đảo chỉ trao đổi gen mỗi `migration_interval` = 20 thế hệ thông qua **Ring Migration** (best của đảo $i$ thay thế cá thể tệ nhất của đảo $i+1$, chỉ khi best đó tốt hơn theo thứ tự từ vựng).
 * **Tại sao tốt hơn**:
   * Duy trì độ đa dạng di truyền lâu dài, chống hiện tượng sụp đổ gen sớm; khai thác tối đa tính song song của kiến trúc Warp/Block trên GPU.
 
@@ -66,7 +61,7 @@ Lúc này, bộ gen 10 xe ban đầu bị TUYỆT CHỦNG hoàn toàn. Trong to�
 ### 5. Phá vỡ Đình trệ Cục bộ Độc lập theo Từng Đảo (Island Stagnation Ruin & Recreate)
 * **So với Baseline (Paper PH-SHOWOA, Algorithm 1 dòng 44-47, Trang 10)**:
   * *Baseline*: Khi toàn bộ tiến trình không cải thiện sau 50 thế hệ (`noImprove >= 50`), baseline gọi `DIVERSIFY(population)` để phá vỡ 40% cá thể ngẫu nhiên trên **toàn bộ quần thể phẳng**.
-  * *Cải tiến GPU*: Theo dõi số thế hệ đình trệ độc lập cho từng đảo. Nếu đảo nào kẹt 50 thế hệ không cải thiện `island_best`, chỉ tiến hành Ruin (xóa 20% - 40% khách) và Recreate (chèn lại tối ưu) cho 40% cá thể yếu nhất của riêng đảo đó, giữ nguyên cá thể tinh hoa và các đảo khác đang phát triển tốt.
+  * *Cải tiến GPU*: Theo dõi số thế hệ đình trệ độc lập cho từng đảo (bộ đếm `stag_state` trên VRAM, cập nhật mỗi thế hệ theo so sánh từ vựng của `island_best`). Nếu đảo nào kẹt `stagnation_interval` = 50 thế hệ không cải thiện `island_best`, chỉ tiến hành Ruin (xóa 20% - 40% khách) và Recreate (chèn lại tối ưu theo chi phí nhỏ nhất) cho 40% cá thể ở cuối đảo đó, rồi đặt lại bộ đếm của đảo; `island_best` được lưu riêng nên không bị mất, và các đảo khác đang phát triển tốt không bị ảnh hưởng.
 * **Tại sao tốt hơn**:
   * Tránh phá hỏng nghiệm của các đảo đang tiến hóa thuận lợi, dồn tài nguyên giải cứu có trọng điểm các đảo bị bế tắc.
 
