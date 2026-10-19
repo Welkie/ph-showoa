@@ -1,0 +1,1512 @@
+TYPE : VRPSDPTW
+DIMENSION : 101
+VEHICLES : 25
+DISPATCHINGCOST : 2000
+UNITCOST : 1.0
+CAPACITY : 1000.0
+EDGE_WEIGHT_TYPE : EXPLICIT
+Avg pick-up/dilvery demand: 14.3400,14.5800
+Starting/end time of DC: 0.0000,1000.0000
+
+Initial random seed: 42
+Pruning: off
+Time limit: -1 seconds
+Runs: 30
+g_1: 500
+Max PH-SHOWOA iterations: 1000
+Population size: 30
+Parallel workers: 1
+Periodic local-search interval: 25
+Diversification stagnation interval: 50
+Diversification ratio: 0.40
+SHO mutation probability: 0.35
+Hybrid mode: ph_showoa
+Compute backend: cpu
+Insertion for initialization: sa_rcrs_grasp
+k_init: 100
+Insertion for crossover: rcrs
+k_crossover: 100
+Parent selection: circle
+Replacement strategy: one_on_one
+Local search probability: 1.00
+O(1) evaluation: off
+2-opt: off
+2-opt*: off
+or-opt: off
+2-exchange: off
+escape local optima number: 1
+random_removal: off
+related_removal: off
+Destroy lower ration: 0.200000
+Destroy upper ration: 0.400000
+regret_insertion: off
+greedy_insertion: off
+Random removal and insertion: off
+Objective mode: lexicographic
+Architecture: python_cuda
+Paper flags: enabled (2opt, 2opt*, oropt_single, 2exchange, related_removal, regret_insertion, lexicographic)
+--------------------------------------------
+Do Pruning
+Total edges 9900, prune by time window 1050(10.6061%),prune by capacity 0(0.0000%)
+Compute backend requested: cpu
+Compute backend selected: cpu
+================================================================================
+[PH-SHOWOA] Full-GPU Solver Engine (SA-RCRS-GRASP) Initializing...
+CPU_PREP: Allocating GPU device buffers, uploading dataset & config, building execution graph
+  Population Size P=30, Islands=6, Max Iterations=1000, Backend=Numba CPU Reference
+================================================================================
+---------------------------------Run 1 (100% Full-GPU Solver)---------------------------
+  Run 1 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 1 CPU_PREP: run_id=1, seed=100045 passed to GPU execution graph
+  Run 1 RUN_GPU_BEGIN
+  Run 1 RUN_CPU_END
+  Run 1 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1383.8912
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1109.2236
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1022.6038
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1009.8338
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1009.5213
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1003.9440
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 997.1946
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 994.3619
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 992.5764
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 992.5764
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 992.5764
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 992.5764
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 992.5220
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 992.3168
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 992.1072
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 991.6250
+  Run 1 Best solution update: 6991.6250 (NV=3, TD=991.6250)
+Run 1 finishes | Run Best: NV=3, TD=991.6250 | Global Best: NV=3, TD=991.6250
+---------------------------------Run 2 (100% Full-GPU Solver)---------------------------
+  Run 2 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 2 CPU_PREP: run_id=2, seed=200048 passed to GPU execution graph
+  Run 2 RUN_GPU_BEGIN
+  Run 2 RUN_CPU_END
+  Run 2 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1360.7934
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1092.5695
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1071.2038
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1030.0136
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1023.3007
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1022.2613
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1016.6422
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1015.9766
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1009.3044
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1009.3044
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 994.3875
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 994.3875
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 994.3875
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 994.3875
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 993.5844
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 992.0742
+Run 2 finishes | Run Best: NV=3, TD=992.0742 | Global Best: NV=3, TD=991.6250
+---------------------------------Run 3 (100% Full-GPU Solver)---------------------------
+  Run 3 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 3 CPU_PREP: run_id=3, seed=300051 passed to GPU execution graph
+  Run 3 RUN_GPU_BEGIN
+  Run 3 RUN_CPU_END
+  Run 3 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1344.5478
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1058.1135
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1037.3545
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1023.2445
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1017.3854
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1016.3656
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1016.1920
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1011.8094
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1002.6819
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 993.1253
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 990.8025
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 990.2387
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 989.8557
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 988.2563
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 988.2563
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 988.2563
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 988.2563
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 987.2532
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 981.7866
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 980.8699
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 980.4511
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 980.4511
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 980.4511
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 980.4511
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 980.4511
+  Run 3 Best solution update: 6980.4511 (NV=3, TD=980.4511)
+Run 3 finishes | Run Best: NV=3, TD=980.4511 | Global Best: NV=3, TD=980.4511
+---------------------------------Run 4 (100% Full-GPU Solver)---------------------------
+  Run 4 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 4 CPU_PREP: run_id=4, seed=400054 passed to GPU execution graph
+  Run 4 RUN_GPU_BEGIN
+  Run 4 RUN_CPU_END
+  Run 4 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1327.5831
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1158.3569
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1091.9544
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1050.2404
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1010.7604
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1008.0992
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1001.5983
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 989.9866
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 986.0945
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 986.0945
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 985.7417
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 984.4870
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 981.9923
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 978.5881
+  Run 4 Best solution update: 6978.5881 (NV=3, TD=978.5881)
+Run 4 finishes | Run Best: NV=3, TD=978.5881 | Global Best: NV=3, TD=978.5881
+---------------------------------Run 5 (100% Full-GPU Solver)---------------------------
+  Run 5 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 5 CPU_PREP: run_id=5, seed=500057 passed to GPU execution graph
+  Run 5 RUN_GPU_BEGIN
+  Run 5 RUN_CPU_END
+  Run 5 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1365.9289
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1161.7808
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1104.4994
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1056.4219
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1041.2418
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1041.2418
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1041.2418
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1041.2418
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1023.9783
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1022.9598
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1018.6668
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1017.6886
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1016.5664
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1016.5392
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1016.5392
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 1016.5392
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 1016.5392
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 1010.3003
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 1010.3003
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 1010.3003
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 1010.3003
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 1010.3003
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 1010.3003
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 1009.2357
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 1009.2357
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 1009.2357
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 1009.2357
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 1007.4870
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 1007.4870
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 1007.4870
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 1007.4870
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 1007.4134
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 1007.4134
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 1007.4134
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 1005.2420
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 1005.2420
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 1005.2420
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 1005.2420
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 1005.2420
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 1005.2420
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 1005.2420
+Run 5 finishes | Run Best: NV=3, TD=1005.2420 | Global Best: NV=3, TD=978.5881
+---------------------------------Run 6 (100% Full-GPU Solver)---------------------------
+  Run 6 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 6 CPU_PREP: run_id=6, seed=600060 passed to GPU execution graph
+  Run 6 RUN_GPU_BEGIN
+  Run 6 RUN_CPU_END
+  Run 6 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1202.2515
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1052.7972
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1046.3168
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1042.6372
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1025.3511
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1025.3511
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1017.3883
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1008.7171
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1008.7171
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1008.7171
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 1005.1069
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 998.1267
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 995.0598
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 989.0327
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 988.2069
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 988.2069
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 988.2069
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 988.2069
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 988.2069
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 988.2069
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 975.8283
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 971.9750
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 962.6672
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 962.5733
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 961.7460
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 961.7460
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 961.2397
+  Run 6 Best solution update: 6961.2397 (NV=3, TD=961.2397)
+Run 6 finishes | Run Best: NV=3, TD=961.2397 | Global Best: NV=3, TD=961.2397
+---------------------------------Run 7 (100% Full-GPU Solver)---------------------------
+  Run 7 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 7 CPU_PREP: run_id=7, seed=700063 passed to GPU execution graph
+  Run 7 RUN_GPU_BEGIN
+  Run 7 RUN_CPU_END
+  Run 7 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1286.1951
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1149.4356
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1030.1550
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1007.2669
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 997.2924
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 996.4654
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 994.5478
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 982.1105
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 977.3876
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 975.1770
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 975.1770
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 975.1770
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 975.1770
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 975.1770
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 959.3751
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 955.5351
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 954.7572
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 953.2033
+  Run 7 Best solution update: 6953.2033 (NV=3, TD=953.2033)
+Run 7 finishes | Run Best: NV=3, TD=953.2033 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 8 (100% Full-GPU Solver)---------------------------
+  Run 8 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 8 CPU_PREP: run_id=8, seed=800066 passed to GPU execution graph
+  Run 8 RUN_GPU_BEGIN
+  Run 8 RUN_CPU_END
+  Run 8 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1297.8159
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1101.4492
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 999.8898
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 990.4681
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 988.8636
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 984.8636
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 984.8636
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 981.4881
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 980.0737
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 980.0737
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 978.0744
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 976.1132
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 973.6818
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 973.5916
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 969.3272
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 966.0332
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 966.0332
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 966.0332
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 956.0685
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 956.0685
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 956.0685
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 955.9780
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 955.0287
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 954.3404
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 954.3404
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 954.3404
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 954.3404
+Run 8 finishes | Run Best: NV=3, TD=954.3404 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 9 (100% Full-GPU Solver)---------------------------
+  Run 9 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 9 CPU_PREP: run_id=9, seed=900069 passed to GPU execution graph
+  Run 9 RUN_GPU_BEGIN
+  Run 9 RUN_CPU_END
+  Run 9 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1328.2746
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1103.4796
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1019.4455
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1003.4026
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 996.9795
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 987.5821
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 980.1064
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 972.9569
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 972.9569
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 970.1402
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 969.9028
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 968.9001
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 968.9001
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 968.9001
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 965.2041
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 965.2041
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 965.2041
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 965.2041
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 965.2041
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 965.2041
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 965.2041
+Run 9 finishes | Run Best: NV=3, TD=965.2041 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 10 (100% Full-GPU Solver)---------------------------
+  Run 10 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 10 CPU_PREP: run_id=10, seed=1000072 passed to GPU execution graph
+  Run 10 RUN_GPU_BEGIN
+  Run 10 RUN_CPU_END
+  Run 10 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1379.4231
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1088.4670
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1072.8684
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1029.9728
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1005.3587
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 994.6221
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 991.3070
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 988.7299
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 982.1511
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 982.1511
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 981.5457
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 978.9807
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 976.3812
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 974.2405
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 974.1020
+Run 10 finishes | Run Best: NV=3, TD=974.1020 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 11 (100% Full-GPU Solver)---------------------------
+  Run 11 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 11 CPU_PREP: run_id=11, seed=1100075 passed to GPU execution graph
+  Run 11 RUN_GPU_BEGIN
+  Run 11 RUN_CPU_END
+  Run 11 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1287.4982
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1105.4968
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1078.5206
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1058.9965
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1058.9965
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1037.6667
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1027.7852
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1027.7852
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1016.7365
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1015.8371
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1014.9196
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1014.9196
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1014.9196
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1014.9196
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 1013.2637
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 1011.0080
+Run 11 finishes | Run Best: NV=3, TD=1011.0080 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 12 (100% Full-GPU Solver)---------------------------
+  Run 12 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 12 CPU_PREP: run_id=12, seed=1200078 passed to GPU execution graph
+  Run 12 RUN_GPU_BEGIN
+  Run 12 RUN_CPU_END
+  Run 12 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1391.6153
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1179.2330
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1082.2378
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1033.9891
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1017.4643
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1008.4952
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1008.2679
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1002.3769
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 989.6242
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 978.6371
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 975.7515
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 975.0399
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 975.0399
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 975.0399
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 975.0399
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 973.3608
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 973.3608
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 973.3608
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 973.3608
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 973.3608
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 973.3608
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 973.2632
+Run 12 finishes | Run Best: NV=3, TD=973.2632 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 13 (100% Full-GPU Solver)---------------------------
+  Run 13 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 13 CPU_PREP: run_id=13, seed=1300081 passed to GPU execution graph
+  Run 13 RUN_GPU_BEGIN
+  Run 13 RUN_CPU_END
+  Run 13 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1404.4828
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1108.8414
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1068.2874
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1053.1615
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1044.4088
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1043.0309
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1038.4223
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1033.5739
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1029.9765
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 1029.1877
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 1028.8932
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 1024.6184
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 1023.3911
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 1020.6258
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 1020.6258
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 1020.6258
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 1020.6258
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 1018.2075
+Run 13 finishes | Run Best: NV=3, TD=1018.2075 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 14 (100% Full-GPU Solver)---------------------------
+  Run 14 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 14 CPU_PREP: run_id=14, seed=1400084 passed to GPU execution graph
+  Run 14 RUN_GPU_BEGIN
+  Run 14 RUN_CPU_END
+  Run 14 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1230.6208
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1138.1636
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1072.2690
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1038.6757
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 973.2455
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 969.7536
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 969.7536
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 969.7536
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 969.7536
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 969.7536
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 969.7536
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 967.9604
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 967.9604
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 967.8583
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 967.8583
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 967.8583
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 958.5835
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 958.5835
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 958.5835
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 958.5835
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 958.5835
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 958.5835
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 958.5835
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 958.3275
+Run 14 finishes | Run Best: NV=3, TD=958.3275 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 15 (100% Full-GPU Solver)---------------------------
+  Run 15 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 15 CPU_PREP: run_id=15, seed=1500087 passed to GPU execution graph
+  Run 15 RUN_GPU_BEGIN
+  Run 15 RUN_CPU_END
+  Run 15 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1300.9908
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1111.2083
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1060.5699
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1043.0013
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1017.6773
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1013.1146
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1005.3711
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 999.6895
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 996.3776
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 995.4783
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 989.6276
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 970.0074
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 970.0074
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 970.0074
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 968.8395
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 968.8395
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 968.8395
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 968.8395
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 968.8395
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 968.5451
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 960.8769
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 960.4970
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 959.4663
+Run 15 finishes | Run Best: NV=3, TD=959.4663 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 16 (100% Full-GPU Solver)---------------------------
+  Run 16 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 16 CPU_PREP: run_id=16, seed=1600090 passed to GPU execution graph
+  Run 16 RUN_GPU_BEGIN
+  Run 16 RUN_CPU_END
+  Run 16 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1486.1302
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1112.5113
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1006.1014
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 985.0137
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 972.2981
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 964.9090
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 964.4608
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 962.4513
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 958.3784
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 957.3973
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 957.3973
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 957.3045
+Run 16 finishes | Run Best: NV=3, TD=957.3045 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 17 (100% Full-GPU Solver)---------------------------
+  Run 17 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 17 CPU_PREP: run_id=17, seed=1700093 passed to GPU execution graph
+  Run 17 RUN_GPU_BEGIN
+  Run 17 RUN_CPU_END
+  Run 17 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1345.9333
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1098.4834
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1057.1551
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1046.9636
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1004.0055
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 999.2403
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 997.0847
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 992.1745
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 990.9644
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 987.6871
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 987.2243
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 987.2243
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 987.2243
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 987.2243
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 982.7912
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 981.3321
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 981.3321
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 981.2844
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 979.1373
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 977.5713
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 977.3487
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 977.3487
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 977.3487
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 977.3487
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 977.3487
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 977.3487
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 977.2039
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 976.6318
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 976.6318
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 975.1309
+Run 17 finishes | Run Best: NV=3, TD=975.1309 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 18 (100% Full-GPU Solver)---------------------------
+  Run 18 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 18 CPU_PREP: run_id=18, seed=1800096 passed to GPU execution graph
+  Run 18 RUN_GPU_BEGIN
+  Run 18 RUN_CPU_END
+  Run 18 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1291.8500
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1078.4104
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1061.9700
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1035.8026
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1018.0353
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1013.2009
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1001.2224
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 993.9125
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 990.3711
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 989.6011
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 989.1706
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 987.3627
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 987.3627
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 985.8368
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 983.9197
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 983.9197
+Run 18 finishes | Run Best: NV=3, TD=983.9197 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 19 (100% Full-GPU Solver)---------------------------
+  Run 19 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 19 CPU_PREP: run_id=19, seed=1900099 passed to GPU execution graph
+  Run 19 RUN_GPU_BEGIN
+  Run 19 RUN_CPU_END
+  Run 19 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1442.0955
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1131.6429
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1077.0663
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1059.8355
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1013.2024
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 994.1751
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 984.8092
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 978.6430
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 976.7242
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 975.7796
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 973.9079
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 973.9079
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 973.9079
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 973.9079
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 973.9079
+Run 19 finishes | Run Best: NV=3, TD=973.9079 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 20 (100% Full-GPU Solver)---------------------------
+  Run 20 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 20 CPU_PREP: run_id=20, seed=2000102 passed to GPU execution graph
+  Run 20 RUN_GPU_BEGIN
+  Run 20 RUN_CPU_END
+  Run 20 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1543.4763
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1096.2072
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1080.8918
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1045.2311
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1045.2311
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1041.2361
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1028.6000
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1007.4100
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1007.4100
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 999.2843
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 991.6905
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 990.0836
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 988.1576
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 988.1576
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 988.1576
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 988.1576
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 988.1576
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 985.1890
+Run 20 finishes | Run Best: NV=3, TD=985.1890 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 21 (100% Full-GPU Solver)---------------------------
+  Run 21 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 21 CPU_PREP: run_id=21, seed=2100105 passed to GPU execution graph
+  Run 21 RUN_GPU_BEGIN
+  Run 21 RUN_CPU_END
+  Run 21 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1169.4145
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1019.8362
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1016.8906
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1002.5709
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 999.7505
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 996.7995
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 995.4567
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 995.1147
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 993.1833
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 990.6786
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 990.6786
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 990.6786
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 990.6786
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 990.6786
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 989.0456
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 985.8625
+Run 21 finishes | Run Best: NV=3, TD=985.8625 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 22 (100% Full-GPU Solver)---------------------------
+  Run 22 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 22 CPU_PREP: run_id=22, seed=2200108 passed to GPU execution graph
+  Run 22 RUN_GPU_BEGIN
+  Run 22 RUN_CPU_END
+  Run 22 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1402.7349
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1127.5980
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1091.0566
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1076.1292
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1061.1349
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1029.3609
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1020.4974
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1010.8853
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1000.4039
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1000.4005
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1000.4005
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1000.4005
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1000.4005
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1000.4005
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1000.4005
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 999.5831
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 999.4119
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 999.4119
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 999.4119
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 999.4119
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 999.4119
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 991.1409
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 990.8433
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 979.3205
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 977.0269
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 977.0269
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 977.0269
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 977.0269
+Run 22 finishes | Run Best: NV=3, TD=977.0269 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 23 (100% Full-GPU Solver)---------------------------
+  Run 23 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 23 CPU_PREP: run_id=23, seed=2300111 passed to GPU execution graph
+  Run 23 RUN_GPU_BEGIN
+  Run 23 RUN_CPU_END
+  Run 23 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1280.4909
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1139.6143
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1099.2643
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1067.2258
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1049.5241
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1042.6667
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1039.8464
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1038.8927
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1029.8274
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1027.4471
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1019.0910
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1019.0910
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1017.6918
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1015.0285
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1015.0285
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 1015.0285
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 1015.0285
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 1015.0285
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 1015.0285
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 1014.7167
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 1014.7167
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 1014.7167
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 1014.7167
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 1014.7167
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 1014.7167
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 1014.7167
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 1012.9887
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 1012.9887
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 1012.9887
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 1012.8545
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 1012.2731
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 1012.2731
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 1012.2731
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 1012.2731
+Run 23 finishes | Run Best: NV=3, TD=1012.2731 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 24 (100% Full-GPU Solver)---------------------------
+  Run 24 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 24 CPU_PREP: run_id=24, seed=2400114 passed to GPU execution graph
+  Run 24 RUN_GPU_BEGIN
+  Run 24 RUN_CPU_END
+  Run 24 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1221.5668
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1137.2620
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1065.5971
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1065.5971
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1052.6664
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1052.6664
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1050.3195
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1045.2304
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1020.9709
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1009.4137
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1007.1077
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1000.8900
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 998.2473
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 992.6526
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 990.1912
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 986.0583
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 986.0583
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 986.0583
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 986.0583
+Run 24 finishes | Run Best: NV=3, TD=986.0583 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 25 (100% Full-GPU Solver)---------------------------
+  Run 25 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 25 CPU_PREP: run_id=25, seed=2500117 passed to GPU execution graph
+  Run 25 RUN_GPU_BEGIN
+  Run 25 RUN_CPU_END
+  Run 25 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1313.5831
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1163.2738
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1105.1084
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1073.5854
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1065.3469
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1018.2090
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 984.8998
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 970.6176
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 970.6176
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 962.7346
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 956.2090
+Run 25 finishes | Run Best: NV=3, TD=956.2090 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 26 (100% Full-GPU Solver)---------------------------
+  Run 26 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 26 CPU_PREP: run_id=26, seed=2600120 passed to GPU execution graph
+  Run 26 RUN_GPU_BEGIN
+  Run 26 RUN_CPU_END
+  Run 26 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1331.3700
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1063.0017
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1056.7732
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1042.4786
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1020.8373
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1000.5422
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1000.3048
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 995.4900
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 987.5186
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 982.9118
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 982.9118
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 982.9118
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 981.0502
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 976.7689
+Run 26 finishes | Run Best: NV=3, TD=976.7689 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 27 (100% Full-GPU Solver)---------------------------
+  Run 27 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 27 CPU_PREP: run_id=27, seed=2700123 passed to GPU execution graph
+  Run 27 RUN_GPU_BEGIN
+  Run 27 RUN_CPU_END
+  Run 27 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1259.8979
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1030.8887
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1025.0270
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1008.8152
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1004.9476
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 995.4743
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 981.1670
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 981.1670
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 973.7000
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 972.1121
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 970.4750
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 970.4750
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 969.0907
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 967.9608
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 967.9608
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 967.9608
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 967.9608
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 967.6187
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 965.5160
+Run 27 finishes | Run Best: NV=3, TD=965.5160 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 28 (100% Full-GPU Solver)---------------------------
+  Run 28 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 28 CPU_PREP: run_id=28, seed=2800126 passed to GPU execution graph
+  Run 28 RUN_GPU_BEGIN
+  Run 28 RUN_CPU_END
+  Run 28 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1312.6717
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1104.7309
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1048.8762
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1028.6269
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1023.3584
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1023.3584
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1014.3683
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1003.0114
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 995.2990
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 995.1813
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 995.1813
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 995.1813
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 994.7295
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 994.7295
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 994.7295
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 994.7295
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 994.7295
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 994.4226
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 983.7311
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 971.4554
+Run 28 finishes | Run Best: NV=3, TD=971.4554 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 29 (100% Full-GPU Solver)---------------------------
+  Run 29 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 29 CPU_PREP: run_id=29, seed=2900129 passed to GPU execution graph
+  Run 29 RUN_GPU_BEGIN
+  Run 29 RUN_CPU_END
+  Run 29 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1331.1285
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1077.6947
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1050.7067
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1050.7067
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1050.1322
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1037.1848
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1033.6142
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1028.8866
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1028.2168
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1026.9573
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1026.9573
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1018.7248
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1018.7248
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1018.7248
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1016.9230
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 1016.9230
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 1016.9230
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 1015.6635
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 1012.5870
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 1008.0478
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 1001.6388
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 1001.6388
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 1001.1836
+Run 29 finishes | Run Best: NV=3, TD=1001.1836 | Global Best: NV=3, TD=953.2033
+---------------------------------Run 30 (100% Full-GPU Solver)---------------------------
+  Run 30 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 30 CPU_PREP: run_id=30, seed=3000132 passed to GPU execution graph
+  Run 30 RUN_GPU_BEGIN
+  Run 30 RUN_CPU_END
+  Run 30 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1357.6157
+  [CPU] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 3, Best TD 1088.8674
+  [CPU] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 3, Best TD 1014.4968
+  [CPU] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 3, Best TD 1011.7202
+  [CPU] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 3, Best TD 1011.6926
+  [CPU] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 3, Best TD 1010.8483
+  [CPU] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 3, Best TD 1010.8483
+  [CPU] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 3, Best TD 1010.8483
+  [CPU] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 3, Best TD 1010.8483
+  [CPU] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 3, Best TD 1010.8483
+  [CPU] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 3, Best TD 1010.8483
+  [CPU] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 3, Best TD 1006.0747
+  [CPU] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+  [CPU] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 3, Best TD 994.7250
+Run 30 finishes | Run Best: NV=3, TD=994.7250 | Global Best: NV=3, TD=953.2033
+------------Summary-----------
+Total 30 runs, total consumed 1682 sec
+Details of the solution:
+route 0, node_num 28, cost 251.13077200000004, nodes: 0 95 92 97 42 43 15 39 67 23 72 21 40 53 87 57 41 22 75 56 55 4 74 73 2 13 58 0
+route 1, node_num 44, cost 390.1647489999999, nodes: 0 28 33 81 65 51 1 69 27 89 60 5 16 86 38 14 44 91 85 99 96 6 84 8 48 47 49 19 63 90 32 10 70 7 82 17 61 100 37 98 93 59 94 0
+route 2, node_num 34, cost 311.90775299999996, nodes: 0 52 18 83 45 46 36 64 11 62 88 31 30 50 76 3 79 78 9 20 66 71 35 34 29 68 77 80 24 25 54 12 26 0
+vehicle (route) number: 3
+Vehicle count: 3
+Total distance: 953.2033
+Total cost: 6953.2032739999995

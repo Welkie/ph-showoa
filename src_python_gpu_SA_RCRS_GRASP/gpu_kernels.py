@@ -159,11 +159,8 @@ def build_kernel_bundle(is_cuda: bool = False):
             return False
         if nr_b <= 0:
             return True
-        if nr_a < nr_b:
-            return True
-        if nr_a == nr_b and dist_a < dist_b - 1e-3:
-            return True
-        return False
+        # Scalar objective: Cost = 2000*NV + TD
+        return (2000.0 * nr_a + dist_a) < (2000.0 * nr_b + dist_b) - 1e-3
 
     # -------------------------------------------------------------------------
     # 3. RCRS-GRASP Score & Construction
@@ -584,7 +581,7 @@ def build_kernel_bundle(is_cuda: bool = False):
             temp *= cooling
 
     # -------------------------------------------------------------------------
-    # 6. Deep Local Search (Systematic 2-Opt & Relocate)
+    # 6. Deep Local Search (Systematic 2-Opt, Relocate & Inter-route Swap)
     # -------------------------------------------------------------------------
     @dev_fn
     def deep_local_search_single(nodes, rlen, nr, dist, cost, s,
@@ -770,6 +767,59 @@ def build_kernel_bundle(is_cuda: bool = False):
                     if found_reloc:
                         break
                 if found_reloc:
+                    break
+
+            # 5. Inter-route Swap (exchange one customer between two routes)
+            for r1 in range(num_r - 1):
+                len1 = rlen[s, r1]
+                if len1 < 3:
+                    continue
+                found_swap = False
+                for r2 in range(r1 + 1, num_r):
+                    len2 = rlen[s, r2]
+                    if len2 < 3:
+                        continue
+                    for i in range(1, len1 - 1):
+                        u = nodes[s, r1, i]
+                        prev_u = nodes[s, r1, i - 1]
+                        next_u = nodes[s, r1, i + 1]
+                        for j in range(1, len2 - 1):
+                            v = nodes[s, r2, j]
+                            prev_v = nodes[s, r2, j - 1]
+                            next_v = nodes[s, r2, j + 1]
+                            delta_d = (dist_matrix[prev_u, v] + dist_matrix[v, next_u] +
+                                       dist_matrix[prev_v, u] + dist_matrix[u, next_v] -
+                                       dist_matrix[prev_u, u] - dist_matrix[u, next_u] -
+                                       dist_matrix[prev_v, v] - dist_matrix[v, next_v])
+                            if delta_d < -1e-3:
+                                for k in range(len1):
+                                    scratch_route[s, k] = nodes[s, r1, k]
+                                scratch_route[s, i] = v
+                                ok1, d1 = eval_route(scratch_route[s, :len1], len1, prob_data)
+                                if ok1:
+                                    for k in range(len2):
+                                        scratch_route2[s, k] = nodes[s, r2, k]
+                                    scratch_route2[s, j] = u
+                                    ok2, d2 = eval_route(scratch_route2[s, :len2], len2, prob_data)
+                                    if ok2:
+                                        _, old_d1 = eval_route(nodes[s, r1, :len1], len1, prob_data)
+                                        _, old_d2 = eval_route(nodes[s, r2, :len2], len2, prob_data)
+                                        if (d1 + d2) < (old_d1 + old_d2) - 1e-3:
+                                            for k in range(len1):
+                                                nodes[s, r1, k] = scratch_route[s, k]
+                                            for k in range(len2):
+                                                nodes[s, r2, k] = scratch_route2[s, k]
+                                            change = (d1 + d2) - (old_d1 + old_d2)
+                                            dist[s] += change
+                                            cost[s] += change * prob_data[4]
+                                            improved = True
+                                            found_swap = True
+                                            break
+                        if found_swap:
+                            break
+                    if found_swap:
+                        break
+                if found_swap:
                     break
 
             if not improved:
@@ -985,17 +1035,17 @@ def build_kernel_bundle(is_cuda: bool = False):
         new_dist = cand_dist[s]
         old_dist = cur_dist[s]
 
-        if new_nr < old_nr:
+        # Scalar Cost acceptance: P = exp(-dCost / (1e-6 + T*|Cost|))
+        old_c = 2000.0 * old_nr + old_dist
+        new_c = 2000.0 * new_nr + new_dist
+        delta = new_c - old_c
+        if delta <= 1e-3:
             accepted = True
-        elif new_nr == old_nr:
-            delta = new_dist - old_dist
-            if delta <= 1e-3:
+        else:
+            temp = 1.0 - float(iteration) / float(max_iter) if max_iter > 0 else 0.0
+            prob = math.exp(-delta / (1e-6 + temp * abs(old_c)))
+            if rand_u01(rng_states, s) < prob:
                 accepted = True
-            else:
-                temp = 1.0 - float(iteration) / float(max_iter) if max_iter > 0 else 0.0
-                prob = math.exp(-delta / (1e-6 + temp * abs(old_dist)))
-                if rand_u01(rng_states, s) < prob:
-                    accepted = True
 
         if accepted:
             copy_solution(cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost, s,
@@ -1010,99 +1060,106 @@ def build_kernel_bundle(is_cuda: bool = False):
     # 8. Diversification & Island Ring Migration
     # -------------------------------------------------------------------------
     @dev_fn
-    def diversify_island_single(nodes, rlen, nr, dist, cost,
-                                island_id, island_size,
-                                scratch_route, scratch_unrouted, scratch_flags,
-                                prob_data, rng_states):
-        island_start = island_id * island_size
-        diversify_count = max(1, int(island_size * 0.40))
-        # Diversify the worst individuals in this island
-        for idx in range(diversify_count):
-            s = island_start + island_size - 1 - idx
-            # Ruin 20-40% customers
-            customer_num = int(prob_data[14])
-            depot = int(prob_data[0])
-            for i in range(customer_num + 1):
-                scratch_flags[s, i] = 0
+    def mark_random_individuals(scratch_flags, P, rng_states):
+        # Marks floor(0.40*P) (>=1) distinct random individuals with scratch_flags[s, 0] = 1
+        for s in range(P):
+            scratch_flags[s, 0] = 0
+        cnt = max(1, int(P * 0.40))
+        for _ in range(cnt):
+            j = randint(rng_states, 0, 0, P - 1)
+            while scratch_flags[j, 0] == 1:
+                j = randint(rng_states, 0, 0, P - 1)
+            scratch_flags[j, 0] = 1
 
-            # Pick random customers to remove
-            ruin_cnt = randint(rng_states, s, int(customer_num * 0.20), int(customer_num * 0.40))
-            for i in range(customer_num):
-                scratch_unrouted[s, i] = i + 1
-            shuffle_ints(scratch_unrouted[s], customer_num, rng_states, s)
-            for i in range(ruin_cnt):
-                c = scratch_unrouted[s, i]
-                scratch_flags[s, c] = 1
+    @dev_fn
+    def diversify_individual(nodes, rlen, nr, dist, cost, s,
+                             scratch_route, scratch_unrouted, scratch_flags,
+                             prob_data, rng_states):
+        # Ruin 20-40% of customers of individual s, then recreate by cheapest insertion
+        # Ruin 20-40% customers
+        customer_num = int(prob_data[14])
+        depot = int(prob_data[0])
+        for i in range(customer_num + 1):
+            scratch_flags[s, i] = 0
 
-            # Remove flagged customers from routes
+        # Pick random customers to remove
+        ruin_cnt = randint(rng_states, s, int(customer_num * 0.20), int(customer_num * 0.40))
+        for i in range(customer_num):
+            scratch_unrouted[s, i] = i + 1
+        shuffle_ints(scratch_unrouted[s], customer_num, rng_states, s)
+        for i in range(ruin_cnt):
+            c = scratch_unrouted[s, i]
+            scratch_flags[s, c] = 1
+
+        # Remove flagged customers from routes
+        for r in range(nr[s]):
+            l = rlen[s, r]
+            write_p = 1
+            for p in range(1, l - 1):
+                node = nodes[s, r, p]
+                if scratch_flags[s, node] == 0:
+                    nodes[s, r, write_p] = node
+                    write_p += 1
+            nodes[s, r, write_p] = depot
+            rlen[s, r] = write_p + 1
+
+        # Recreate: insert removed customers back with min delta
+        for i in range(ruin_cnt):
+            c = scratch_unrouted[s, i]
+            best_delta = 1e12
+            best_r = -1
+            best_p = -1
             for r in range(nr[s]):
                 l = rlen[s, r]
-                write_p = 1
-                for p in range(1, l - 1):
-                    node = nodes[s, r, p]
-                    if scratch_flags[s, node] == 0:
-                        nodes[s, r, write_p] = node
-                        write_p += 1
-                nodes[s, r, write_p] = depot
-                rlen[s, r] = write_p + 1
+                if l <= 2:
+                    continue
+                ok_o, old_d = eval_route(nodes[s, r, :l], l, prob_data)
+                for p in range(1, l):
+                    for k in range(p):
+                        scratch_route[s, k] = nodes[s, r, k]
+                    scratch_route[s, p] = c
+                    for k in range(p, l):
+                        scratch_route[s, k + 1] = nodes[s, r, k]
+                    ok_n, new_d = eval_route(scratch_route[s, :l+1], l + 1, prob_data)
+                    if ok_n:
+                        delta = new_d - old_d
+                        if delta < best_delta:
+                            best_delta = delta
+                            best_r = r
+                            best_p = p
 
-            # Recreate: insert removed customers back with min delta
-            for i in range(ruin_cnt):
-                c = scratch_unrouted[s, i]
-                best_delta = 1e12
-                best_r = -1
-                best_p = -1
-                for r in range(nr[s]):
-                    l = rlen[s, r]
-                    if l <= 2:
-                        continue
-                    ok_o, old_d = eval_route(nodes[s, r, :l], l, prob_data)
-                    for p in range(1, l):
-                        for k in range(p):
-                            scratch_route[s, k] = nodes[s, r, k]
-                        scratch_route[s, p] = c
-                        for k in range(p, l):
-                            scratch_route[s, k + 1] = nodes[s, r, k]
-                        ok_n, new_d = eval_route(scratch_route[s, :l+1], l + 1, prob_data)
-                        if ok_n:
-                            delta = new_d - old_d
-                            if delta < best_delta:
-                                best_delta = delta
-                                best_r = r
-                                best_p = p
-
-                if best_r != -1:
-                    l = rlen[s, best_r]
-                    for k in range(l, best_p, -1):
-                        nodes[s, best_r, k] = nodes[s, best_r, k - 1]
-                    nodes[s, best_r, best_p] = c
-                    rlen[s, best_r] = l + 1
-                else:
-                    new_r = nr[s]
-                    nodes[s, new_r, 0] = depot
-                    nodes[s, new_r, 1] = c
-                    nodes[s, new_r, 2] = depot
-                    rlen[s, new_r] = 3
-                    nr[s] = new_r + 1
-
-            # Compact away routes emptied by the ruin step, then refresh the cached nr/dist/cost
-            write_r = 0
-            for r in range(nr[s]):
-                l = rlen[s, r]
-                if l > 2:
-                    if write_r != r:
-                        for k in range(l):
-                            nodes[s, write_r, k] = nodes[s, r, k]
-                        rlen[s, write_r] = l
-                    write_r += 1
-            nr[s] = write_r
-            ok, n_act, t_dist, t_cost = eval_solution(nodes, rlen, nr, s, prob_data)
-            if ok:
-                dist[s] = t_dist
-                cost[s] = t_cost
+            if best_r != -1:
+                l = rlen[s, best_r]
+                for k in range(l, best_p, -1):
+                    nodes[s, best_r, k] = nodes[s, best_r, k - 1]
+                nodes[s, best_r, best_p] = c
+                rlen[s, best_r] = l + 1
             else:
-                dist[s] = 1e12
-                cost[s] = 1e12
+                new_r = nr[s]
+                nodes[s, new_r, 0] = depot
+                nodes[s, new_r, 1] = c
+                nodes[s, new_r, 2] = depot
+                rlen[s, new_r] = 3
+                nr[s] = new_r + 1
+
+        # Compact away routes emptied by the ruin step, then refresh the cached nr/dist/cost
+        write_r = 0
+        for r in range(nr[s]):
+            l = rlen[s, r]
+            if l > 2:
+                if write_r != r:
+                    for k in range(l):
+                        nodes[s, write_r, k] = nodes[s, r, k]
+                    rlen[s, write_r] = l
+                write_r += 1
+        nr[s] = write_r
+        ok, n_act, t_dist, t_cost = eval_solution(nodes, rlen, nr, s, prob_data)
+        if ok:
+            dist[s] = t_dist
+            cost[s] = t_cost
+        else:
+            dist[s] = 1e12
+            cost[s] = 1e12
 
     # -------------------------------------------------------------------------
     # 9. Top-Level Kernels
@@ -1211,29 +1268,39 @@ def build_kernel_bundle(is_cuda: bool = False):
 
         @k_fn
         def island_stagnation_update_kernel(ibest_nr, ibest_dist, stag_state, num_islands):
-            # stag_state[isl] = (best_nr, best_dist, generations without improvement)
-            isl = cuda.grid(1)
-            if isl < num_islands and ibest_nr[isl] > 0:
-                if stag_state[isl, 0] <= 0.0 or is_better_lex(ibest_nr[isl], ibest_dist[isl],
-                                                              int(stag_state[isl, 0]), stag_state[isl, 1]):
-                    stag_state[isl, 0] = float(ibest_nr[isl])
-                    stag_state[isl, 1] = ibest_dist[isl]
-                    stag_state[isl, 2] = 0.0
-                else:
-                    stag_state[isl, 2] += 1.0
+            # Single global stagnation counter on the best of the whole population
+            # stag_state[0] = (best_nr, best_dist, generations without improvement)
+            if cuda.grid(1) == 0:
+                best_i = -1
+                for isl in range(num_islands):
+                    if ibest_nr[isl] > 0:
+                        if best_i < 0 or is_better_lex(ibest_nr[isl], ibest_dist[isl],
+                                                       ibest_nr[best_i], ibest_dist[best_i]):
+                            best_i = isl
+                if best_i >= 0:
+                    if stag_state[0, 0] <= 0.0 or is_better_lex(ibest_nr[best_i], ibest_dist[best_i],
+                                                                int(stag_state[0, 0]), stag_state[0, 1]):
+                        stag_state[0, 0] = float(ibest_nr[best_i])
+                        stag_state[0, 1] = ibest_dist[best_i]
+                        stag_state[0, 2] = 0.0
+                    else:
+                        stag_state[0, 2] += 1.0
 
         @k_fn
         def stagnation_diversify_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states, num_islands, island_size,
                                         stag_state, stag_interval):
-            isl = cuda.grid(1)
-            if isl < num_islands and stag_state[isl, 2] >= stag_interval:
-                diversify_island_single(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                                        isl, island_size,
-                                        scratch_route, scratch_unrouted, scratch_flags,
-                                        prob_data, rng_states)
-                stag_state[isl, 2] = 0.0
+            # If the whole population stagnates, ruin & recreate 40% random individuals
+            if cuda.grid(1) == 0 and stag_state[0, 2] >= stag_interval:
+                P = pop_nodes.shape[0]
+                mark_random_individuals(scratch_flags, P, rng_states)
+                for s in range(P):
+                    if scratch_flags[s, 0] == 1:
+                        diversify_individual(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, s,
+                                             scratch_route, scratch_unrouted, scratch_flags,
+                                             prob_data, rng_states)
+                stag_state[0, 2] = 0.0
 
         @k_fn
         def init_device_rng_kernel(rng_states, seed):
@@ -1356,28 +1423,38 @@ def build_kernel_bundle(is_cuda: bool = False):
 
         @k_fn
         def island_stagnation_update_kernel(ibest_nr, ibest_dist, stag_state, num_islands):
+            # Single global stagnation counter on the best of the whole population
+            # stag_state[0] = (best_nr, best_dist, generations without improvement)
+            best_i = -1
             for isl in range(num_islands):
                 if ibest_nr[isl] > 0:
-                    if stag_state[isl, 0] <= 0.0 or is_better_lex(ibest_nr[isl], ibest_dist[isl],
-                                                                  int(stag_state[isl, 0]), stag_state[isl, 1]):
-                        stag_state[isl, 0] = float(ibest_nr[isl])
-                        stag_state[isl, 1] = ibest_dist[isl]
-                        stag_state[isl, 2] = 0.0
-                    else:
-                        stag_state[isl, 2] += 1.0
+                    if best_i < 0 or is_better_lex(ibest_nr[isl], ibest_dist[isl],
+                                                   ibest_nr[best_i], ibest_dist[best_i]):
+                        best_i = isl
+            if best_i >= 0:
+                if stag_state[0, 0] <= 0.0 or is_better_lex(ibest_nr[best_i], ibest_dist[best_i],
+                                                            int(stag_state[0, 0]), stag_state[0, 1]):
+                    stag_state[0, 0] = float(ibest_nr[best_i])
+                    stag_state[0, 1] = ibest_dist[best_i]
+                    stag_state[0, 2] = 0.0
+                else:
+                    stag_state[0, 2] += 1.0
 
         @k_fn
         def stagnation_diversify_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                                         scratch_route, scratch_unrouted, scratch_flags,
                                         prob_data, rng_states, num_islands, island_size,
                                         stag_state, stag_interval):
-            for isl in range(num_islands):
-                if stag_state[isl, 2] >= stag_interval:
-                    diversify_island_single(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                                            isl, island_size,
-                                            scratch_route, scratch_unrouted, scratch_flags,
-                                            prob_data, rng_states)
-                    stag_state[isl, 2] = 0.0
+            # If the whole population stagnates, ruin & recreate 40% random individuals
+            if stag_state[0, 2] >= stag_interval:
+                P = pop_nodes.shape[0]
+                mark_random_individuals(scratch_flags, P, rng_states)
+                for s in range(P):
+                    if scratch_flags[s, 0] == 1:
+                        diversify_individual(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, s,
+                                             scratch_route, scratch_unrouted, scratch_flags,
+                                             prob_data, rng_states)
+                stag_state[0, 2] = 0.0
 
         @k_fn
         def init_device_rng_kernel(rng_states, seed):

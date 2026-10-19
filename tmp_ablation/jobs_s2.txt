@@ -1,0 +1,15 @@
+src_sa_init2 SAI cdp101 it1000 --pop_size 30 --num_islands 6 --max_iter 1000
+src_sa_init2 SAI cdp101 it200 --pop_size 30 --num_islands 6 --max_iter 200
+src_sa_init2 SAI cdp101 it100 --pop_size 30 --num_islands 6 --max_iter 100
+src_python_gpu_SA_RCRS_GRASP CUR cdp101 it200 --pop_size 30 --num_islands 6 --max_iter 200
+src_python_gpu_SA_RCRS_GRASP CUR cdp101 it100 --pop_size 30 --num_islands 6 --max_iter 100
+src_sa_init2 SAI rcdp104 it1000 --pop_size 30 --num_islands 6 --max_iter 1000
+src_sa_init2 SAI rcdp104 it200 --pop_size 30 --num_islands 6 --max_iter 200
+src_sa_init2 SAI rcdp104 it100 --pop_size 30 --num_islands 6 --max_iter 100
+src_python_gpu_SA_RCRS_GRASP CUR rcdp104 it200 --pop_size 30 --num_islands 6 --max_iter 200
+src_python_gpu_SA_RCRS_GRASP CUR rcdp104 it100 --pop_size 30 --num_islands 6 --max_iter 100
+src_sa_init2 SAI rdp210 it1000 --pop_size 30 --num_islands 6 --max_iter 1000
+src_sa_init2 SAI rdp210 it200 --pop_size 30 --num_islands 6 --max_iter 200
+src_sa_init2 SAI rdp210 it100 --pop_size 30 --num_islands 6 --max_iter 100
+src_python_gpu_SA_RCRS_GRASP CUR rdp210 it200 --pop_size 30 --num_islands 6 --max_iter 200
+src_python_gpu_SA_RCRS_GRASP CUR rdp210 it100 --pop_size 30 --num_islands 6 --max_iter 100

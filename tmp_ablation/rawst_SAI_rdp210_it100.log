@@ -1,0 +1,429 @@
+TYPE : VRPSDPTW
+DIMENSION : 101
+VEHICLES : 25
+DISPATCHINGCOST : 2000
+UNITCOST : 1.0
+CAPACITY : 1000.0
+EDGE_WEIGHT_TYPE : EXPLICIT
+Avg pick-up/dilvery demand: 14.2100,14.5800
+Starting/end time of DC: 0.0000,1000.0000
+
+Initial random seed: 42
+Pruning: off
+Time limit: -1 seconds
+Runs: 30
+g_1: 500
+Max PH-SHOWOA iterations: 100
+Population size: 30
+Parallel workers: 1
+Periodic local-search interval: 25
+Diversification stagnation interval: 50
+Diversification ratio: 0.40
+SHO mutation probability: 0.35
+Hybrid mode: ph_showoa
+Compute backend: cpu
+Insertion for initialization: sa_rcrs_grasp
+k_init: 100
+Insertion for crossover: rcrs
+k_crossover: 100
+Parent selection: circle
+Replacement strategy: one_on_one
+Local search probability: 1.00
+O(1) evaluation: off
+2-opt: off
+2-opt*: off
+or-opt: off
+2-exchange: off
+escape local optima number: 1
+random_removal: off
+related_removal: off
+Destroy lower ration: 0.200000
+Destroy upper ration: 0.400000
+regret_insertion: off
+greedy_insertion: off
+Random removal and insertion: off
+Objective mode: lexicographic
+Architecture: python_cuda
+Paper flags: enabled (2opt, 2opt*, oropt_single, 2exchange, related_removal, regret_insertion, lexicographic)
+--------------------------------------------
+Do Pruning
+Total edges 9900, prune by time window 1535(15.5051%),prune by capacity 0(0.0000%)
+Compute backend requested: cpu
+Compute backend selected: cpu
+================================================================================
+[PH-SHOWOA] Full-GPU Solver Engine (SA-RCRS-GRASP) Initializing...
+CPU_PREP: Allocating GPU device buffers, uploading dataset & config, building execution graph
+  Population Size P=30, Islands=6, Max Iterations=100, Backend=Numba CPU Reference
+================================================================================
+---------------------------------Run 1 (100% Full-GPU Solver)---------------------------
+  Run 1 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 1 CPU_PREP: run_id=1, seed=100045 passed to GPU execution graph
+  Run 1 RUN_GPU_BEGIN
+  Run 1 RUN_CPU_END
+  Run 1 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1544.9367
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1163.8666
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1083.5747
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1040.6706
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 997.2533
+  Run 1 Best solution update: 6997.2533 (NV=3, TD=997.2533)
+Run 1 finishes | Run Best: NV=3, TD=997.2533 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 2 (100% Full-GPU Solver)---------------------------
+  Run 2 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 2 CPU_PREP: run_id=2, seed=200048 passed to GPU execution graph
+  Run 2 RUN_GPU_BEGIN
+  Run 2 RUN_CPU_END
+  Run 2 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1563.9263
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1124.4686
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1096.5235
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1064.3940
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1045.7201
+Run 2 finishes | Run Best: NV=3, TD=1045.7201 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 3 (100% Full-GPU Solver)---------------------------
+  Run 3 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 3 CPU_PREP: run_id=3, seed=300051 passed to GPU execution graph
+  Run 3 RUN_GPU_BEGIN
+  Run 3 RUN_CPU_END
+  Run 3 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1404.8269
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1170.5452
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1048.2754
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1017.3853
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1013.8680
+Run 3 finishes | Run Best: NV=3, TD=1013.8680 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 4 (100% Full-GPU Solver)---------------------------
+  Run 4 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 4 CPU_PREP: run_id=4, seed=400054 passed to GPU execution graph
+  Run 4 RUN_GPU_BEGIN
+  Run 4 RUN_CPU_END
+  Run 4 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1559.9463
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1228.4170
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1134.4494
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1029.0781
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1016.3289
+Run 4 finishes | Run Best: NV=3, TD=1016.3289 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 5 (100% Full-GPU Solver)---------------------------
+  Run 5 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 5 CPU_PREP: run_id=5, seed=500057 passed to GPU execution graph
+  Run 5 RUN_GPU_BEGIN
+  Run 5 RUN_CPU_END
+  Run 5 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1401.4094
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1085.3142
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1077.8845
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1058.5126
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1033.8561
+Run 5 finishes | Run Best: NV=3, TD=1033.8561 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 6 (100% Full-GPU Solver)---------------------------
+  Run 6 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 6 CPU_PREP: run_id=6, seed=600060 passed to GPU execution graph
+  Run 6 RUN_GPU_BEGIN
+  Run 6 RUN_CPU_END
+  Run 6 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1543.3712
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1120.8128
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1065.6892
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1052.2569
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1022.2491
+Run 6 finishes | Run Best: NV=3, TD=1022.2491 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 7 (100% Full-GPU Solver)---------------------------
+  Run 7 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 7 CPU_PREP: run_id=7, seed=700063 passed to GPU execution graph
+  Run 7 RUN_GPU_BEGIN
+  Run 7 RUN_CPU_END
+  Run 7 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1554.8767
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1170.1270
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1084.2695
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1066.0354
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1041.6915
+Run 7 finishes | Run Best: NV=3, TD=1041.6915 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 8 (100% Full-GPU Solver)---------------------------
+  Run 8 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 8 CPU_PREP: run_id=8, seed=800066 passed to GPU execution graph
+  Run 8 RUN_GPU_BEGIN
+  Run 8 RUN_CPU_END
+  Run 8 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1431.4721
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1207.5983
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1156.4186
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1102.9429
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1075.5507
+Run 8 finishes | Run Best: NV=3, TD=1075.5507 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 9 (100% Full-GPU Solver)---------------------------
+  Run 9 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 9 CPU_PREP: run_id=9, seed=900069 passed to GPU execution graph
+  Run 9 RUN_GPU_BEGIN
+  Run 9 RUN_CPU_END
+  Run 9 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1470.7853
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1144.5304
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1092.9673
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1032.7665
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1027.6438
+Run 9 finishes | Run Best: NV=3, TD=1027.6438 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 10 (100% Full-GPU Solver)---------------------------
+  Run 10 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 10 CPU_PREP: run_id=10, seed=1000072 passed to GPU execution graph
+  Run 10 RUN_GPU_BEGIN
+  Run 10 RUN_CPU_END
+  Run 10 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1592.3042
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1133.2279
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1050.1075
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1025.2676
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1020.9020
+Run 10 finishes | Run Best: NV=3, TD=1020.9020 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 11 (100% Full-GPU Solver)---------------------------
+  Run 11 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 11 CPU_PREP: run_id=11, seed=1100075 passed to GPU execution graph
+  Run 11 RUN_GPU_BEGIN
+  Run 11 RUN_CPU_END
+  Run 11 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1526.2246
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1133.9803
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1076.7483
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1069.7014
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1056.0379
+Run 11 finishes | Run Best: NV=3, TD=1056.0379 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 12 (100% Full-GPU Solver)---------------------------
+  Run 12 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 12 CPU_PREP: run_id=12, seed=1200078 passed to GPU execution graph
+  Run 12 RUN_GPU_BEGIN
+  Run 12 RUN_CPU_END
+  Run 12 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1553.5380
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1282.1553
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1146.5869
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1107.5467
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1074.4778
+Run 12 finishes | Run Best: NV=3, TD=1074.4778 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 13 (100% Full-GPU Solver)---------------------------
+  Run 13 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 13 CPU_PREP: run_id=13, seed=1300081 passed to GPU execution graph
+  Run 13 RUN_GPU_BEGIN
+  Run 13 RUN_CPU_END
+  Run 13 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1486.5675
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1132.2770
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1096.3116
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1050.1366
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1042.1515
+Run 13 finishes | Run Best: NV=3, TD=1042.1515 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 14 (100% Full-GPU Solver)---------------------------
+  Run 14 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 14 CPU_PREP: run_id=14, seed=1400084 passed to GPU execution graph
+  Run 14 RUN_GPU_BEGIN
+  Run 14 RUN_CPU_END
+  Run 14 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1520.7107
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1268.5513
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1137.7135
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1079.8280
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1054.8209
+Run 14 finishes | Run Best: NV=3, TD=1054.8209 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 15 (100% Full-GPU Solver)---------------------------
+  Run 15 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 15 CPU_PREP: run_id=15, seed=1500087 passed to GPU execution graph
+  Run 15 RUN_GPU_BEGIN
+  Run 15 RUN_CPU_END
+  Run 15 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1465.2489
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1263.9610
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1127.3767
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1085.7169
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1078.1366
+Run 15 finishes | Run Best: NV=3, TD=1078.1366 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 16 (100% Full-GPU Solver)---------------------------
+  Run 16 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 16 CPU_PREP: run_id=16, seed=1600090 passed to GPU execution graph
+  Run 16 RUN_GPU_BEGIN
+  Run 16 RUN_CPU_END
+  Run 16 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1454.1803
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1175.7945
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1092.9826
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1073.4722
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1046.6539
+Run 16 finishes | Run Best: NV=3, TD=1046.6539 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 17 (100% Full-GPU Solver)---------------------------
+  Run 17 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 17 CPU_PREP: run_id=17, seed=1700093 passed to GPU execution graph
+  Run 17 RUN_GPU_BEGIN
+  Run 17 RUN_CPU_END
+  Run 17 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1577.0795
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1187.9931
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1109.2945
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1062.3522
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1024.2165
+Run 17 finishes | Run Best: NV=3, TD=1024.2165 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 18 (100% Full-GPU Solver)---------------------------
+  Run 18 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 18 CPU_PREP: run_id=18, seed=1800096 passed to GPU execution graph
+  Run 18 RUN_GPU_BEGIN
+  Run 18 RUN_CPU_END
+  Run 18 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1480.3631
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1140.9715
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1071.8541
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1059.4409
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1052.8750
+Run 18 finishes | Run Best: NV=3, TD=1052.8750 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 19 (100% Full-GPU Solver)---------------------------
+  Run 19 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 19 CPU_PREP: run_id=19, seed=1900099 passed to GPU execution graph
+  Run 19 RUN_GPU_BEGIN
+  Run 19 RUN_CPU_END
+  Run 19 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1422.9825
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1185.0184
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1108.0892
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1094.1707
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1079.6118
+Run 19 finishes | Run Best: NV=3, TD=1079.6118 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 20 (100% Full-GPU Solver)---------------------------
+  Run 20 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 20 CPU_PREP: run_id=20, seed=2000102 passed to GPU execution graph
+  Run 20 RUN_GPU_BEGIN
+  Run 20 RUN_CPU_END
+  Run 20 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1468.0382
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1197.6783
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1164.4007
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1130.3540
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1052.9731
+Run 20 finishes | Run Best: NV=3, TD=1052.9731 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 21 (100% Full-GPU Solver)---------------------------
+  Run 21 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 21 CPU_PREP: run_id=21, seed=2100105 passed to GPU execution graph
+  Run 21 RUN_GPU_BEGIN
+  Run 21 RUN_CPU_END
+  Run 21 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1487.8916
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1096.3591
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1043.7201
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1016.8077
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1008.5210
+Run 21 finishes | Run Best: NV=3, TD=1008.5210 | Global Best: NV=3, TD=997.2533
+---------------------------------Run 22 (100% Full-GPU Solver)---------------------------
+  Run 22 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 22 CPU_PREP: run_id=22, seed=2200108 passed to GPU execution graph
+  Run 22 RUN_GPU_BEGIN
+  Run 22 RUN_CPU_END
+  Run 22 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1634.3297
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1104.8303
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1025.3274
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 994.0381
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 989.9242
+  Run 22 Best solution update: 6989.9242 (NV=3, TD=989.9242)
+Run 22 finishes | Run Best: NV=3, TD=989.9242 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 23 (100% Full-GPU Solver)---------------------------
+  Run 23 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 23 CPU_PREP: run_id=23, seed=2300111 passed to GPU execution graph
+  Run 23 RUN_GPU_BEGIN
+  Run 23 RUN_CPU_END
+  Run 23 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1545.3599
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1172.2259
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1073.6302
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1059.6928
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1037.5898
+Run 23 finishes | Run Best: NV=3, TD=1037.5898 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 24 (100% Full-GPU Solver)---------------------------
+  Run 24 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 24 CPU_PREP: run_id=24, seed=2400114 passed to GPU execution graph
+  Run 24 RUN_GPU_BEGIN
+  Run 24 RUN_CPU_END
+  Run 24 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1611.1852
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 4, Best TD 1141.1806
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1106.8356
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1060.2918
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1055.9845
+Run 24 finishes | Run Best: NV=3, TD=1055.9845 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 25 (100% Full-GPU Solver)---------------------------
+  Run 25 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 25 CPU_PREP: run_id=25, seed=2500117 passed to GPU execution graph
+  Run 25 RUN_GPU_BEGIN
+  Run 25 RUN_CPU_END
+  Run 25 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1486.2553
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1120.2832
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1040.0434
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1032.9718
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1027.8944
+Run 25 finishes | Run Best: NV=3, TD=1027.8944 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 26 (100% Full-GPU Solver)---------------------------
+  Run 26 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 26 CPU_PREP: run_id=26, seed=2600120 passed to GPU execution graph
+  Run 26 RUN_GPU_BEGIN
+  Run 26 RUN_CPU_END
+  Run 26 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1531.7553
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1155.3105
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1090.1098
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1062.1928
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1046.1409
+Run 26 finishes | Run Best: NV=3, TD=1046.1409 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 27 (100% Full-GPU Solver)---------------------------
+  Run 27 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 27 CPU_PREP: run_id=27, seed=2700123 passed to GPU execution graph
+  Run 27 RUN_GPU_BEGIN
+  Run 27 RUN_CPU_END
+  Run 27 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1558.9045
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1050.6110
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1032.2833
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1023.2500
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1012.4071
+Run 27 finishes | Run Best: NV=3, TD=1012.4071 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 28 (100% Full-GPU Solver)---------------------------
+  Run 28 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 28 CPU_PREP: run_id=28, seed=2800126 passed to GPU execution graph
+  Run 28 RUN_GPU_BEGIN
+  Run 28 RUN_CPU_END
+  Run 28 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1338.6261
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1193.6439
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1130.4217
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1057.2391
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1006.5150
+Run 28 finishes | Run Best: NV=3, TD=1006.5150 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 29 (100% Full-GPU Solver)---------------------------
+  Run 29 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 29 CPU_PREP: run_id=29, seed=2900129 passed to GPU execution graph
+  Run 29 RUN_GPU_BEGIN
+  Run 29 RUN_CPU_END
+  Run 29 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 3, Best TD 1667.4394
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1236.1039
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1107.2406
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1041.7789
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1028.1290
+Run 29 finishes | Run Best: NV=3, TD=1028.1290 | Global Best: NV=3, TD=989.9242
+---------------------------------Run 30 (100% Full-GPU Solver)---------------------------
+  Run 30 [CPU_TELEMETRY] Running pure Numba CPU Reference mode (P=30, islands=6)
+  Run 30 CPU_PREP: run_id=30, seed=3000132 passed to GPU execution graph
+  Run 30 RUN_GPU_BEGIN
+  Run 30 RUN_CPU_END
+  Run 30 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [CPU] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 4, Best TD 1561.8330
+  [CPU] Gen: 25. a 1.5200, p_hybrid 0.3800. Best NV 3, Best TD 1132.9919
+  [CPU] Gen: 50. a 1.0200, p_hybrid 0.2550. Best NV 3, Best TD 1043.1421
+  [CPU] Gen: 75. a 0.5200, p_hybrid 0.1500. Best NV 3, Best TD 1033.3336
+  [CPU] Gen: 100. a 0.0200, p_hybrid 0.1500. Best NV 3, Best TD 1027.7312
+Run 30 finishes | Run Best: NV=3, TD=1027.7312 | Global Best: NV=3, TD=989.9242
+------------Summary-----------
+Total 30 runs, total consumed 90 sec
+Details of the solution:
+route 0, node_num 34, cost 283.627779, nodes: 0 95 92 98 14 42 15 2 73 72 39 67 23 75 22 41 57 87 94 6 53 40 21 74 56 4 55 25 54 24 80 26 58 0
+route 1, node_num 33, cost 321.37602400000003, nodes: 0 28 12 29 33 71 65 30 62 88 31 69 1 50 76 3 79 78 81 9 51 32 90 63 10 70 20 66 35 34 68 77 0
+route 2, node_num 39, cost 384.92039400000004, nodes: 0 27 52 7 82 36 64 11 19 48 45 86 38 44 16 61 85 99 5 84 83 18 8 47 49 46 17 93 96 13 97 43 91 100 37 59 60 89 0
+vehicle (route) number: 3
+Vehicle count: 3
+Total distance: 989.9242
+Total cost: 6989.924197

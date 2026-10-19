@@ -412,7 +412,7 @@ class GpuEngine:
                         self.num_islands
                     )
                     k["record_log"][1, 1](run_log, gbest_nr, gbest_dist, gen)
-                    # Per-island stagnation: only islands with no ibest improvement for stag_interval gens are ruined
+                    # Global stagnation: if the best of the whole population stalls for stag_interval gens, ruin 40% random individuals
                     k["island_stagnation_update"][self.isl_blocks, self.threads_per_block](
                         ibest_nr, ibest_dist, stag_state, self.num_islands
                     )
