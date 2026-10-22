@@ -1,0 +1,142 @@
+[2026-10-19 15:46:10] Start: 5 workers, runs=2, max_iter=20, pop_size=30, commit=f33b63f, smoke=True
+[2026-10-19 15:46:15] [PUSH] a1 <- RCdp1001 (job d1878bbd58df)
+[2026-10-19 15:46:20] [PUSH] b1 <- RCdp1001 (job f7090f5c9a6a)
+[2026-10-19 15:46:24] [PUSH] c1 <- RCdp1001 (job 40e7c5177171)
+[2026-10-19 15:46:29] [PUSH] d1 <- RCdp1001 (job 5883a1e8fe05)
+[2026-10-19 15:46:34] [PUSH] e1 <- RCdp1001 (job 44c32a534886)
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h00m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h00m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h00m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                RUNNING   RCdp1001   0h00m
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h00m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, d=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h01m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h01m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h01m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                RUNNING   RCdp1001   0h01m
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h01m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, d=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h02m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h02m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h02m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                RUNNING   RCdp1001   0h02m
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h02m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, d=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h03m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h03m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h03m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                RUNNING   RCdp1001   0h03m
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h03m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, d=30.0h, e=30.0h
+==============================================================================
+[2026-10-19 15:51:27] [SMOKE OK] d1: NV=3 TD=348.9824 avg=0.11s (5.0 min incl. queue)
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h05m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h05m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h05m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h04m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h06m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h06m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h06m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h06m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h07m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h07m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h07m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h07m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h08m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h08m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h08m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h08m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h09m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h09m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h09m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h09m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h10m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h10m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h10m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h10m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h11m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h11m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h11m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h11m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h13m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h12m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h12m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h12m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h14m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h14m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h13m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h13m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h15m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h15m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h15m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h14m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================
+==============================================================================
+ 0/65 instances done | failed: -
+  a1  saostken/phshowoa-gpu-bench-a1                RUNNING   RCdp1001   0h16m
+  b1  welkie/phshowoa-gpu-bench-b1                  RUNNING   RCdp1001   0h16m
+  c1  minhanhphm1676/phshowoa-gpu-bench-c1          RUNNING   RCdp1001   0h16m
+  d1  tafuhihi/phshowoa-gpu-bench-d1                IDLE      -          
+  e1  dautromduoicuop/phshowoa-gpu-bench-e1         RUNNING   RCdp1001   0h16m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, e=30.0h
+==============================================================================

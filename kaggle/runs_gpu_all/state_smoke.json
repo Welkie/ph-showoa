@@ -1,0 +1,56 @@
+{
+  "workers": {
+    "a1": {
+      "status": "RUNNING",
+      "instance": "RCdp1001",
+      "job_id": "d1878bbd58df",
+      "pushed_at": 1792399575.282897,
+      "seen_running": true
+    },
+    "b1": {
+      "status": "RUNNING",
+      "instance": "RCdp1001",
+      "job_id": "f7090f5c9a6a",
+      "pushed_at": 1792399580.0372574,
+      "seen_running": true
+    },
+    "c1": {
+      "status": "RUNNING",
+      "instance": "RCdp1001",
+      "job_id": "40e7c5177171",
+      "pushed_at": 1792399584.4920955,
+      "seen_running": true
+    },
+    "d1": {
+      "status": "IDLE"
+    },
+    "e1": {
+      "status": "RUNNING",
+      "instance": "RCdp1001",
+      "job_id": "44c32a534886",
+      "pushed_at": 1792399594.9303231,
+      "seen_running": true
+    }
+  },
+  "retries": {},
+  "failed": {},
+  "runtime_hours": {},
+  "quota_cache": {
+    "a": {
+      "t": 1792399572.0762093,
+      "remaining": 30.0
+    },
+    "b": {
+      "t": 1792399576.5121264,
+      "remaining": 30.0
+    },
+    "c": {
+      "t": 1792399581.9768302,
+      "remaining": 30.0
+    },
+    "e": {
+      "t": 1792399591.8485491,
+      "remaining": 30.0
+    }
+  }
+}

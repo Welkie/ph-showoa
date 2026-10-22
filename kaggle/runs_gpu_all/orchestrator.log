@@ -1,0 +1,61 @@
+[2026-10-19 16:40:16] Start: 10 workers, runs=30, max_iter=1000, pop_size=30, commit=f33b63f, smoke=False
+[2026-10-19 16:40:20] [PUSH] a1 <- RCdp1001 (job 488d762edf8c)
+[2026-10-19 16:40:23] [PUSH] a2 <- RCdp1004 (job deaae392ad65)
+[2026-10-19 16:40:28] [PUSH] b1 <- RCdp1007 (job 34fd599a6384)
+[2026-10-19 16:40:31] [PUSH] b2 <- RCdp2501 (job eb717d332cfc)
+[2026-10-19 16:40:35] [PUSH] c1 <- RCdp2504 (job 17df09a14162)
+[2026-10-19 16:40:38] [PUSH] c2 <- RCdp2507 (job 50ce9e2b1860)
+[2026-10-19 16:40:44] [PUSH] d1 <- RCdp5001 (job e592cb5bb3db)
+[2026-10-19 16:40:47] [PUSH] d2 <- RCdp5004 (job f6eec5aec617)
+[2026-10-19 16:40:54] [PUSH] e1 <- RCdp5007 (job 737927f9961d)
+[2026-10-19 16:40:58] [PUSH] e2 <- RCdp101 (job 186f8e57772d)
+[2026-10-19 17:37:22] [DONE] RCdp1001 on a1: best NV=3 TD=348.98 avg/run=29.7s, wall=0.95h
+[2026-10-19 17:37:46] [DONE] RCdp1004 on a2: best NV=2 TD=216.69 avg/run=29.2s, wall=0.96h
+[2026-10-19 17:38:11] [DONE] RCdp1007 on b1: best NV=2 TD=310.81 avg/run=30.1s, wall=0.96h
+[2026-10-19 17:38:38] [DONE] RCdp2501 on b2: best NV=5 TD=551.05 avg/run=36.0s, wall=0.97h
+[2026-10-19 17:39:02] [DONE] RCdp2504 on c1: best NV=4 TD=473.46 avg/run=36.8s, wall=0.97h
+[2026-10-19 17:39:27] [DONE] RCdp2507 on c2: best NV=5 TD=540.87 avg/run=34.3s, wall=0.98h
+[2026-10-19 17:39:53] [DONE] RCdp5001 on d1: best NV=9 TD=994.18 avg/run=54.4s, wall=0.99h
+[2026-10-19 17:40:19] [DONE] RCdp5004 on d2: best NV=6 TD=733.21 avg/run=56.4s, wall=0.99h
+[2026-10-19 17:48:35] [RESULT ERROR] e1 RCdp5007: summary.json/runs.csv missing
+[2026-10-19 17:49:01] [FAILED] e1 RCdp5007 status=ERROR retry=1 no_gpu=False: ,{"stream_name":"stderr","time":1717.13008569,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"} ,{"stream_name":"stderr","time":1717.694510197,"data":"[NbConvertApp] Writing 304784 bytes to __results__.html\n"} ]
+[2026-10-19 17:51:07] [PUSH] a1 <- RCdp5007 (job f2e7b591ef74)
+[2026-10-19 17:51:10] [PUSH] a2 <- RCdp102 (job 71913b09a2b3)
+[2026-10-19 17:51:15] [PUSH] b1 <- RCdp103 (job 055d1df73ec2)
+[2026-10-19 17:51:18] [PUSH] b2 <- RCdp104 (job c02925ccf60b)
+[2026-10-19 17:51:22] [PUSH] c1 <- RCdp105 (job a3921fc4029a)
+[2026-10-19 17:51:27] [PUSH] c2 <- RCdp106 (job 01875bad12b9)
+[2026-10-19 17:51:32] [PUSH] d1 <- RCdp107 (job c8630525692c)
+[2026-10-19 17:51:37] [PUSH] d2 <- RCdp108 (job 36eecec72bc8)
+[2026-10-19 17:51:42] [PUSH] e1 <- RCdp201 (job 78fa20874d4d)
+[2026-10-19 17:52:32] [DONE] RCdp101 on e2: best NV=15 TD=1675.17 avg/run=135.5s, wall=1.19h
+[2026-10-19 17:54:38] [PUSH] e2 <- RCdp202 (job 0e57423796d1)
+[2026-10-19 20:01:44] [DONE] RCdp105 on c1: best NV=15 TD=1562.47 avg/run=139.4s, wall=2.17h
+[2026-10-19 20:02:13] [DONE] RCdp106 on c2: best NV=13 TD=1428.55 avg/run=142.8s, wall=2.18h
+[2026-10-19 20:04:25] [PUSH] c1 <- RCdp203 (job 9803b66e77c3)
+[2026-10-19 20:04:29] [PUSH] c2 <- RCdp204 (job 28493a61c3be)
+[2026-10-19 20:32:30] [FAILED] a1 RCdp5007 status=CANCEL_ACKNOWLEDGED retry=2 no_gpu=False: 
+[2026-10-19 20:32:34] [FAILED] a2 RCdp102 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
+[2026-10-19 20:32:42] [FAILED] c1 RCdp203 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
+[2026-10-19 20:32:47] [FAILED] c2 RCdp204 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
+[2026-10-19 20:32:56] [FAILED] d1 RCdp107 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
+[2026-10-19 20:33:02] [FAILED] d2 RCdp108 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
+[2026-10-19 20:35:12] [PUSH] a1 <- RCdp102 (job 4dcb4b12e276)
+[2026-10-19 20:35:15] [PUSH] a2 <- RCdp107 (job a4d2d490b38c)
+[2026-10-19 20:35:31] [WARN] could not read GPU quota for account c: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[2026-10-19 20:35:34] [PUSH] c1 <- RCdp108 (job cd4322af10d6)
+[2026-10-19 20:35:38] [PUSH] c2 <- RCdp203 (job 944897f326b7)
+[2026-10-19 20:35:44] [PUSH] d1 <- RCdp204 (job ec59826052fa)
+[2026-10-19 20:35:47] [PUSH] d2 <- RCdp205 (job 58bd4eaa8d67)
+[2026-10-19 20:35:56] [FAILED] b1 RCdp103 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
+[2026-10-19 20:36:01] [FAILED] b2 RCdp104 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
+[2026-10-19 20:38:18] [PUSH] b1 <- RCdp103 (job f7452bb0281e)
+[2026-10-19 20:38:21] [PUSH] b2 <- RCdp104 (job ad2667a64673)
+[2026-10-19 21:31:07] [DONE] RCdp202 on e2: best NV=4 TD=1161.29 avg/run=428.8s, wall=3.61h
+[2026-10-19 21:33:15] [PUSH] e2 <- RCdp206 (job b3ba9ecaf48c)
+[2026-10-19 21:50:26] [DONE] RCdp102 on a1: best NV=13 TD=1588.91 avg/run=143.9s, wall=1.25h
+[2026-10-19 21:52:48] [PUSH] a1 <- RCdp207 (job d5672ddf9777)
+[2026-10-19 21:55:36] [DONE] RCdp104 on b2: best NV=11 TD=1193.11 avg/run=151.7s, wall=1.29h
+[2026-10-19 21:57:54] [PUSH] b2 <- RCdp208 (job 4b5d4226d499)
+[2026-10-20 00:53:51] [DONE] RCdp206 on e2: best NV=3 TD=1164.75 avg/run=392.6s, wall=3.34h
+[2026-10-20 00:55:57] [PUSH] e2 <- Cdp101 (job bafd21f3ae48)

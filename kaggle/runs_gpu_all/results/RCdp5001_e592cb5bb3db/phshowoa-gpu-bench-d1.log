@@ -1,0 +1,99 @@
+[{"stream_name":"stderr","time":7.40875523,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.408798959,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.40880607,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.408810911,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.028020158,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.028045836,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.028052432,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.028059257,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":11.035051682,"data":"Mon Oct 19 09:40:58 2026       \n"}
+,{"stream_name":"stdout","time":11.035074228,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":11.03507736,"data":"| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |\n"}
+,{"stream_name":"stdout","time":11.035080063,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":11.035082496,"data":"| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n"}
+,{"stream_name":"stdout","time":11.035085035,"data":"| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n"}
+,{"stream_name":"stdout","time":11.035087309,"data":"|                                         |                        |               MIG M. |\n"}
+,{"stream_name":"stdout","time":11.03508962,"data":"|=========================================+========================+======================|\n"}
+,{"stream_name":"stdout","time":11.066657673,"data":"|   0  Tesla T4                       Off |   00000000:00:04.0 Off |                    0 |\n"}
+,{"stream_name":"stdout","time":11.066678431,"data":"| N/A   51C    P8             10W /   70W |       0MiB /  15360MiB |      0%      Default |\n"}
+,{"stream_name":"stdout","time":11.066681412,"data":"|                                         |                        |                  N/A |\n"}
+,{"stream_name":"stdout","time":11.066698381,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":11.066702688,"data":"|   1  Tesla T4                       Off |   00000000:00:05.0 Off |                    0 |\n"}
+,{"stream_name":"stdout","time":11.066706806,"data":"| N/A   52C    P8             10W /   70W |       0MiB /  15360MiB |      0%      Default |\n"}
+,{"stream_name":"stdout","time":11.066710903,"data":"|                                         |                        |                  N/A |\n"}
+,{"stream_name":"stdout","time":11.06671441,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":11.067228438,"data":"\n"}
+,{"stream_name":"stdout","time":11.067241037,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":11.067245065,"data":"| Processes:                                                                              |\n"}
+,{"stream_name":"stdout","time":11.067248762,"data":"|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n"}
+,{"stream_name":"stdout","time":11.06726755,"data":"|        ID   ID                                                               Usage      |\n"}
+,{"stream_name":"stdout","time":11.067270246,"data":"|=========================================================================================|\n"}
+,{"stream_name":"stdout","time":11.068857221,"data":"|  No running processes found                                                             |\n"}
+,{"stream_name":"stdout","time":11.068868688,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":11.206383867,"data":"Code commit: f33b63fa7da189ec91109813e896985261226889\n"}
+,{"stream_name":"stdout","time":11.206403047,"data":"Mon Oct 19 09:40:58 2026       \n"}
+,{"stream_name":"stdout","time":11.206407078,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":11.206410881,"data":"| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |\n"}
+,{"stream_name":"stdout","time":11.20641504,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":11.206419278,"data":"| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n"}
+,{"stream_name":"stdout","time":11.20642277,"data":"| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n"}
+,{"stream_name":"stdout","time":11.20642627,"data":"|                                         |                        |               MIG M. |\n"}
+,{"stream_name":"stdout","time":11.206429742,"data":"|=========================================+========================+======================|\n"}
+,{"stream_name":"stdout","time":11.206436417,"data":"|   0  Tesla T4                       Off |   00000000:00:04.0 Off |                    0 |\n"}
+,{"stream_name":"stdout","time":11.206441416,"data":"| N/A   51C    P8             10W /   70W |       0MiB /  15360MiB |      0%      Default |\n"}
+,{"stream_name":"stdout","time":11.206448933,"data":"|                                         |                        |                  N/A |\n"}
+,{"stream_name":"stdout","time":11.206451778,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":11.206454094,"data":"|   1  Tesla T4                       Off |   00000000:00:05.0 Off |                    0 |\n"}
+,{"stream_name":"stdout","time":11.206456518,"data":"| N/A   52C    P8             10W /   70W |       0MiB /  15360MiB |      0%      Default |\n"}
+,{"stream_name":"stdout","time":11.206458885,"data":"|                                         |                        |                  N/A |\n"}
+,{"stream_name":"stdout","time":11.206461097,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":11.20646341,"data":"\n"}
+,{"stream_name":"stdout","time":11.206465458,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":11.206467755,"data":"| Processes:                                                                              |\n"}
+,{"stream_name":"stdout","time":11.206469963,"data":"|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n"}
+,{"stream_name":"stdout","time":11.206472378,"data":"|        ID   ID                                                               Usage      |\n"}
+,{"stream_name":"stdout","time":11.206483558,"data":"|=========================================================================================|\n"}
+,{"stream_name":"stdout","time":11.206486071,"data":"|  No running processes found                                                             |\n"}
+,{"stream_name":"stdout","time":11.206489057,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":21.544072629,"data":"GPU: Tesla T4\n"}
+,{"stream_name":"stdout","time":21.74572483,"data":"Problem file: /kaggle/input/datasets/keith1101/ph-showoa/Wang_Chen/explicit_rcdp5001.vrpsdptw\n"}
+,{"stream_name":"stdout","time":91.363538916,"data":"[run  1/30] seed=42 NV=9 TD=994.1825 time=69.6s\n"}
+,{"stream_name":"stdout","time":149.867522656,"data":"[run  2/30] seed=43 NV=9 TD=994.1825 time=58.5s\n"}
+,{"stream_name":"stdout","time":201.816869512,"data":"[run  3/30] seed=44 NV=9 TD=994.1825 time=51.9s\n"}
+,{"stream_name":"stdout","time":262.263380466,"data":"[run  4/30] seed=45 NV=9 TD=1008.7278 time=60.4s\n"}
+,{"stream_name":"stdout","time":323.946535579,"data":"[run  5/30] seed=46 NV=9 TD=994.1825 time=61.7s\n"}
+,{"stream_name":"stdout","time":378.834423224,"data":"[run  6/30] seed=47 NV=9 TD=994.1825 time=54.9s\n"}
+,{"stream_name":"stdout","time":434.062862684,"data":"[run  7/30] seed=48 NV=9 TD=994.1825 time=55.2s\n"}
+,{"stream_name":"stdout","time":489.218374816,"data":"[run  8/30] seed=49 NV=9 TD=994.1825 time=55.2s\n"}
+,{"stream_name":"stdout","time":544.241256382,"data":"[run  9/30] seed=50 NV=9 TD=994.1825 time=55.0s\n"}
+,{"stream_name":"stdout","time":599.633740467,"data":"[run 10/30] seed=51 NV=9 TD=994.1825 time=55.4s\n"}
+,{"stream_name":"stdout","time":655.616768251,"data":"[run 11/30] seed=52 NV=9 TD=994.1825 time=56.0s\n"}
+,{"stream_name":"stdout","time":708.042544682,"data":"[run 12/30] seed=53 NV=9 TD=994.1825 time=52.4s\n"}
+,{"stream_name":"stdout","time":760.363734586,"data":"[run 13/30] seed=54 NV=9 TD=994.1825 time=52.3s\n"}
+,{"stream_name":"stdout","time":812.399786266,"data":"[run 14/30] seed=55 NV=9 TD=994.1825 time=52.0s\n"}
+,{"stream_name":"stdout","time":864.537184072,"data":"[run 15/30] seed=56 NV=9 TD=994.1825 time=52.1s\n"}
+,{"stream_name":"stdout","time":916.998525419,"data":"[run 16/30] seed=57 NV=9 TD=1007.7008 time=52.5s\n"}
+,{"stream_name":"stdout","time":973.519920938,"data":"[run 17/30] seed=58 NV=9 TD=994.1825 time=56.5s\n"}
+,{"stream_name":"stdout","time":1026.68951048,"data":"[run 18/30] seed=59 NV=9 TD=1007.1852 time=53.2s\n"}
+,{"stream_name":"stdout","time":1079.768909299,"data":"[run 19/30] seed=60 NV=9 TD=994.1825 time=53.1s\n"}
+,{"stream_name":"stdout","time":1131.703611693,"data":"[run 20/30] seed=61 NV=9 TD=994.1825 time=51.9s\n"}
+,{"stream_name":"stdout","time":1183.789985283,"data":"[run 21/30] seed=62 NV=9 TD=994.1825 time=52.1s\n"}
+,{"stream_name":"stdout","time":1236.293757787,"data":"[run 22/30] seed=63 NV=9 TD=994.1825 time=52.5s\n"}
+,{"stream_name":"stdout","time":1288.921305716,"data":"[run 23/30] seed=64 NV=9 TD=994.1825 time=52.6s\n"}
+,{"stream_name":"stdout","time":1340.633901429,"data":"[run 24/30] seed=65 NV=9 TD=994.1825 time=51.7s\n"}
+,{"stream_name":"stdout","time":1392.826857229,"data":"[run 25/30] seed=66 NV=9 TD=1007.1852 time=52.2s\n"}
+,{"stream_name":"stdout","time":1445.132751406,"data":"[run 26/30] seed=67 NV=9 TD=1007.1852 time=52.3s\n"}
+,{"stream_name":"stdout","time":1497.367076293,"data":"[run 27/30] seed=68 NV=9 TD=994.1825 time=52.2s\n"}
+,{"stream_name":"stdout","time":1551.197538325,"data":"[run 28/30] seed=69 NV=9 TD=994.1825 time=53.8s\n"}
+,{"stream_name":"stdout","time":1603.206558566,"data":"[run 29/30] seed=70 NV=9 TD=994.1825 time=52.0s\n"}
+,{"stream_name":"stdout","time":1655.183104601,"data":"[run 30/30] seed=71 NV=9 TD=1007.1852 time=52.0s\n"}
+,{"stream_name":"stdout","time":1655.18397339,"data":"SUMMARY: {\"job_id\": \"e592cb5bb3db\", \"instance\": \"RCdp5001\", \"status\": \"Success\", \"runs\": 30, \"best_NV\": 9, \"best_TD\": 994.1825, \"avg_time_s\": 54.447, \"timing\": \"per-run fresh process, launch-to-exit wall clock\", \"commit\": \"f33b63fa7da189ec91109813e896985261226889\"}\n"}
+,{"stream_name":"stderr","time":1658.313953276,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":1658.31399091,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":1658.482089068,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":1658.482116521,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":1659.26189069,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":1659.33940474,"data":"[NbConvertApp] Writing 13074 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":1661.791570515,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":1662.344239767,"data":"[NbConvertApp] Writing 304791 bytes to __results__.html\n"}
+]

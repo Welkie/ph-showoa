@@ -1,0 +1,140 @@
+{
+  "workers": {
+    "a1": {
+      "status": "RUNNING",
+      "instance": "RCdp207",
+      "job_id": "d5672ddf9777",
+      "pushed_at": 1792421568.3308938,
+      "seen_running": true
+    },
+    "a2": {
+      "status": "RUNNING",
+      "instance": "RCdp107",
+      "job_id": "a4d2d490b38c",
+      "pushed_at": 1792416915.2556946,
+      "seen_running": true
+    },
+    "b1": {
+      "status": "RUNNING",
+      "instance": "RCdp103",
+      "job_id": "f7452bb0281e",
+      "pushed_at": 1792417098.7898471,
+      "seen_running": true
+    },
+    "b2": {
+      "status": "RUNNING",
+      "instance": "RCdp208",
+      "job_id": "4b5d4226d499",
+      "pushed_at": 1792421874.416346,
+      "seen_running": true
+    },
+    "c1": {
+      "status": "RUNNING",
+      "instance": "RCdp108",
+      "job_id": "cd4322af10d6",
+      "pushed_at": 1792416934.384407,
+      "seen_running": true
+    },
+    "c2": {
+      "status": "RUNNING",
+      "instance": "RCdp203",
+      "job_id": "944897f326b7",
+      "pushed_at": 1792416938.5054984,
+      "seen_running": true
+    },
+    "d1": {
+      "status": "RUNNING",
+      "instance": "RCdp204",
+      "job_id": "ec59826052fa",
+      "pushed_at": 1792416944.3602948,
+      "seen_running": true
+    },
+    "d2": {
+      "status": "RUNNING",
+      "instance": "RCdp205",
+      "job_id": "58bd4eaa8d67",
+      "pushed_at": 1792416947.568764,
+      "seen_running": true
+    },
+    "e1": {
+      "status": "RUNNING",
+      "instance": "RCdp201",
+      "job_id": "78fa20874d4d",
+      "pushed_at": 1792407102.6658444,
+      "seen_running": true
+    },
+    "e2": {
+      "status": "RUNNING",
+      "instance": "Cdp101",
+      "job_id": "bafd21f3ae48",
+      "pushed_at": 1792432557.5181851,
+      "seen_running": false
+    }
+  },
+  "retries": {
+    "RCdp5007": 2,
+    "RCdp102": 1,
+    "RCdp203": 1,
+    "RCdp204": 1,
+    "RCdp107": 1,
+    "RCdp108": 1,
+    "RCdp103": 1,
+    "RCdp104": 1
+  },
+  "failed": {},
+  "runtime_hours": {
+    "10": [
+      0.951,
+      0.956,
+      0.962
+    ],
+    "25": [
+      0.969,
+      0.974,
+      0.98
+    ],
+    "50": [
+      0.986,
+      0.992
+    ],
+    "100": [
+      1.193,
+      2.173,
+      2.179,
+      3.608,
+      1.254,
+      1.287,
+      3.343
+    ]
+  },
+  "quota_cache": {
+    "c": {
+      "t": 1792416935.912342,
+      "remaining": 26.94
+    },
+    "d": {
+      "t": 1792416941.0921068,
+      "remaining": 28.91
+    },
+    "a": {
+      "t": 1792421565.4634376,
+      "remaining": 28.22
+    },
+    "b": {
+      "t": 1792421871.757747,
+      "remaining": 27.81
+    },
+    "e": {
+      "t": 1792432554.154847,
+      "remaining": 19.78
+    }
+  },
+  "account_ok": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e"
+  ],
+  "account_broken": {}
+}

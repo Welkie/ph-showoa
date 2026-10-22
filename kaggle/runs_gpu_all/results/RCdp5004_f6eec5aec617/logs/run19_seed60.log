@@ -1,0 +1,119 @@
+TYPE : VRPSDPTW
+DIMENSION : 51
+VEHICLES : 15
+DISPATCHINGCOST : 2000
+UNITCOST : 1.0
+CAPACITY : 200.0
+EDGE_WEIGHT_TYPE : EXPLICIT
+Avg pick-up/dilvery demand: 15.7200,16.9400
+Starting/end time of DC: 0.0000,240.0000
+
+Initial random seed: 60
+Pruning: off
+Time limit: -1 seconds
+Runs: 1
+g_1: 500
+Max PH-SHOWOA iterations: 1000
+Population size: 30
+Parallel workers: 1
+Periodic local-search interval: 25
+Diversification stagnation interval: 50
+Diversification ratio: 0.40
+SHO mutation probability: 0.35
+Hybrid mode: ph_showoa
+Compute backend: cuda
+Insertion for initialization: sa_rcrs_grasp
+k_init: 50
+Insertion for crossover: rcrs
+k_crossover: 50
+Parent selection: circle
+Replacement strategy: one_on_one
+Local search probability: 1.00
+O(1) evaluation: off
+2-opt: off
+2-opt*: off
+or-opt: off
+2-exchange: off
+escape local optima number: 1
+random_removal: off
+related_removal: off
+Destroy lower ration: 0.200000
+Destroy upper ration: 0.400000
+regret_insertion: off
+greedy_insertion: off
+Random removal and insertion: off
+Objective mode: lexicographic
+Architecture: python_cuda
+Paper flags: enabled (2opt, 2opt*, oropt_single, 2exchange, related_removal, regret_insertion, lexicographic)
+--------------------------------------------
+Do Pruning
+Total edges 2450, prune by time window 190(7.7551%),prune by capacity 0(0.0000%)
+Compute backend requested: cuda
+Compute backend selected: torch_cuda
+================================================================================
+[PH-SHOWOA] Full-GPU Solver Engine (SA-RCRS-GRASP) Initializing...
+CPU_PREP: Allocating GPU device buffers, uploading dataset & config, building execution graph
+  Population Size P=30, Islands=6, Max Iterations=1000, Backend=Numba CUDA
+================================================================================
+---------------------------------Run 1 (100% Full-GPU Solver)---------------------------
+  Run 1 [GPU_TELEMETRY] Device='Tesla T4' (CUDA:0) | VRAM: 108.9MB used / 14912MB total | Grid: 1 blocks x 32 threads (100% GPU Resident)
+  Run 1 CPU_PREP: run_id=1, seed=100063 passed to GPU execution graph
+  Run 1 RUN_GPU_BEGIN
+  Run 1 RUN_GPU_END (Device: Tesla T4, 0 CPU fallback)
+  Run 1 CPU_DECODE: Receiving gbest and telemetry log from GPU...
+  [GPU Tesla T4] Gen: 1. a 2.0000, p_hybrid 0.5000. Best NV 7, Best TD 784.0144
+  [GPU Tesla T4] Gen: 25. a 1.9520, p_hybrid 0.4880. Best NV 6, Best TD 794.1631
+  [GPU Tesla T4] Gen: 50. a 1.9020, p_hybrid 0.4755. Best NV 6, Best TD 767.8831
+  [GPU Tesla T4] Gen: 75. a 1.8520, p_hybrid 0.4630. Best NV 6, Best TD 758.7611
+  [GPU Tesla T4] Gen: 100. a 1.8020, p_hybrid 0.4505. Best NV 6, Best TD 750.6630
+  [GPU Tesla T4] Gen: 125. a 1.7520, p_hybrid 0.4380. Best NV 6, Best TD 750.6630
+  [GPU Tesla T4] Gen: 150. a 1.7020, p_hybrid 0.4255. Best NV 6, Best TD 748.5479
+  [GPU Tesla T4] Gen: 175. a 1.6520, p_hybrid 0.4130. Best NV 6, Best TD 748.5479
+  [GPU Tesla T4] Gen: 200. a 1.6020, p_hybrid 0.4005. Best NV 6, Best TD 737.1323
+  [GPU Tesla T4] Gen: 225. a 1.5520, p_hybrid 0.3880. Best NV 6, Best TD 737.1323
+  [GPU Tesla T4] Gen: 250. a 1.5020, p_hybrid 0.3755. Best NV 6, Best TD 737.1323
+  [GPU Tesla T4] Gen: 275. a 1.4520, p_hybrid 0.3630. Best NV 6, Best TD 737.1323
+  [GPU Tesla T4] Gen: 300. a 1.4020, p_hybrid 0.3505. Best NV 6, Best TD 737.1323
+  [GPU Tesla T4] Gen: 325. a 1.3520, p_hybrid 0.3380. Best NV 6, Best TD 737.1323
+  [GPU Tesla T4] Gen: 350. a 1.3020, p_hybrid 0.3255. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 375. a 1.2520, p_hybrid 0.3130. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 400. a 1.2020, p_hybrid 0.3005. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 425. a 1.1520, p_hybrid 0.2880. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 450. a 1.1020, p_hybrid 0.2755. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 475. a 1.0520, p_hybrid 0.2630. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 500. a 1.0020, p_hybrid 0.2505. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 525. a 0.9520, p_hybrid 0.2380. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 550. a 0.9020, p_hybrid 0.2255. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 575. a 0.8520, p_hybrid 0.2130. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 600. a 0.8020, p_hybrid 0.2005. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 625. a 0.7520, p_hybrid 0.1880. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 650. a 0.7020, p_hybrid 0.1755. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 675. a 0.6520, p_hybrid 0.1630. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 700. a 0.6020, p_hybrid 0.1505. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 725. a 0.5520, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 750. a 0.5020, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 775. a 0.4520, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 800. a 0.4020, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 825. a 0.3520, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 850. a 0.3020, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 875. a 0.2520, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 900. a 0.2020, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 925. a 0.1520, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 950. a 0.1020, p_hybrid 0.1500. Best NV 6, Best TD 736.6467
+  [GPU Tesla T4] Gen: 975. a 0.0520, p_hybrid 0.1500. Best NV 6, Best TD 736.2491
+  [GPU Tesla T4] Gen: 1000. a 0.0020, p_hybrid 0.1500. Best NV 6, Best TD 736.2491
+  Run 1 Best solution update: 12736.2491 (NV=6, TD=736.2491)
+Run 1 finishes | Run Best: NV=6, TD=736.2491 | Global Best: NV=6, TD=736.2491
+------------Summary-----------
+Total 1 runs, total consumed 50 sec
+Details of the solution:
+route 0, node_num 12, cost 139.09323899999998, nodes: 0 31 49 47 37 14 15 16 17 18 41 0
+route 1, node_num 11, cost 138.483147, nodes: 0 46 48 35 30 40 43 9 10 45 0
+route 2, node_num 10, cost 135.469116, nodes: 0 13 8 29 11 12 39 33 32 0
+route 3, node_num 11, cost 130.696596, nodes: 0 6 7 28 38 3 27 2 26 1 0
+route 4, node_num 9, cost 96.919721, nodes: 0 44 36 50 5 4 34 42 0
+route 5, node_num 9, cost 95.587249, nodes: 0 22 21 19 20 23 25 24 0
+vehicle (route) number: 6
+Vehicle count: 6
+Total distance: 736.2491
+Total cost: 12736.249068000001

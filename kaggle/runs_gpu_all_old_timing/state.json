@@ -1,0 +1,112 @@
+{
+  "workers": {
+    "a1": {
+      "status": "IDLE"
+    },
+    "a2": {
+      "status": "RUNNING",
+      "instance": "RCdp1004",
+      "job_id": "54b4f8ebc226",
+      "pushed_at": 1792400997.9343586,
+      "seen_running": true
+    },
+    "b1": {
+      "status": "RUNNING",
+      "instance": "RCdp102",
+      "job_id": "3b096151202f",
+      "pushed_at": 1792401526.1526458,
+      "seen_running": true
+    },
+    "c1": {
+      "status": "RUNNING",
+      "instance": "RCdp2501",
+      "job_id": "e72883d7e06b",
+      "pushed_at": 1792401007.4098356,
+      "seen_running": true
+    },
+    "c2": {
+      "status": "RUNNING",
+      "instance": "RCdp2504",
+      "job_id": "8465823cfde2",
+      "pushed_at": 1792401009.9905257,
+      "seen_running": true
+    },
+    "d1": {
+      "status": "RUNNING",
+      "instance": "RCdp103",
+      "job_id": "1038b1a0d9dc",
+      "pushed_at": 1792401531.912496,
+      "seen_running": true
+    },
+    "d2": {
+      "status": "RUNNING",
+      "instance": "RCdp5001",
+      "job_id": "9ab4d6e037e6",
+      "pushed_at": 1792401018.4438064,
+      "seen_running": true
+    },
+    "e1": {
+      "status": "RUNNING",
+      "instance": "RCdp105",
+      "job_id": "0eb27dfcf6bf",
+      "pushed_at": 1792402117.6426463,
+      "seen_running": true
+    },
+    "b2": {
+      "status": "RUNNING",
+      "instance": "RCdp5007",
+      "job_id": "ed152f9d634e",
+      "pushed_at": 1792401163.793097,
+      "seen_running": true
+    },
+    "e2": {
+      "status": "RUNNING",
+      "instance": "RCdp104",
+      "job_id": "0b62278dc716",
+      "pushed_at": 1792401534.798138,
+      "seen_running": true
+    }
+  },
+  "retries": {
+    "RCdp101": 1
+  },
+  "failed": {},
+  "runtime_hours": {
+    "10": [
+      0.056,
+      0.061
+    ],
+    "25": [
+      0.107
+    ],
+    "50": [
+      0.269
+    ]
+  },
+  "quota_cache": {
+    "c": {
+      "t": 1792401004.7684577,
+      "remaining": 29.98
+    },
+    "b": {
+      "t": 1792401359.8643003,
+      "remaining": 29.92
+    },
+    "d": {
+      "t": 1792401528.7808356,
+      "remaining": 29.75
+    },
+    "e": {
+      "t": 1792402114.7276144,
+      "remaining": 29.59
+    }
+  },
+  "account_ok": [
+    "c",
+    "d",
+    "a",
+    "b",
+    "e"
+  ],
+  "account_broken": {}
+}

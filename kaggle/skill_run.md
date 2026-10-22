@@ -1,4 +1,4 @@
-Tui đang có 5 acc kaggle. Bạn thực hiện chạy tất cả các instance trong instances_benchmark_pop_size30_runs=30_iter1000.csv bằng dựa theo code `src_python_gpu_SA_RCRS_GRASP` với các tham số sau:
+Tui đang có 5 acc kaggle. Bạn thực hiện chạy tất cả các instance trong instances_benchmark_pop_size30_runs=30_iter1000.csv dựa theo code trong `src_python_gpu_SA_RCRS_GRASP` và tham khảo cách chạy trên kaggle: kaggle_gpu_sa_rcrs_grasp.ipynb với các tham số sau:
 pop_size=30; max_iter=1000; runs=30. GPU T4. Trên 5 acc kaggle đó. 
 Do kaggle có giới hạn quota. Nên bây giờ tui cần bạn set up chạy lần lượt các instance trên 5 acc kaggle (mỗi 1 acc kaggle thì kaggle cho chạy 2 version cùng lúc). Do quota có hạn nên bạn cứ set up chạy các instance lần lượt từng instance một rồi lưu kết quả best cost vào file instances_benchmark_pop_size30_runs=30_iter1000.csv đã có sẵn. 
 Kết quả của từng run thì lưu vào file ph_showoa_caitiengpu_all.csv, seed chạy thì giống như trong khung đã điền sẵn, từ 42-71

@@ -1,0 +1,32 @@
+[2026-10-19 15:46:10] Start: 5 workers, runs=2, max_iter=20, pop_size=30, commit=f33b63f, smoke=True
+[2026-10-19 15:46:15] [PUSH] a1 <- RCdp1001 (job d1878bbd58df)
+[2026-10-19 15:46:20] [PUSH] b1 <- RCdp1001 (job f7090f5c9a6a)
+[2026-10-19 15:46:24] [PUSH] c1 <- RCdp1001 (job 40e7c5177171)
+[2026-10-19 15:46:29] [PUSH] d1 <- RCdp1001 (job 5883a1e8fe05)
+[2026-10-19 15:46:34] [PUSH] e1 <- RCdp1001 (job 44c32a534886)
+[2026-10-19 15:51:27] [SMOKE OK] d1: NV=3 TD=348.9824 avg=0.11s (5.0 min incl. queue)
+[2026-10-19 16:09:51] Start: 10 workers, runs=30, max_iter=1000, pop_size=30, commit=f33b63f, smoke=False
+[2026-10-19 16:09:55] [PUSH] a1 <- RCdp1001 (job 739c92a40f70)
+[2026-10-19 16:09:57] [PUSH] a2 <- RCdp1004 (job 54b4f8ebc226)
+[2026-10-19 16:10:01] [PUSH] b1 <- RCdp1007 (job 792b7f235a7c)
+[2026-10-19 16:10:03] [PUSH FAILED] b2 (RCdp2501): Kernel push error: Maximum batch GPU session count of 2 reached.
+[2026-10-19 16:10:07] [PUSH] c1 <- RCdp2501 (job e72883d7e06b)
+[2026-10-19 16:10:09] [PUSH] c2 <- RCdp2504 (job 8465823cfde2)
+[2026-10-19 16:10:14] [PUSH] d1 <- RCdp2507 (job 4b535828be3f)
+[2026-10-19 16:10:18] [PUSH] d2 <- RCdp5001 (job 9ab4d6e037e6)
+[2026-10-19 16:10:22] [PUSH] e1 <- RCdp5004 (job 044fd63e21e6)
+[2026-10-19 16:10:26] [PUSH FAILED] e2 (RCdp5007): Kernel push error: Maximum batch GPU session count of 2 reached.
+[2026-10-19 16:12:43] [PUSH] b2 <- RCdp5007 (job ed152f9d634e)
+[2026-10-19 16:12:47] [PUSH FAILED] e2 (RCdp101): Kernel push error: Maximum batch GPU session count of 2 reached.
+[2026-10-19 16:13:17] [DONE] RCdp1001 on a1: best NV=3 TD=348.98 avg/run=1.2s, wall=0.06h
+[2026-10-19 16:13:41] [DONE] RCdp1007 on b1: best NV=2 TD=310.81 avg/run=1.2s, wall=0.06h
+[2026-10-19 16:15:58] [PUSH] a1 <- RCdp101 (job 3c401ec89335)
+[2026-10-19 16:16:02] [PUSH FAILED] b1 (RCdp102): Kernel push error: Maximum batch GPU session count of 2 reached.
+[2026-10-19 16:16:05] [PUSH FAILED] e2 (RCdp102): Kernel push error: Maximum batch GPU session count of 2 reached.
+[2026-10-19 16:16:38] [DONE] RCdp2507 on d1: best NV=5 TD=540.87 avg/run=5.9s, wall=0.11h
+[2026-10-19 16:18:46] [PUSH] b1 <- RCdp102 (job 3b096151202f)
+[2026-10-19 16:18:51] [PUSH] d1 <- RCdp103 (job 1038b1a0d9dc)
+[2026-10-19 16:18:54] [PUSH] e2 <- RCdp104 (job 0b62278dc716)
+[2026-10-19 16:26:30] [DONE] RCdp5004 on e1: best NV=6 TD=733.21 avg/run=27.9s, wall=0.27h
+[2026-10-19 16:28:37] [PUSH] e1 <- RCdp105 (job 0eb27dfcf6bf)
+[2026-10-19 16:37:52] [FAILED] a1 RCdp101 status=CANCEL_ACKNOWLEDGED retry=1 no_gpu=False: 
