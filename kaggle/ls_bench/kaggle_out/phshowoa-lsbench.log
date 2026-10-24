@@ -1,0 +1,55 @@
+[{"stream_name":"stderr","time":7.515769156,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.515835929,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.515840547,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.515843536,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.170429154,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.170461825,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.170467072,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.170470929,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":9.471611281,"data":"GPU 0: Tesla T4 (UUID: GPU-f23f9bd1-f814-7142-b0f8-0de3d9e2cbb8)\n"}
+,{"stream_name":"stdout","time":9.471689192,"data":"GPU 1: Tesla T4 (UUID: GPU-f7b5ced4-5636-e62d-10d8-7fbf0f05f2d6)\n"}
+,{"stream_name":"stdout","time":9.677798653,"data":"GPU 0: Tesla T4 (UUID: GPU-f23f9bd1-f814-7142-b0f8-0de3d9e2cbb8)\n"}
+,{"stream_name":"stdout","time":9.677825197,"data":"GPU 1: Tesla T4 (UUID: GPU-f7b5ced4-5636-e62d-10d8-7fbf0f05f2d6)\n"}
+,{"stream_name":"stdout","time":273.486275358,"data":"GPU: Tesla T4\n"}
+,{"stream_name":"stdout","time":273.486324793,"data":"cdp101   FI-CPU single median       1.2 ms  mean      10.7 ms  max      48.4 ms  sum30    0.32 s  cost 26036.0  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.48633759,"data":"cdp101   BI-CPU single median       1.2 ms  mean       5.4 ms  max      21.3 ms  sum30    0.16 s  cost 25757.8  infeasible 0  moves 9\n"}
+,{"stream_name":"stdout","time":273.486343856,"data":"cdp101   FI-GPU single median      58.7 ms  mean     255.2 ms  max    1085.6 ms  sum30    7.66 s  pop30    7.41 s  cost 26036.0  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.48634978,"data":"cdp101   BI-GPU single median       2.4 ms  mean      10.9 ms  max      44.7 ms  sum30    0.33 s  pop30    0.03 s  cost 25757.8  infeasible 0  moves 9\n"}
+,{"stream_name":"stdout","time":273.486355679,"data":"cdp101   cost before LS 27155.8\n"}
+,{"stream_name":"stdout","time":273.486361216,"data":"rcdp101  FI-CPU single median       0.9 ms  mean       1.0 ms  max       1.9 ms  sum30    0.03 s  cost 36086.2  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.486368016,"data":"rcdp101  BI-CPU single median       1.3 ms  mean       1.6 ms  max       4.2 ms  sum30    0.05 s  cost 36084.7  infeasible 0  moves 1\n"}
+,{"stream_name":"stdout","time":273.486374572,"data":"rcdp101  FI-GPU single median      21.4 ms  mean      23.2 ms  max      42.9 ms  sum30    0.70 s  pop30    0.62 s  cost 36086.2  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.486380588,"data":"rcdp101  BI-GPU single median       2.0 ms  mean       2.4 ms  max       5.8 ms  sum30    0.07 s  pop30    0.01 s  cost 36084.7  infeasible 0  moves 1\n"}
+,{"stream_name":"stdout","time":273.486386728,"data":"rcdp101  cost before LS 36091.7\n"}
+,{"stream_name":"stdout","time":273.486392284,"data":"rcdp104  FI-CPU single median      18.3 ms  mean      19.8 ms  max      62.0 ms  sum30    0.59 s  cost 25625.0  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.48639816,"data":"rcdp104  BI-CPU single median      16.0 ms  mean      14.4 ms  max      46.1 ms  sum30    0.43 s  cost 25551.2  infeasible 0  moves 24\n"}
+,{"stream_name":"stdout","time":273.486404388,"data":"rcdp104  FI-GPU single median     453.2 ms  mean     479.4 ms  max    1440.0 ms  sum30   14.38 s  pop30   14.12 s  cost 25625.0  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.486421827,"data":"rcdp104  BI-GPU single median      14.5 ms  mean      14.7 ms  max      51.8 ms  sum30    0.44 s  pop30    0.05 s  cost 25551.2  infeasible 0  moves 24\n"}
+,{"stream_name":"stdout","time":273.486428205,"data":"rcdp104  cost before LS 27719.3\n"}
+,{"stream_name":"stdout","time":273.486432924,"data":"rcdp202  FI-CPU single median      26.3 ms  mean      37.9 ms  max     102.1 ms  sum30    1.14 s  cost 10057.7  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.486437707,"data":"rcdp202  BI-CPU single median       8.3 ms  mean      10.2 ms  max      25.3 ms  sum30    0.31 s  cost 9983.6  infeasible 0  moves 17\n"}
+,{"stream_name":"stdout","time":273.486444196,"data":"rcdp202  FI-GPU single median     848.6 ms  mean    1179.3 ms  max    3166.0 ms  sum30   35.38 s  pop30   33.03 s  cost 10057.7  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.486449026,"data":"rcdp202  BI-GPU single median      23.2 ms  mean      27.4 ms  max      69.2 ms  sum30    0.82 s  pop30    0.07 s  cost 9983.6  infeasible 0  moves 17\n"}
+,{"stream_name":"stdout","time":273.48645379,"data":"rcdp202  cost before LS 10368.5\n"}
+,{"stream_name":"stdout","time":273.48645794,"data":"rdp210   FI-CPU single median      52.5 ms  mean      52.6 ms  max     147.0 ms  sum30    1.58 s  cost 9022.5  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.486462703,"data":"rdp210   BI-CPU single median      13.8 ms  mean      12.0 ms  max      26.7 ms  sum30    0.36 s  cost 9014.4  infeasible 0  moves 22\n"}
+,{"stream_name":"stdout","time":273.486467482,"data":"rdp210   FI-GPU single median    1706.9 ms  mean    1675.6 ms  max    4791.5 ms  sum30   50.27 s  pop30   48.65 s  cost 9022.5  infeasible 0\n"}
+,{"stream_name":"stdout","time":273.486471977,"data":"rdp210   BI-GPU single median      31.5 ms  mean      31.0 ms  max      75.0 ms  sum30    0.93 s  pop30    0.07 s  cost 9014.4  infeasible 0  moves 22\n"}
+,{"stream_name":"stdout","time":273.486494561,"data":"rdp210   cost before LS 9218.2\n"}
+,{"stream_name":"stdout","time":273.48649901,"data":"\n"}
+,{"stream_name":"stdout","time":273.486503182,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":273.486510333,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":273.486515851,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":273.48652165,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":273.486527164,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":273.486532812,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":273.486537349,"data":"\n"}
+,{"stream_name":"stderr","time":276.29818523,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":276.298215725,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":276.473528341,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":276.473578065,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":277.305969739,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":277.390422771,"data":"[NbConvertApp] Writing 139014 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":280.195801791,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":280.753198715,"data":"[NbConvertApp] Writing 413603 bytes to __results__.html\n"}
+]

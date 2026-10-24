@@ -31,6 +31,13 @@ def parse_args(args=None):
     parser.add_argument("--local_search_interval", type=int, default=25, help="Iterations between local searches (default: 25)")
     parser.add_argument("--grasp_alpha_lo", type=float, default=0.10)
     parser.add_argument("--grasp_alpha_hi", type=float, default=0.40)
+    parser.add_argument("--ls_strategy", choices=["best", "first"], default="best",
+                        help="Improvement 4 local search: best = block-parallel best improvement (default); "
+                             "first = Algorithm 8, first improvement, one thread per individual (ablation)")
+    parser.add_argument("--ls_scope", choices=["population", "best"], default="population",
+                        help="Periodic local search for every individual (default) or only the best (ablation)")
+    parser.add_argument("--no_ls_2opt_star", action="store_true",
+                        help="Drop Inter 2-opt* from the local search (ablation; ls_strategy best only)")
     parser.add_argument("--convergence_csv", type=str, default=None,
                         help="Append the best NV/TD every --convergence_every iterations to this CSV")
     parser.add_argument("--convergence_every", type=int, default=10)
@@ -88,11 +95,15 @@ def main():
         local_search_interval=args.local_search_interval,
         grasp_alpha_lo=args.grasp_alpha_lo,
         grasp_alpha_hi=args.grasp_alpha_hi,
+        ls_strategy=args.ls_strategy,
+        ls_scope=args.ls_scope,
+        ls_2opt_star=not args.no_ls_2opt_star,
     )
     # One solver per process: kernels are compiled and device buffers allocated once, then reused by every run
     solver = PHSHOWOAGpuSolver(problem, config)
     print(f"Backend: {'cuda' if solver.is_cuda else 'cpu'} | init={config.init} | islands={solver.num_islands} "
-          f"x {solver.island_size}")
+          f"x {solver.island_size} | LS={config.ls_strategy}/{config.ls_scope}"
+          f"{'' if config.ls_2opt_star else ' (no 2-opt*)'}")
 
     conv_csv = Path(args.convergence_csv) if args.convergence_csv else None
     if conv_csv:

@@ -1,0 +1,107 @@
+{
+ "cdp101": {
+  "FI-CPU": {
+   "single_median_s": 0.0006173500005388632,
+   "single_mean_s": 0.005118116666562855,
+   "single_max_s": 0.020824999999604188,
+   "single_sum_s": 0.15354349999688566,
+   "mean_cost_after": 26036.006823829764,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.0005249500027275644,
+   "single_mean_s": 0.002191983335069381,
+   "single_max_s": 0.008722600003238767,
+   "single_sum_s": 0.06575950005208142,
+   "mean_cost_after": 25757.77378072086,
+   "infeasible": 0,
+   "mean_moves": 8.8
+  },
+  "cost_before": 27155.797614534804
+ },
+ "rcdp101": {
+  "FI-CPU": {
+   "single_median_s": 0.00043435000407043844,
+   "single_mean_s": 0.0005313333322798523,
+   "single_max_s": 0.0009500000014668331,
+   "single_sum_s": 0.01593999996839557,
+   "mean_cost_after": 36086.20609249408,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.0004811999970115721,
+   "single_mean_s": 0.0006200133328093215,
+   "single_max_s": 0.0021763999975519255,
+   "single_sum_s": 0.018600399984279647,
+   "mean_cost_after": 36084.67730100587,
+   "infeasible": 0,
+   "mean_moves": 1.2333333333333334
+  },
+  "cost_before": 36091.73005025683
+ },
+ "rcdp104": {
+  "FI-CPU": {
+   "single_median_s": 0.008405350003158674,
+   "single_mean_s": 0.009491770000507434,
+   "single_max_s": 0.031223800004227087,
+   "single_sum_s": 0.284753100015223,
+   "mean_cost_after": 25625.028615742176,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.005464399997435976,
+   "single_mean_s": 0.0056640300002375925,
+   "single_max_s": 0.016601600000285544,
+   "single_sum_s": 0.16992090000712778,
+   "mean_cost_after": 25551.21641869642,
+   "infeasible": 0,
+   "mean_moves": 24
+  },
+  "cost_before": 27719.27071682692
+ },
+ "rcdp202": {
+  "FI-CPU": {
+   "single_median_s": 0.011986350000370294,
+   "single_mean_s": 0.01821626666787779,
+   "single_max_s": 0.05320490000303835,
+   "single_sum_s": 0.5464880000363337,
+   "mean_cost_after": 10057.692592818534,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.003279249998740852,
+   "single_mean_s": 0.004116796664796614,
+   "single_max_s": 0.010097999998833984,
+   "single_sum_s": 0.12350389994389843,
+   "mean_cost_after": 9983.55950419992,
+   "infeasible": 0,
+   "mean_moves": 17.133333333333333
+  },
+  "cost_before": 10368.549989286805
+ },
+ "rdp210": {
+  "FI-CPU": {
+   "single_median_s": 0.02318974999798229,
+   "single_mean_s": 0.023802406667285444,
+   "single_max_s": 0.07079100000555627,
+   "single_sum_s": 0.7140722000185633,
+   "mean_cost_after": 9022.47213034538,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.005990000005112961,
+   "single_mean_s": 0.004782506666864113,
+   "single_max_s": 0.011026699998183176,
+   "single_sum_s": 0.1434752000059234,
+   "mean_cost_after": 9014.39977754748,
+   "infeasible": 0,
+   "mean_moves": 21.766666666666666
+  },
+  "cost_before": 9218.229075609343
+ }
+}

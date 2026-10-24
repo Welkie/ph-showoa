@@ -1,0 +1,217 @@
+{
+ "cdp101": {
+  "FI-CPU": {
+   "single_median_s": 0.0011538140000055819,
+   "single_mean_s": 0.010726437599999864,
+   "single_max_s": 0.04837247300000058,
+   "single_sum_s": 0.32179312799999593,
+   "mean_cost_after": 26036.006823829764,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.0011535260000101744,
+   "single_mean_s": 0.00544062440000251,
+   "single_max_s": 0.021278988999995363,
+   "single_sum_s": 0.1632187320000753,
+   "mean_cost_after": 25757.77378072086,
+   "infeasible": 0,
+   "mean_moves": 8.8
+  },
+  "FI-GPU": {
+   "single_median_s": 0.05865427499999498,
+   "single_mean_s": 0.2552154364999988,
+   "single_max_s": 1.085649138000008,
+   "single_sum_s": 7.656463094999964,
+   "mean_cost_after": 26036.006823829764,
+   "infeasible": 0,
+   "mean_moves": null,
+   "population_s": 7.411515874999992,
+   "population_same_as_single": true
+  },
+  "BI-GPU": {
+   "single_median_s": 0.0023806800000016892,
+   "single_mean_s": 0.010901267033330934,
+   "single_max_s": 0.044735125999977754,
+   "single_sum_s": 0.327038010999928,
+   "mean_cost_after": 25757.77378072086,
+   "infeasible": 0,
+   "mean_moves": 8.8,
+   "population_s": 0.029852101000017228,
+   "population_same_as_single": true
+  },
+  "cost_before": 27155.797614534804
+ },
+ "rcdp101": {
+  "FI-CPU": {
+   "single_median_s": 0.0009336375000117414,
+   "single_mean_s": 0.001016670966671048,
+   "single_max_s": 0.0018902410000123382,
+   "single_sum_s": 0.030500129000131437,
+   "mean_cost_after": 36086.20609249408,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.0013275385000071083,
+   "single_mean_s": 0.00155741636666941,
+   "single_max_s": 0.004227842000005921,
+   "single_sum_s": 0.0467224910000823,
+   "mean_cost_after": 36084.67730100587,
+   "infeasible": 0,
+   "mean_moves": 1.2333333333333334
+  },
+  "FI-GPU": {
+   "single_median_s": 0.021359624500007612,
+   "single_mean_s": 0.02319489196666685,
+   "single_max_s": 0.04292970000000196,
+   "single_sum_s": 0.6958467590000055,
+   "mean_cost_after": 36086.20609249408,
+   "infeasible": 0,
+   "mean_moves": null,
+   "population_s": 0.6190714180000043,
+   "population_same_as_single": true
+  },
+  "BI-GPU": {
+   "single_median_s": 0.0019697864999841386,
+   "single_mean_s": 0.002373627566665467,
+   "single_max_s": 0.005754370000005338,
+   "single_sum_s": 0.071208826999964,
+   "mean_cost_after": 36084.67730100587,
+   "infeasible": 0,
+   "mean_moves": 1.2333333333333334,
+   "population_s": 0.00577030600001649,
+   "population_same_as_single": true
+  },
+  "cost_before": 36091.73005025683
+ },
+ "rcdp104": {
+  "FI-CPU": {
+   "single_median_s": 0.01828733450000186,
+   "single_mean_s": 0.01977639833332982,
+   "single_max_s": 0.062008523000002924,
+   "single_sum_s": 0.5932919499998945,
+   "mean_cost_after": 25625.028615742176,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.016024302499999976,
+   "single_mean_s": 0.014366035666666714,
+   "single_max_s": 0.04612668600000802,
+   "single_sum_s": 0.4309810700000014,
+   "mean_cost_after": 25551.21641869642,
+   "infeasible": 0,
+   "mean_moves": 24
+  },
+  "FI-GPU": {
+   "single_median_s": 0.4532468620000145,
+   "single_mean_s": 0.47937642853333384,
+   "single_max_s": 1.4400248949999934,
+   "single_sum_s": 14.381292856000016,
+   "mean_cost_after": 25625.028615742176,
+   "infeasible": 0,
+   "mean_moves": null,
+   "population_s": 14.121553202000001,
+   "population_same_as_single": true
+  },
+  "BI-GPU": {
+   "single_median_s": 0.014505821000014407,
+   "single_mean_s": 0.014655884466668568,
+   "single_max_s": 0.051761412000018936,
+   "single_sum_s": 0.439676534000057,
+   "mean_cost_after": 25551.21641869642,
+   "infeasible": 0,
+   "mean_moves": 24,
+   "population_s": 0.05109302800002524,
+   "population_same_as_single": true
+  },
+  "cost_before": 27719.27071682692
+ },
+ "rcdp202": {
+  "FI-CPU": {
+   "single_median_s": 0.02630319849998841,
+   "single_mean_s": 0.03786390163333143,
+   "single_max_s": 0.10210991300004935,
+   "single_sum_s": 1.1359170489999428,
+   "mean_cost_after": 10057.692592818534,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.008285040499998786,
+   "single_mean_s": 0.010231660899995632,
+   "single_max_s": 0.02527349700000059,
+   "single_sum_s": 0.30694982699986895,
+   "mean_cost_after": 9983.55950419992,
+   "infeasible": 0,
+   "mean_moves": 17.133333333333333
+  },
+  "FI-GPU": {
+   "single_median_s": 0.8486306569999726,
+   "single_mean_s": 1.1793033831666606,
+   "single_max_s": 3.166018199000007,
+   "single_sum_s": 35.379101494999816,
+   "mean_cost_after": 10057.692592818534,
+   "infeasible": 0,
+   "mean_moves": null,
+   "population_s": 33.03100398700002,
+   "population_same_as_single": true
+  },
+  "BI-GPU": {
+   "single_median_s": 0.023231819500011852,
+   "single_mean_s": 0.027399474533340632,
+   "single_max_s": 0.06923367800004598,
+   "single_sum_s": 0.821984236000219,
+   "mean_cost_after": 9983.55950419992,
+   "infeasible": 0,
+   "mean_moves": 17.133333333333333,
+   "population_s": 0.06927555700002586,
+   "population_same_as_single": true
+  },
+  "cost_before": 10368.549989286805
+ },
+ "rdp210": {
+  "FI-CPU": {
+   "single_median_s": 0.05252878550001583,
+   "single_mean_s": 0.05261622203333142,
+   "single_max_s": 0.1469784119999531,
+   "single_sum_s": 1.5784866609999426,
+   "mean_cost_after": 9022.47213034538,
+   "infeasible": 0,
+   "mean_moves": null
+  },
+  "BI-CPU": {
+   "single_median_s": 0.013761072499988813,
+   "single_mean_s": 0.012019193266665222,
+   "single_max_s": 0.026671803999988697,
+   "single_sum_s": 0.36057579799995665,
+   "mean_cost_after": 9014.39977754748,
+   "infeasible": 0,
+   "mean_moves": 21.766666666666666
+  },
+  "FI-GPU": {
+   "single_median_s": 1.7068677839999964,
+   "single_mean_s": 1.675556398466667,
+   "single_max_s": 4.791513565999992,
+   "single_sum_s": 50.26669195400001,
+   "mean_cost_after": 9022.47213034538,
+   "infeasible": 0,
+   "mean_moves": null,
+   "population_s": 48.650306091000004,
+   "population_same_as_single": true
+  },
+  "BI-GPU": {
+   "single_median_s": 0.0314501094999855,
+   "single_mean_s": 0.03100814659999666,
+   "single_max_s": 0.07495012999999062,
+   "single_sum_s": 0.9302443979998998,
+   "mean_cost_after": 9014.39977754748,
+   "infeasible": 0,
+   "mean_moves": 21.766666666666666,
+   "population_s": 0.07449540300001445,
+   "population_same_as_single": true
+  },
+  "cost_before": 9218.229075609343
+ }
+}

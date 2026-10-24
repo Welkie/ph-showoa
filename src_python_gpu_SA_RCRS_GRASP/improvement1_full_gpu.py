@@ -167,6 +167,8 @@ def allocate_buffers(is_cuda, P, R, L, N, num_islands, max_iter, prob_data):
     buf["scratch_unrouted"] = zeros((P, N + 1), np.int32)
     buf["scratch_flags"] = zeros((P, N + 1), np.int32)
     buf["scratch_scores"] = zeros((P, N + 1), np.float64)
+    buf["slot_r"] = zeros((P, N + 2 * R), np.int32)          # improvement 4: (route, position) of every slot
+    buf["slot_k"] = zeros((P, N + 2 * R), np.int32)
     buf["rng_states"] = zeros((P, 4), np.uint32)
     buf["run_log"] = zeros((max_iter, 2), np.float64)
     if is_cuda:
@@ -226,7 +228,7 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                         bak_nodes, bak_rlen, bak_nr, bak_dist, bak_cost,
                         scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                         prob_data, init_mode, alpha_lo, alpha_hi, sa_iters, re_passes,
-                        t0, alpha_sa, t_min, iter_max, rng_states):
+                        t0, alpha_sa, t_min, iter_max, rng_states, init_fi_ls):
         if init_mode == 1:
             # Algorithm 2 of the paper (--init sa)
             init_paper_sa_single(nodes, rlen, nr, dist, cost, s,
@@ -235,7 +237,9 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                                  scratch_route, scratch_unrouted, scratch_scores,
                                  prob_data, rng_states, t0, alpha_sa, t_min, iter_max)
         else:
-            # Improvement 2 (--init sa_rcrs_grasp): RCRS-GRASP, SA warm-up, route elimination, Algorithm 8
+            # Improvement 2 (--init sa_rcrs_grasp): RCRS-GRASP, SA warm-up, route elimination, local search.
+            # With --ls_strategy best (default) the local search is the block-parallel kernel of improvement 4,
+            # launched by the host right after this kernel.
             alpha = alpha_lo + rand_u01(rng_states, s) * (alpha_hi - alpha_lo)
             construct_rcrs_grasp(nodes, rlen, nr, dist, cost, s,
                                  scratch_route, scratch_unrouted, scratch_flags, scratch_scores,
@@ -244,8 +248,9 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                              prob_data, rng_states, sa_iters)
             route_elimination_single(nodes, rlen, nr, dist, cost, s,
                                      scratch_route, scratch_unrouted, scratch_flags, prob_data, re_passes)
-            deep_local_search_single(nodes, rlen, nr, dist, cost, s,
-                                     scratch_route, scratch_route2, prob_data, 1000000)
+            if init_fi_ls:
+                deep_local_search_single(nodes, rlen, nr, dist, cost, s,
+                                         scratch_route, scratch_route2, prob_data, 1000000)
 
     @k["dev_fn"]
     def diversify_population(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
@@ -292,7 +297,7 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                                    bak_nodes, bak_rlen, bak_nr, bak_dist, bak_cost,
                                    scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                                    prob_data, init_mode, alpha_lo, alpha_hi, sa_iters, re_passes,
-                                   t0, alpha_sa, t_min, iter_max, rng_states):
+                                   t0, alpha_sa, t_min, iter_max, rng_states, init_fi_ls):
             s = cuda.grid(1)
             if s < nodes.shape[0]:
                 init_individual(nodes, rlen, nr, dist, cost, s,
@@ -300,7 +305,7 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                                 bak_nodes, bak_rlen, bak_nr, bak_dist, bak_cost,
                                 scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                                 prob_data, init_mode, alpha_lo, alpha_hi, sa_iters, re_passes,
-                                t0, alpha_sa, t_min, iter_max, rng_states)
+                                t0, alpha_sa, t_min, iter_max, rng_states, init_fi_ls)
 
         @k_fn
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
@@ -349,14 +354,14 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                                    bak_nodes, bak_rlen, bak_nr, bak_dist, bak_cost,
                                    scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                                    prob_data, init_mode, alpha_lo, alpha_hi, sa_iters, re_passes,
-                                   t0, alpha_sa, t_min, iter_max, rng_states):
+                                   t0, alpha_sa, t_min, iter_max, rng_states, init_fi_ls):
             for s in range(nodes.shape[0]):
                 init_individual(nodes, rlen, nr, dist, cost, s,
                                 cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                                 bak_nodes, bak_rlen, bak_nr, bak_dist, bak_cost,
                                 scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                                 prob_data, init_mode, alpha_lo, alpha_hi, sa_iters, re_passes,
-                                t0, alpha_sa, t_min, iter_max, rng_states)
+                                t0, alpha_sa, t_min, iter_max, rng_states, init_fi_ls)
 
         @k_fn
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,

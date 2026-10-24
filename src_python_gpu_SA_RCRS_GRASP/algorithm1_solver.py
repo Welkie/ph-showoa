@@ -3,7 +3,8 @@
 Same structure as src_python_baseline/algorithm1_solver.py; the host launches one kernel per step and the whole run
 stays on the device until the best solution is copied back once at the end (improvement 1). Differences from the
 baseline are the declared improvements: initialization (improvement 2, unless --init sa), islands with ring
-migration (improvement 3) and local search for every individual with Inter 2-opt* (improvement 4).
+migration (improvement 3) and local search for every individual with Inter 2-opt*, executed block-parallel with
+best improvement (improvement 4).
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ import numpy as np
 from .algorithm9_feasibility import check_feasibility_canonical
 from .improvement1_full_gpu import allocate_buffers, build_kernel_bundle, cuda, prepare_problem_data
 from .improvement3_island_model import island_layout
+from .improvement4_population_local_search import NT as LS_THREADS
 from .problem import Problem
 from .solution import Solution
 
@@ -46,6 +48,10 @@ class SolverConfig:
     # Improvement 3
     num_islands: int = 6
     migration_interval: int = 20
+    # Improvement 4 (the defaults are the full improvement; the other values are for the ablation)
+    ls_strategy: str = "best"              # best: block-parallel best improvement | first: Algorithm 8, one thread
+    ls_scope: str = "population"           # population | best (periodic LS only for the best individual)
+    ls_2opt_star: bool = True              # add Inter 2-opt* (best strategy only)
 
 
 @dataclass
@@ -85,6 +91,10 @@ class PHSHOWOAGpuSolver:
         self.L = self.N + 2
         self.threads = 32
         self.blocks = (self.P + self.threads - 1) // self.threads
+        if self.config.ls_strategy not in ("best", "first") or self.config.ls_scope not in ("population", "best"):
+            raise ValueError("ls_strategy must be best|first and ls_scope population|best")
+        if self.config.ls_strategy == "first" and not self.config.ls_2opt_star:
+            raise ValueError("ls_2opt_star=False is only implemented for ls_strategy=best")
         self.isl_blocks = (self.num_islands + self.threads - 1) // self.threads
 
         self.kernels = build_kernel_bundle(self.is_cuda)
@@ -92,12 +102,26 @@ class PHSHOWOAGpuSolver:
         self.buf = allocate_buffers(self.is_cuda, self.P, self.R, self.L, self.N, self.num_islands,
                                     int(self.config.max_iter), self.prob_data)
 
-    def _launch(self, name, grid, *args):
+    def _launch(self, name, grid, *args, threads=None):
         kernel = self.kernels[name]
         if self.is_cuda:
-            kernel[grid, self.threads](*args)
+            kernel[grid, self.threads if threads is None else threads](*args)
         else:
             kernel(*args)
+
+    def _local_search(self, pop, only_best):
+        """Improvement 4: local search for the population (or only its best individual, ablation)."""
+        cfg, b = self.config, self.buf
+        if cfg.ls_strategy == "best":
+            self._launch("local_search_bi", 1 if only_best else self.P, *pop, b["slot_r"], b["slot_k"],
+                         b["scratch_route"], b["scratch_route2"], b["prob"], 1000000, int(cfg.ls_2opt_star),
+                         int(only_best), threads=LS_THREADS)
+        elif only_best:
+            self._launch("local_search_best_fi", 1, *pop, b["scratch_route"], b["scratch_route2"], b["prob"],
+                         1000000, threads=1)
+        else:
+            self._launch("local_search", self.blocks, *pop, b["scratch_route"], b["scratch_route2"], b["prob"],
+                         1000000)
 
     def solve(self, run_index: int = 1) -> RunResult:
         start_time = time.time()
@@ -128,7 +152,9 @@ class PHSHOWOAGpuSolver:
         self._launch("init_population", P_grid, *pop, *cand, *bak, sr, sr2, su, sf, ss, prob, init_mode,
                      float(cfg.grasp_alpha_lo), float(cfg.grasp_alpha_hi), int(cfg.sa_warmup_iterations),
                      int(cfg.route_elimination_passes), float(cfg.t0_sa), float(cfg.alpha_sa), float(cfg.t_min_sa),
-                     int(cfg.iter_max_sa), rng)
+                     int(cfg.iter_max_sa), rng, int(init_mode == 0 and cfg.ls_strategy == "first"))
+        if init_mode == 0 and cfg.ls_strategy == "best":
+            self._local_search(pop, only_best=False)     # last step of the sa_rcrs_grasp chain, every individual
         self._launch("update_island_bests", I_grid, *pop, *ibest, self.num_islands, self.island_size)
         self._launch("update_global_best", 1, *ibest, *gbest, self.num_islands)
 
@@ -146,7 +172,7 @@ class PHSHOWOAGpuSolver:
             # Lines 34-37: periodic local search (improvement 4: every individual; improvement 2: route elimination)
             if iteration % cfg.local_search_interval == 0:
                 self._launch("route_elimination", P_grid, *cur, sr, su, sf, prob, int(cfg.route_elimination_passes))
-                self._launch("local_search", P_grid, *cur, sr, sr2, prob, 1000000)
+                self._local_search(cur, only_best=cfg.ls_scope == "best")
 
             # Improvement 3: ring migration between islands
             if self.num_islands > 1 and (iteration + 1) % cfg.migration_interval == 0:

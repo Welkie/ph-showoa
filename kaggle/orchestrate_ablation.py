@@ -6,10 +6,9 @@ Kaggle orchestrator for the ablation study of docs/improved.md (sections 2-4) on
 - Each push is one batch of up to 2 jobs; a T4 x2 session runs them in parallel, one job per GPU
   (CUDA_VISIBLE_DEVICES), via kaggle/ablation_driver.py. A job = one configuration x one instance, 30 runs,
   seeds 42..71, kernels compiled once per job (run 1 includes the JIT compile).
-- The code is not fetched from GitHub: the current src_python_gpu_SA_RCRS_GRASP, the two temporary variants
-  (A1: periodic Deep LS only for the best individual; A2: Deep LS without Inter 2-opt*) and the .txt instances
-  are zipped once into kaggle/runs_ablation/payload.zip and embedded in every notebook, so every batch runs
-  exactly the same code.
+- The code is not fetched from GitHub: the current src_python_gpu_SA_RCRS_GRASP and the .txt instances are zipped
+  once into kaggle/runs_ablation/payload.zip and embedded in every notebook, so every batch runs exactly the same
+  code. The variants are SolverConfig fields (--num_islands, --init, --ls_scope, --ls_2opt_star, --ls_strategy).
 - Results are downloaded to kaggle/runs_ablation/results/ (<name>__<inst>.csv and <name>__<inst>__conv.csv).
 - Before each push the remaining weekly GPU quota of the account is checked.
 
@@ -50,98 +49,44 @@ QUOTA_SAFETY = 1.2
 MAX_RETRIES = 2
 STALE_GUARD_S = 180
 
-ALL12 = ["cdp101", "cdp103", "cdp201", "rcdp101", "rcdp104", "rcdp202", "rcdp205", "rcdp207",
-         "rdp103", "rdp201", "rdp203", "rdp210"]
-SEC2 = ["cdp101", "rcdp104", "rdp210"]
-SEC3B = ["cdp103", "rcdp205", "rdp203", "rcdp104", "rcdp207"]
+# 2 instances per class of the 100-customer Wang & Chen set: Cdp1, Cdp2, Rdp1, Rdp2, RCdp1, RCdp2
+ALL12 = ["cdp101", "cdp103", "cdp203", "cdp207", "rdp103", "rdp107", "rdp201", "rdp210",
+         "rcdp101", "rcdp104", "rcdp202", "rcdp207"]
+SEC2 = ALL12          # every section uses the same 12 instances
+SEC3B = ALL12
 
 
 def build_jobs():
-    """Batches of 2 jobs in priority order: sections 4 and 3a, then 2, then 3b."""
+    """Batches of 2 jobs in priority order: section 4 and 3a, then 2, then 3b (docs/improved.md, Ablation)."""
     batches = []
     for inst in ALL12:
-        batches.append([("B", "main", inst, {}), ("isl1", "main", inst, {"num_islands": 1})])
-        batches.append([("A1", "A1", inst, {}), ("A2", "A2", inst, {})])
+        batches.append([("B", inst, {}), ("isl1", inst, {"num_islands": 1})])
+        batches.append([("A1", inst, {"ls_scope": "best"}), ("A2", inst, {"ls_2opt_star": False})])
+    for i in range(0, len(ALL12), 2):
+        batches.append([("A3", inst, {"ls_strategy": "first"}) for inst in ALL12[i:i + 2]])
     for inst in SEC2:
-        batches.append([("sa_1000", "main", inst, {"init": "sa"}),
-                        ("sa_100", "main", inst, {"init": "sa", "max_iter": 100})])
-    shorts = [(f"{k}_{it}", "main", inst, dict({"max_iter": it}, **({"init": "sa"} if k == "sa" else {})))
+        batches.append([("sa_1000", inst, {"init": "sa"}), ("sa_100", inst, {"init": "sa", "max_iter": 100})])
+    shorts = [(f"{k}_{it}", inst, dict({"max_iter": it}, **({"init": "sa"} if k == "sa" else {})))
               for inst in SEC2 for it in (100, 200) for k in ("sa", "grasp") if (k, it) != ("sa", 100)]
     for i in range(0, len(shorts), 2):
         batches.append(shorts[i:i + 2])
     for inst in SEC3B:
-        batches.append([("P30_isl3", "main", inst, {"num_islands": 3}),
-                        ("P30_isl10", "main", inst, {"num_islands": 10})])
-        batches.append([("P60_isl12", "main", inst, {"pop_size": 60, "num_islands": 12}),
-                        ("P60_isl1", "main", inst, {"pop_size": 60, "num_islands": 1})])
-    out = []
-    for k, b in enumerate(batches):
-        out.append({"batch": f"b{k:02d}", "jobs": [{"name": n, "variant": v, "inst": i, "cfg": c} for n, v, i, c in b]})
-    return out
+        batches.append([("P30_isl3", inst, {"num_islands": 3}), ("P30_isl10", inst, {"num_islands": 10})])
+        batches.append([("P60_isl12", inst, {"pop_size": 60, "num_islands": 12}),
+                        ("P60_isl1", inst, {"pop_size": 60, "num_islands": 1})])
+    return [{"batch": f"b{k:02d}", "jobs": [{"name": n, "variant": "main", "inst": i, "cfg": c} for n, i, c in b]}
+            for k, b in enumerate(batches)]
 
 
 # --------------------------------------------------------------------------------------
 # Payload: package + variants + instances + driver
 # --------------------------------------------------------------------------------------
-def _sub(text, old, new):
-    assert text.count(old) == 1, old[:60]
-    return text.replace(old, new)
-
-
-def variant_files(variant):
-    src = REPO_ROOT / PKG
-    files = {p.name: p.read_text(encoding="utf-8") for p in sorted(src.glob("*.py"))}
-    if variant == "A1":
-        files["algorithm1_solver.py"] = _sub(
-            files["algorithm1_solver.py"],
-            'self._launch("local_search", P_grid, *cur, sr, sr2, prob, 1000000)',
-            'self._launch("local_search_best", 1, *cur, sr, sr2, prob, 1000000)')
-        f = "improvement4_population_local_search.py"
-        files[f] = _sub(files[f], '    deep_local_search_single = k["deep_local_search_single"]\n',
-                        '    deep_local_search_single = k["deep_local_search_single"]\n'
-                        '    is_better_lex = k["is_better_lex"]\n')
-        files[f] = _sub(files[f], '    kernels["local_search"] = local_search_kernel\n', '''
-    # Ablation A1: Deep LS only for the best individual of the population (one thread)
-    if is_cuda:
-        @k_fn
-        def local_search_best_kernel(nodes, rlen, nr, dist, cost, scratch_route, scratch_route2, prob_data,
-                                     max_moves):
-            if cuda.grid(1) == 0:
-                best_s = 0
-                for s in range(1, nodes.shape[0]):
-                    if is_better_lex(nr[s], dist[s], nr[best_s], dist[best_s]):
-                        best_s = s
-                deep_local_search_single(nodes, rlen, nr, dist, cost, best_s,
-                                         scratch_route, scratch_route2, prob_data, max_moves)
-    else:
-        @k_fn
-        def local_search_best_kernel(nodes, rlen, nr, dist, cost, scratch_route, scratch_route2, prob_data,
-                                     max_moves):
-            best_s = 0
-            for s in range(1, nodes.shape[0]):
-                if is_better_lex(nr[s], dist[s], nr[best_s], dist[best_s]):
-                    best_s = s
-            deep_local_search_single(nodes, rlen, nr, dist, cost, best_s,
-                                     scratch_route, scratch_route2, prob_data, max_moves)
-    kernels["local_search"] = local_search_kernel
-    kernels["local_search_best"] = local_search_best_kernel
-''')
-    elif variant == "A2":
-        f = "algorithm8_localsearch.py"
-        files[f] = _sub(
-            files[f],
-            "            if inter_2opt_star_first_improvement(nodes, rlen, nr, s, scratch_route, scratch_route2, prob_data, tol):",
-            "            if False and inter_2opt_star_first_improvement(nodes, rlen, nr, s, scratch_route, scratch_route2, prob_data, tol):")
-    return files
-
-
 def build_payload():
     insts = sorted(set(ALL12))
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        for v in ("main", "A1", "A2"):
-            for name, text in variant_files(v).items():
-                z.writestr(f"pkg/{v}/{PKG}/{name}", text)
+        for p in sorted((REPO_ROOT / PKG).glob("*.py")):
+            z.write(p, f"pkg/main/{PKG}/{p.name}")
         for i in insts:
             z.write(REPO_ROOT / "dataset" / f"{i}.txt", f"dataset/{i}.txt")
         z.write(REPO_ROOT / "kaggle" / "ablation_driver.py", "ablation_driver.py")
