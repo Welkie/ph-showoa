@@ -1,0 +1,368 @@
+[2026-10-24 18:01:22] Start: 10 workers, 42 batches
+[2026-10-24 18:02:03] [PUSH] a1 <- b00: B cdp101, isl1 cdp101
+[2026-10-24 18:02:28] [PUSH] a2 <- b01: A1 cdp101, A2 cdp101
+[2026-10-24 18:03:15] [PUSH] b1 <- b02: B cdp103, isl1 cdp103
+[2026-10-24 18:03:40] [PUSH] b2 <- b03: A1 cdp103, A2 cdp103
+[2026-10-24 18:04:15] [PUSH] c1 <- b04: B cdp201, isl1 cdp201
+[2026-10-24 18:04:31] [PUSH] c2 <- b05: A1 cdp201, A2 cdp201
+[2026-10-24 18:05:03] [PUSH] d1 <- b06: B rcdp101, isl1 rcdp101
+[2026-10-24 18:05:31] [PUSH] d2 <- b07: A1 rcdp101, A2 rcdp101
+[2026-10-24 18:06:11] [PUSH] e1 <- b08: B rcdp104, isl1 rcdp104
+[2026-10-24 18:06:43] [PUSH] e2 <- b09: A1 rcdp104, A2 rcdp104
+==============================================================================
+ 0/42 batches done | failed: -
+  a1  RUNNING   b00  B cdp101, isl1 cdp101              0h07m
+  a2  RUNNING   b01  A1 cdp101, A2 cdp101               0h07m
+  b1  RUNNING   b02  B cdp103, isl1 cdp103              0h06m
+  b2  RUNNING   b03  A1 cdp103, A2 cdp103               0h06m
+  c1  RUNNING   b04  B cdp201, isl1 cdp201              0h05m
+  c2  RUNNING   b05  A1 cdp201, A2 cdp201               0h05m
+  d1  RUNNING   b06  B rcdp101, isl1 rcdp101            0h04m
+  d2  RUNNING   b07  A1 rcdp101, A2 rcdp101             0h04m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            0h03m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             0h03m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, d=30.0h, e=30.0h
+==============================================================================
+[2026-10-24 18:32:14] [WARN] c1 unexpected status HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY NEWCONNECTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO ESTABLISH A NEW CONNECTION: [WINERROR 10053] AN ESTABLISHED CONNECTION WAS ABORTED BY THE SOFTWARE IN YOUR HOST MACHINE"))
+==============================================================================
+ 0/42 batches done | failed: -
+  a1  RUNNING   b00  B cdp101, isl1 cdp101              0h38m
+  a2  RUNNING   b01  A1 cdp101, A2 cdp101               0h37m
+  b1  RUNNING   b02  B cdp103, isl1 cdp103              0h36m
+  b2  RUNNING   b03  A1 cdp103, A2 cdp103               0h36m
+  c1  RUNNING   b04  B cdp201, isl1 cdp201              0h35m
+  c2  RUNNING   b05  A1 cdp201, A2 cdp201               0h35m
+  d1  RUNNING   b06  B rcdp101, isl1 rcdp101            0h35m
+  d2  RUNNING   b07  A1 rcdp101, A2 rcdp101             0h34m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            0h33m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             0h33m
+ GPU quota remaining: a=30.0h, b=30.0h, c=30.0h, d=30.0h, e=30.0h
+==============================================================================
+[2026-10-24 18:53:12] [DONE] b07 on d2 in 0.79h (n_gpu=2)
+[2026-10-24 18:56:08] [PUSH] d2 <- b10: B rcdp202, isl1 rcdp202
+[2026-10-24 19:00:19] [DONE] b04 on c1 in 0.93h (n_gpu=2)
+[2026-10-24 19:00:42] [DONE] b05 on c2 in 0.94h (n_gpu=2)
+[2026-10-24 19:03:23] [PUSH] c1 <- b11: A1 rcdp202, A2 rcdp202
+[2026-10-24 19:03:29] [PUSH] c2 <- b12: B rcdp205, isl1 rcdp205
+[2026-10-24 19:11:09] [DONE] b06 on d1 in 1.10h (n_gpu=2)
+==============================================================================
+ 4/42 batches done | failed: -
+  a1  RUNNING   b00  B cdp101, isl1 cdp101              1h09m
+  a2  RUNNING   b01  A1 cdp101, A2 cdp101               1h09m
+  b1  RUNNING   b02  B cdp103, isl1 cdp103              1h08m
+  b2  RUNNING   b03  A1 cdp103, A2 cdp103               1h07m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             0h08m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            0h08m
+  d1  IDLE      -                                       
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            0h15m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            1h05m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             1h04m
+ GPU quota remaining: a=30.0h, b=30.0h, c=28.2h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102]
+==============================================================================
+[2026-10-24 19:13:56] [PUSH] d1 <- b13: A1 rcdp205, A2 rcdp205
+[2026-10-24 19:17:53] [WARN] d1 unexpected status WARNING: LOOKS LIKE YOU'RE USING AN OUTDATED `KAGGLE` VERSION (INSTALLED: 2.2.4), PLEASE CONSIDER UPGRADING TO THE LATEST VERSION (2.2.5)
+ ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+[2026-10-24 19:27:15] [DONE] b01 on a2 in 1.41h (n_gpu=2)
+[2026-10-24 19:27:59] [WARN] c2 unexpected status ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+[2026-10-24 19:30:45] [PUSH] a2 <- b14: B rcdp207, isl1 rcdp207
+[2026-10-24 19:31:15] [DONE] b00 on a1 in 1.49h (n_gpu=2)
+[2026-10-24 19:35:12] [PUSH] a1 <- b15: A1 rcdp207, A2 rcdp207
+[2026-10-24 19:36:09] [DONE] b02 on b1 in 1.55h (n_gpu=2)
+[2026-10-24 19:39:58] [PUSH] b1 <- b16: B rdp103, isl1 rdp103
+[2026-10-24 19:40:56] [WARN] c2 unexpected status ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+==============================================================================
+ 7/42 batches done | failed: -
+  a1  RUNNING   b15  A1 rcdp207, A2 rcdp207             0h09m
+  a2  RUNNING   b14  B rcdp207, isl1 rcdp207            0h13m
+  b1  RUNNING   b16  B rdp103, isl1 rdp103              0h04m
+  b2  RUNNING   b03  A1 cdp103, A2 cdp103               1h41m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             0h41m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            0h41m
+  d1  RUNNING   b13  A1 rcdp205, A2 rcdp205             0h30m
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            0h48m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            1h38m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             1h37m
+ GPU quota remaining: a=27.1h, b=26.9h, c=28.2h, d=27.9h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102, 1.413, 1.487, 1.548]
+==============================================================================
+[2026-10-24 19:47:42] [DONE] b03 on b2 in 1.73h (n_gpu=2)
+[2026-10-24 19:50:49] [PUSH] b2 <- b17: A1 rdp103, A2 rdp103
+[2026-10-24 19:55:58] [WARN] e1 unexpected status WARNING: LOOKS LIKE YOU'RE USING AN OUTDATED `KAGGLE` VERSION (INSTALLED: 2.2.4), PLEASE CONSIDER UPGRADING TO THE LATEST VERSION (2.2.5)
+ ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+[2026-10-24 20:03:34] [WARN] e2 unexpected status WARNING: LOOKS LIKE YOU'RE USING AN OUTDATED `KAGGLE` VERSION (INSTALLED: 2.2.4), PLEASE CONSIDER UPGRADING TO THE LATEST VERSION (2.2.5)
+ ('CONNECTION ABORTED.', CONNECTIONABORTEDERROR(10053, 'AN ESTABLISHED CONNECTION WAS ABORTED BY THE SOFTWARE IN YOUR HOST MACHINE', NONE, 10053, NONE))
+[2026-10-24 20:05:51] [WARN] a1 unexpected status HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY NAMERESOLUTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)"))
+[2026-10-24 20:06:12] [WARN] a2 unexpected status HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY NAMERESOLUTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)"))
+[2026-10-24 20:06:40] [WARN] b1 unexpected status TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 239, IN _NEW_CONN
+    SOCK = CONNECTION.CREATE_CONNECTION(
+        (SELF._DNS_HOST, SELF.PORT),
+    ...<2 LINES>...
+        SOCKET_OPTIONS=SELF.SOCKET_OPTIONS,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\CONNECTION.PY", LINE 60, IN CREATE_CONNECTION
+    FOR RES IN SOCKET.GETADDRINFO(HOST, PORT, FAMILY, SOCKET.SOCK_STREAM):
+               ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "C:\PROGRAM FILES\PYTHON313\LIB\SOCKET.PY", LINE 977, IN GETADDRINFO
+    FOR RES IN _SOCKET.GETADDRINFO(HOST, PORT, FAMILY, TYPE, PROTO, FLAGS):
+               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SOCKET.GAIERROR: [ERRNO 11001] GETADDRINFO FAILED
+
+THE ABOVE EXCEPTION WAS THE DIRECT CAUSE OF THE FOLLOWING EXCEPTION:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 793, IN URLOPEN
+    RESPONSE = SELF._MAKE_REQUEST(
+        CONN,
+    ...<10 LINES>...
+        **RESPONSE_KW,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 494, IN _MAKE_REQUEST
+    RAISE NEW_E
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 470, IN _MAKE_REQUEST
+    SELF._VALIDATE_CONN(CONN)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 1125, IN _VALIDATE_CONN
+    CONN.CONNECT()
+    ~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 827, IN CONNECT
+    SELF.SOCK = SOCK = SELF._NEW_CONN()
+                       ~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 246, IN _NEW_CONN
+    RAISE NAMERESOLUTIONERROR(SELF.HOST, SELF, E) FROM E
+URLLIB3.EXCEPTIONS.NAMERESOLUTIONERROR: HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)
+
+THE ABOVE EXCEPTION WAS THE DIRECT CAUSE OF THE FOLLOWING EXCEPTION:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\ADAPTERS.PY", LINE 696, IN SEND
+    RESP = CONN.URLOPEN(
+        METHOD=REQUEST.METHOD,
+    ...<9 LINES>...
+        CHUNKED=CHUNKED,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 847, IN URLOPEN
+    RETRIES = RETRIES.INCREMENT(
+        METHOD, URL, ERROR=NEW_E, _POOL=SELF, _STACKTRACE=SYS.EXC_INFO()[2]
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\RETRY.PY", LINE 555, IN INCREMENT
+    RAISE MAXRETRYERROR(_POOL, URL, REASON) FROM REASON  # TYPE: IGNORE[ARG-TYPE]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+URLLIB3.EXCEPTIONS.MAXRETRYERROR: HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/SECURITY.OAUTHSERVICE/INTROSPECTTOKEN (CAUSED BY NAMERESOLUTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)"))
+
+DURING HANDLING OF THE ABOVE EXCEPTION, ANOTHER EXCEPTION OCCURRED:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "<FROZEN RUNPY>", LINE 198, IN _RUN_MODULE_AS_MAIN
+  FILE "<FROZEN RUNPY>", LINE 88, IN _RUN_CODE
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\SCRIPTS\KAGGLE.EXE\__MAIN__.PY", LINE 10, IN <MODULE>
+    SYS.EXIT(MAIN())
+             ~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\CLI.PY", LINE 75, IN MAIN
+    API.AUTHENTICATE()
+    ~~~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1239, IN AUTHENTICATE
+    IF SELF._AUTHENTICATE_WITH_ACCESS_TOKEN():
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1310, IN _AUTHENTICATE_WITH_ACCESS_TOKEN
+    USERNAME = SELF._INTROSPECT_TOKEN(ACCESS_TOKEN)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1352, IN _INTROSPECT_TOKEN
+    RESPONSE = KAGGLE.SECURITY.OAUTH_CLIENT.INTROSPECT_TOKEN(REQUEST)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLESDK\SECURITY\SERVICES\OAUTH_SERVICE.PY", LINE 44, IN INTROSPECT_TOKEN
+    RETURN SELF._CLIENT.CALL("SECURITY.OAUTHSERVICE", "INTROSPECTTOKEN", REQUEST, INTROSPECTTOKENRESPONSE)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLESDK\KAGGLE_HTTP_CLIENT.PY", LINE 104, IN CALL
+    HTTP_RESPONSE = SELF._SESSION.SEND(HTTP_REQUEST, **SETTINGS)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\SESSIONS.PY", LINE 784, IN SEND
+    R = ADAPTER.SEND(REQUEST, **KWARGS)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\ADAPTERS.PY", LINE 729, IN SEND
+    RAISE CONNECTIONERROR(E, REQUEST=REQUEST)
+REQUESTS.EXCEPTIONS.CONNECTIONERROR: HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/SECURITY.OAUTHSERVICE/INTROSPECTTOKEN (CAUSED BY NAMERESOLUTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)"))
+[2026-10-24 20:06:57] [WARN] b2 unexpected status TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 239, IN _NEW_CONN
+    SOCK = CONNECTION.CREATE_CONNECTION(
+        (SELF._DNS_HOST, SELF.PORT),
+    ...<2 LINES>...
+        SOCKET_OPTIONS=SELF.SOCKET_OPTIONS,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\CONNECTION.PY", LINE 60, IN CREATE_CONNECTION
+    FOR RES IN SOCKET.GETADDRINFO(HOST, PORT, FAMILY, SOCKET.SOCK_STREAM):
+               ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "C:\PROGRAM FILES\PYTHON313\LIB\SOCKET.PY", LINE 977, IN GETADDRINFO
+    FOR RES IN _SOCKET.GETADDRINFO(HOST, PORT, FAMILY, TYPE, PROTO, FLAGS):
+               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SOCKET.GAIERROR: [ERRNO 11001] GETADDRINFO FAILED
+
+THE ABOVE EXCEPTION WAS THE DIRECT CAUSE OF THE FOLLOWING EXCEPTION:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 793, IN URLOPEN
+    RESPONSE = SELF._MAKE_REQUEST(
+        CONN,
+    ...<10 LINES>...
+        **RESPONSE_KW,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 494, IN _MAKE_REQUEST
+    RAISE NEW_E
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 470, IN _MAKE_REQUEST
+    SELF._VALIDATE_CONN(CONN)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 1125, IN _VALIDATE_CONN
+    CONN.CONNECT()
+    ~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 827, IN CONNECT
+    SELF.SOCK = SOCK = SELF._NEW_CONN()
+                       ~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 246, IN _NEW_CONN
+    RAISE NAMERESOLUTIONERROR(SELF.HOST, SELF, E) FROM E
+URLLIB3.EXCEPTIONS.NAMERESOLUTIONERROR: HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)
+
+THE ABOVE EXCEPTION WAS THE DIRECT CAUSE OF THE FOLLOWING EXCEPTION:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\ADAPTERS.PY", LINE 696, IN SEND
+    RESP = CONN.URLOPEN(
+        METHOD=REQUEST.METHOD,
+    ...<9 LINES>...
+        CHUNKED=CHUNKED,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 847, IN URLOPEN
+    RETRIES = RETRIES.INCREMENT(
+        METHOD, URL, ERROR=NEW_E, _POOL=SELF, _STACKTRACE=SYS.EXC_INFO()[2]
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\RETRY.PY", LINE 555, IN INCREMENT
+    RAISE MAXRETRYERROR(_POOL, URL, REASON) FROM REASON  # TYPE: IGNORE[ARG-TYPE]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+URLLIB3.EXCEPTIONS.MAXRETRYERROR: HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/SECURITY.OAUTHSERVICE/INTROSPECTTOKEN (CAUSED BY NAMERESOLUTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)"))
+
+DURING HANDLING OF THE ABOVE EXCEPTION, ANOTHER EXCEPTION OCCURRED:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "<FROZEN RUNPY>", LINE 198, IN _RUN_MODULE_AS_MAIN
+  FILE "<FROZEN RUNPY>", LINE 88, IN _RUN_CODE
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\SCRIPTS\KAGGLE.EXE\__MAIN__.PY", LINE 10, IN <MODULE>
+    SYS.EXIT(MAIN())
+             ~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\CLI.PY", LINE 75, IN MAIN
+    API.AUTHENTICATE()
+    ~~~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1239, IN AUTHENTICATE
+    IF SELF._AUTHENTICATE_WITH_ACCESS_TOKEN():
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1310, IN _AUTHENTICATE_WITH_ACCESS_TOKEN
+    USERNAME = SELF._INTROSPECT_TOKEN(ACCESS_TOKEN)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1352, IN _INTROSPECT_TOKEN
+    RESPONSE = KAGGLE.SECURITY.OAUTH_CLIENT.INTROSPECT_TOKEN(REQUEST)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLESDK\SECURITY\SERVICES\OAUTH_SERVICE.PY", LINE 44, IN INTROSPECT_TOKEN
+    RETURN SELF._CLIENT.CALL("SECURITY.OAUTHSERVICE", "INTROSPECTTOKEN", REQUEST, INTROSPECTTOKENRESPONSE)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLESDK\KAGGLE_HTTP_CLIENT.PY", LINE 104, IN CALL
+    HTTP_RESPONSE = SELF._SESSION.SEND(HTTP_REQUEST, **SETTINGS)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\SESSIONS.PY", LINE 784, IN SEND
+    R = ADAPTER.SEND(REQUEST, **KWARGS)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\ADAPTERS.PY", LINE 729, IN SEND
+    RAISE CONNECTIONERROR(E, REQUEST=REQUEST)
+REQUESTS.EXCEPTIONS.CONNECTIONERROR: HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/SECURITY.OAUTHSERVICE/INTROSPECTTOKEN (CAUSED BY NAMERESOLUTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)"))
+==============================================================================
+ 8/42 batches done | failed: -
+  a1  RUNNING   b15  A1 rcdp207, A2 rcdp207             0h40m
+  a2  RUNNING   b14  B rcdp207, isl1 rcdp207            0h44m
+  b1  RUNNING   b16  B rdp103, isl1 rdp103              0h35m
+  b2  RUNNING   b17  A1 rdp103, A2 rdp103               0h24m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             1h11m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            1h11m
+  d1  RUNNING   b13  A1 rcdp205, A2 rcdp205             1h01m
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            1h19m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            2h09m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             2h08m
+ GPU quota remaining: a=27.1h, b=26.6h, c=28.2h, d=27.9h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102, 1.413, 1.487, 1.548, 1.734]
+==============================================================================
+[2026-10-24 20:24:52] [WARN] c2 unexpected status ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+==============================================================================
+ 8/42 batches done | failed: -
+  a1  RUNNING   b15  A1 rcdp207, A2 rcdp207             1h12m
+  a2  RUNNING   b14  B rcdp207, isl1 rcdp207            1h16m
+  b1  RUNNING   b16  B rdp103, isl1 rdp103              1h07m
+  b2  RUNNING   b17  A1 rdp103, A2 rdp103               0h56m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             1h44m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            1h43m
+  d1  RUNNING   b13  A1 rcdp205, A2 rcdp205             1h33m
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            1h51m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            2h41m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             2h40m
+ GPU quota remaining: a=27.1h, b=26.6h, c=28.2h, d=27.9h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102, 1.413, 1.487, 1.548, 1.734]
+==============================================================================
+[2026-10-24 21:11:12] [DONE] b17 on b2 in 1.34h (n_gpu=2)
+[2026-10-24 21:14:12] [PUSH] b2 <- b18: B rdp201, isl1 rdp201
+==============================================================================
+ 9/42 batches done | failed: -
+  a1  RUNNING   b15  A1 rcdp207, A2 rcdp207             1h43m
+  a2  RUNNING   b14  B rcdp207, isl1 rcdp207            1h48m
+  b1  RUNNING   b16  B rdp103, isl1 rdp103              1h38m
+  b2  RUNNING   b18  B rdp201, isl1 rdp201              0h04m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             2h15m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            2h15m
+  d1  RUNNING   b13  A1 rcdp205, A2 rcdp205             2h04m
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            2h22m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            3h12m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             3h12m
+ GPU quota remaining: a=27.1h, b=23.9h, c=28.2h, d=27.9h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102, 1.34, 1.413, 1.487, 1.548, 1.734]
+==============================================================================
+[2026-10-24 21:34:42] [DONE] b16 on b1 in 1.91h (n_gpu=2)
+[2026-10-24 21:38:30] [PUSH FAILED] b1 b19: Warning: Looks like you're using an outdated `kaggle` version (installed: 2.2.4), please consider upgrading to the latest version (2.2.5)
+
+Expecting value: line 1 column 1 (char 0)
+[2026-10-24 21:42:07] [PUSH] b1 <- b19: A1 rdp201, A2 rdp201
+[2026-10-24 21:42:39] [WARN] b1 unexpected status WARNING: LOOKS LIKE YOU'RE USING AN OUTDATED `KAGGLE` VERSION (INSTALLED: 2.2.4), PLEASE CONSIDER UPGRADING TO THE LATEST VERSION (2.2.5)
+ ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+==============================================================================
+ 10/42 batches done | failed: -
+  a1  RUNNING   b15  A1 rcdp207, A2 rcdp207             2h14m
+  a2  RUNNING   b14  B rcdp207, isl1 rcdp207            2h19m
+  b1  RUNNING   b19  A1 rdp201, A2 rdp201               0h07m
+  b2  RUNNING   b18  B rdp201, isl1 rdp201              0h35m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             2h46m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            2h46m
+  d1  RUNNING   b13  A1 rcdp205, A2 rcdp205             2h36m
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            2h53m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            3h43m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             3h43m
+ GPU quota remaining: a=27.1h, b=23.2h, c=28.2h, d=27.9h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102, 1.34, 1.413, 1.487, 1.548, 1.734, 1.912]
+==============================================================================
+==============================================================================
+ 10/42 batches done | failed: -
+  a1  RUNNING   b15  A1 rcdp207, A2 rcdp207             2h48m
+  a2  RUNNING   b14  B rcdp207, isl1 rcdp207            2h52m
+  b1  RUNNING   b19  A1 rdp201, A2 rdp201               0h41m
+  b2  RUNNING   b18  B rdp201, isl1 rdp201              1h09m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             3h20m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            3h19m
+  d1  RUNNING   b13  A1 rcdp205, A2 rcdp205             3h09m
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            3h27m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            4h17m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             4h16m
+ GPU quota remaining: a=27.1h, b=23.2h, c=28.2h, d=27.9h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102, 1.34, 1.413, 1.487, 1.548, 1.734, 1.912]
+==============================================================================
+==============================================================================
+ 10/42 batches done | failed: -
+  a1  RUNNING   b15  A1 rcdp207, A2 rcdp207             3h20m
+  a2  RUNNING   b14  B rcdp207, isl1 rcdp207            3h24m
+  b1  RUNNING   b19  A1 rdp201, A2 rdp201               1h13m
+  b2  RUNNING   b18  B rdp201, isl1 rdp201              1h41m
+  c1  RUNNING   b11  A1 rcdp202, A2 rcdp202             3h52m
+  c2  RUNNING   b12  B rcdp205, isl1 rcdp205            3h52m
+  d1  RUNNING   b13  A1 rcdp205, A2 rcdp205             3h41m
+  d2  RUNNING   b10  B rcdp202, isl1 rcdp202            3h59m
+  e1  RUNNING   b08  B rcdp104, isl1 rcdp104            4h49m
+  e2  RUNNING   b09  A1 rcdp104, A2 rcdp104             4h48m
+ GPU quota remaining: a=27.1h, b=23.2h, c=28.2h, d=27.9h, e=30.0h
+ batch wall time (h): [0.795, 0.934, 0.936, 1.102, 1.34, 1.413, 1.487, 1.548, 1.734, 1.912]
+==============================================================================
+[2026-10-24 23:15:48] [DONE] b09 on e2 in 5.15h (n_gpu=2)
+[2026-10-24 23:18:30] [PUSH] e2 <- b20: B rdp203, isl1 rdp203

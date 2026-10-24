@@ -1,0 +1,111 @@
+{
+ "workers": {
+  "a1": {
+   "status": "RUNNING",
+   "batch": "b15",
+   "batch_id": "7d45ab7c2da9",
+   "pushed_at": 1792845312.2938328,
+   "seen_running": true
+  },
+  "a2": {
+   "status": "RUNNING",
+   "batch": "b14",
+   "batch_id": "bf8ba4ddb0f5",
+   "pushed_at": 1792845045.6478562,
+   "seen_running": true
+  },
+  "b1": {
+   "status": "RUNNING",
+   "batch": "b19",
+   "batch_id": "4b477b31005f",
+   "pushed_at": 1792852927.8971155,
+   "seen_running": true
+  },
+  "b2": {
+   "status": "RUNNING",
+   "batch": "b18",
+   "batch_id": "44dc413c33fe",
+   "pushed_at": 1792851252.4235318,
+   "seen_running": true
+  },
+  "c1": {
+   "status": "RUNNING",
+   "batch": "b11",
+   "batch_id": "fb613bb91196",
+   "pushed_at": 1792843403.2589135,
+   "seen_running": true
+  },
+  "c2": {
+   "status": "RUNNING",
+   "batch": "b12",
+   "batch_id": "c0e4761e3ffd",
+   "pushed_at": 1792843409.1415195,
+   "seen_running": true
+  },
+  "d1": {
+   "status": "RUNNING",
+   "batch": "b13",
+   "batch_id": "16c5de99d02d",
+   "pushed_at": 1792844036.2283282,
+   "seen_running": true
+  },
+  "d2": {
+   "status": "RUNNING",
+   "batch": "b10",
+   "batch_id": "cbc5d9153180",
+   "pushed_at": 1792842968.9701138,
+   "seen_running": true
+  },
+  "e1": {
+   "status": "RUNNING",
+   "batch": "b08",
+   "batch_id": "4151037bb8bb",
+   "pushed_at": 1792839971.64876,
+   "seen_running": true
+  },
+  "e2": {
+   "status": "RUNNING",
+   "batch": "b20",
+   "batch_id": "f49acae04977",
+   "pushed_at": 1792858710.5175564,
+   "seen_running": true
+  }
+ },
+ "retries": {},
+ "failed": {},
+ "hours": [
+  0.795,
+  0.934,
+  0.936,
+  1.102,
+  1.413,
+  1.487,
+  1.548,
+  1.734,
+  1.34,
+  1.912,
+  5.152
+ ],
+ "quota": {
+  "c": {
+   "t": 1792843397.0150914,
+   "remaining": 28.2
+  },
+  "d": {
+   "t": 1792844027.0258112,
+   "remaining": 27.9
+  },
+  "a": {
+   "t": 1792845298.1194434,
+   "remaining": 27.08
+  },
+  "b": {
+   "t": 1792852687.031228,
+   "remaining": 23.2
+  },
+  "e": {
+   "t": 1792858683.6739018,
+   "remaining": 19.67
+  }
+ }
+}

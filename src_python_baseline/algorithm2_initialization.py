@@ -16,7 +16,6 @@ def construct_initial_solution(problem: Problem, rng: random.Random) -> Solution
     Customer order sorted by due date with randomized perturbation across seeds.
     Each customer is inserted into the best feasible position across existing routes,
     or opens a new route if no feasible insertion exists.
-    Priority Level 4 selection: the paper takes S0 as input (Algorithm 2) but does not define how it is built.
     """
     customers = list(range(1, problem.num_customers + 1))
     rng.shuffle(customers)

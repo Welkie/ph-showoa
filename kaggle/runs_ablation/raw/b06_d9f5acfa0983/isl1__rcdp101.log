@@ -1,0 +1,50 @@
+isl1 rcdp101: backend=cuda islands=1
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=16 TD=1714.97 feasible=True (195.7s)
+  run 02 seed=43 NV=16 TD=1706.81 feasible=True (126.5s)
+  run 03 seed=44 NV=16 TD=1722.88 feasible=True (126.3s)
+  run 04 seed=45 NV=16 TD=1709.94 feasible=True (122.8s)
+  run 05 seed=46 NV=16 TD=1734.17 feasible=True (123.7s)
+  run 06 seed=47 NV=16 TD=1709.78 feasible=True (125.7s)
+  run 07 seed=48 NV=16 TD=1695.44 feasible=True (124.7s)
+  run 08 seed=49 NV=16 TD=1729.70 feasible=True (124.2s)
+  run 09 seed=50 NV=16 TD=1685.26 feasible=True (124.9s)
+  run 10 seed=51 NV=16 TD=1702.81 feasible=True (128.3s)
+  run 11 seed=52 NV=16 TD=1692.20 feasible=True (124.3s)
+  run 12 seed=53 NV=16 TD=1721.24 feasible=True (125.9s)
+  run 13 seed=54 NV=16 TD=1683.29 feasible=True (125.2s)
+  run 14 seed=55 NV=16 TD=1676.05 feasible=True (123.5s)
+  run 15 seed=56 NV=16 TD=1705.09 feasible=True (124.9s)
+  run 16 seed=57 NV=16 TD=1724.08 feasible=True (123.7s)
+  run 17 seed=58 NV=16 TD=1683.08 feasible=True (127.9s)
+  run 18 seed=59 NV=16 TD=1710.45 feasible=True (122.6s)
+  run 19 seed=60 NV=15 TD=1717.33 feasible=True (124.8s)
+  run 20 seed=61 NV=16 TD=1704.09 feasible=True (125.6s)
+  run 21 seed=62 NV=16 TD=1684.29 feasible=True (128.4s)
+  run 22 seed=63 NV=16 TD=1738.23 feasible=True (122.6s)
+  run 23 seed=64 NV=16 TD=1717.80 feasible=True (122.4s)
+  run 24 seed=65 NV=16 TD=1715.22 feasible=True (122.2s)
+  run 25 seed=66 NV=16 TD=1696.91 feasible=True (125.5s)
+  run 26 seed=67 NV=16 TD=1714.93 feasible=True (125.7s)
+  run 27 seed=68 NV=16 TD=1714.26 feasible=True (125.5s)
+  run 28 seed=69 NV=16 TD=1708.09 feasible=True (124.1s)
+  run 29 seed=70 NV=16 TD=1677.62 feasible=True (124.1s)
+  run 30 seed=71 NV=16 TD=1694.42 feasible=True (122.5s)
+DONE isl1 rcdp101 3814s

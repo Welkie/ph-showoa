@@ -21,6 +21,9 @@ def based_on_woa_update(
     Algorithm 4. BasedOnWOAUpdate (Best-Guided Intensification)
     Encircling prey, spiral movement, and controlled local perturbations
     anchored to the current global best solution.
+    Direction B: Acts as a candidate generator returning feasible candidate
+    directly (allowing nf > cf) so Master SA in Algorithm 1 governs acceptance.
+    Safely falls back to whale.copy() only if repair cannot achieve feasibility.
     """
     routes = [list(r) for r in whale.routes if len(r) > 0]
     best_routes = [list(r) for r in best_whale.routes if len(r) > 0]
@@ -43,8 +46,7 @@ def based_on_woa_update(
 
         if p < 0.5:
             if abs(ai) < 1.0:
-                # ENCIRCLING_PREY (line 18): not defined in the paper. Priority Level 4 selection:
-                # align the order of shared customers toward best_route.
+                # ENCIRCLING_PREY: align shared customer order toward best_route
                 fraction = (1.0 - abs(ai)) * (ci / 2.0)
                 _relink(route, best_route, fraction, ai >= 0.0)
             else:
@@ -61,15 +63,12 @@ def based_on_woa_update(
                         routes = backup_all_routes
                         route = routes[i]
         else:
-            # SPIRAL_MOVEMENT (line 31): not defined in the paper. Priority Level 4 selection:
-            # fraction from the original WOA spiral e^l * cos(2*pi*l).
+            # SPIRAL_MOVEMENT
             l = ci - 1.0
             fraction = min(1.0, abs(math.exp(l) * math.cos(2.0 * math.pi * l)))
             _relink(route, best_route, fraction, l >= 0.0)
 
-        # Lines 33-34: route feasibility check. The paper restores only route i; we restore the
-        # whole pre-step copy because a multi-route move (line 24) may also have changed other routes,
-        # and restoring route i alone could duplicate or drop customers.
+        # Route feasibility check
         if not is_route_feasible(route, problem):
             routes = backup_all_routes
 
@@ -77,16 +76,15 @@ def based_on_woa_update(
     routes = [r for r in routes if len(r) > 0]
     cand = Solution(routes, problem)
 
-    # Lines 37-38: ValidateRoutes fallback to single-customer routes if invalid
+    # Feasibility check & repair (Direction B candidate generator)
     if not is_solution_feasible(cand, problem):
-        fallback_routes = [[c] for c in range(1, problem.num_customers + 1)]
-        cand = Solution(fallback_routes, problem)
+        cand = repair_procedure(cand, problem)
+        if not is_solution_feasible(cand, problem):
+            return whale.copy()
 
-    # Lines 42-44 & 50: Accept candidate only if better than current whale
-    if cand.cost < whale.cost:
-        return cand
-    else:
-        return whale.copy()
+    # Direction B: Candidate generator returns feasible candidate directly (allowing nf > cf).
+    # The Master Simulated Annealing in Algorithm 1 decides acceptance.
+    return cand
 
 
 def _relink(route: List[int], target: List[int], fraction: float, forward: bool) -> None:

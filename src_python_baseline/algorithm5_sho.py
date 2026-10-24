@@ -35,7 +35,9 @@ def based_on_sho_update(
     Algorithm 5. BasedOnSHOUpdate (Population-Guided Diversification)
     Recombines information from best, a tournament partner, and current hyena,
     with probabilistic mutation (pm=0.35) and feasibility repair.
-    Table 2 lists h, rd1, rd2 for SHO, but Algorithm 5 does not use them; this follows the pseudo-code.
+    Direction B: Acts as a candidate generator returning feasible candidate
+    directly (allowing nf > cf) so Master SA in Algorithm 1 governs acceptance.
+    Safely falls back to base only if repair cannot achieve feasibility.
     """
     base = hyena.copy()
 
@@ -55,8 +57,7 @@ def based_on_sho_update(
         if not is_solution_feasible(combined, problem):
             return base
 
-    # Lines 14-21: Return better solution (page 15: compared against reference/current solution)
-    if combined.cost < base.cost:
-        return combined
-    else:
-        return base
+    # Direction B: Candidate generator returns feasible candidate directly (allowing nf > cf).
+    # The Master Simulated Annealing in Algorithm 1 decides acceptance.
+    return combined
+
