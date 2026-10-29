@@ -2,9 +2,8 @@
 
 Same structure as src_python_baseline/algorithm1_solver.py; the host launches one kernel per step and the whole run
 stays on the device until the best solution is copied back once at the end (improvement 1). Differences from the
-baseline are the declared improvements: initialization (improvement 2, unless --init sa), islands with ring
-migration (improvement 3) and local search for every individual with Inter 2-opt*, executed block-parallel with
-best improvement (improvement 4).
+baseline are the declared improvements: initialization (improvement 2, unless --init sa) and local search for
+every individual with Inter 2-opt*, executed block-parallel with best improvement (improvement 3).
 """
 
 from __future__ import annotations
@@ -12,15 +11,16 @@ from __future__ import annotations
 import math
 import os
 import time
+import warnings
 from dataclasses import dataclass, field
 from typing import List, Optional
 
 import numpy as np
 
 from .algorithm9_feasibility import check_feasibility_canonical
+from .improvement1_block_parallel import NTU as UPD_THREADS
 from .improvement1_full_gpu import allocate_buffers, build_kernel_bundle, cuda, prepare_problem_data
-from .improvement3_island_model import island_layout
-from .improvement4_population_local_search import NT as LS_THREADS
+from .improvement3_population_local_search import NT as LS_THREADS
 from .problem import Problem
 from .solution import Solution
 
@@ -34,24 +34,22 @@ class SolverConfig:
     stagnation_limit: int = 50
     mutation_prob: float = 0.35
     compute_backend: str = "auto"          # auto | cuda | cpu
-    # Initialization: "sa_rcrs_grasp" (improvement 2) or "sa" (Algorithm 2 of the paper)
+    # Initialization: "sa_rcrs_grasp" (improvement 2), "sa" (Algorithm 2 of the paper) or "mixed" (half each)
     init: str = "sa_rcrs_grasp"
     grasp_alpha_lo: float = 0.10
     grasp_alpha_hi: float = 0.40
-    sa_warmup_iterations: int = 25
+    sa_warmup_iterations: int = 0          # SA warm-up after RCRS-GRASP (off: the ejection pool replaces it)
     route_elimination_passes: int = 5
+    ep_budget: int = 5000                  # ejection-pool route minimization after RCRS-GRASP (CUDA only; not for init "sa")
     # Algorithm 2 parameters (same Priority Level 4 choice as src_python_baseline)
     t0_sa: float = 1.0
     alpha_sa: float = 0.9
     t_min_sa: float = 0.01
     iter_max_sa: int = 20
-    # Improvement 3
-    num_islands: int = 6
-    migration_interval: int = 20
-    # Improvement 4 (the defaults are the full improvement; the other values are for the ablation)
+    # Improvement 3 (the defaults are the full improvement; the other values are for the ablation)
     ls_strategy: str = "best"              # best: block-parallel best improvement | first: Algorithm 8, one thread
     ls_scope: str = "population"           # population | best (periodic LS only for the best individual)
-    ls_2opt_star: bool = True              # add Inter 2-opt* (best strategy only)
+    ls_2opt_star: bool = True              # add Inter 2-opt*
 
 
 @dataclass
@@ -81,11 +79,6 @@ class PHSHOWOAGpuSolver:
         self.is_cuda = cuda_ok if backend == "auto" else backend == "cuda"
 
         self.P = int(self.config.pop_size)
-        self.num_islands = island_layout(self.P, self.config.num_islands)
-        if self.num_islands != self.config.num_islands:
-            print(f"[WARN] pop_size={self.P} is not divisible by num_islands={self.config.num_islands}; "
-                  f"using {self.num_islands} island(s) of {self.P // self.num_islands} individuals", flush=True)
-        self.island_size = self.P // self.num_islands
         self.N = problem.num_customers
         self.R = min(self.N + 5, 105)
         self.L = self.N + 2
@@ -93,14 +86,8 @@ class PHSHOWOAGpuSolver:
         self.blocks = (self.P + self.threads - 1) // self.threads
         if self.config.ls_strategy not in ("best", "first") or self.config.ls_scope not in ("population", "best"):
             raise ValueError("ls_strategy must be best|first and ls_scope population|best")
-        if self.config.ls_strategy == "first" and not self.config.ls_2opt_star:
-            raise ValueError("ls_2opt_star=False is only implemented for ls_strategy=best")
-        self.isl_blocks = (self.num_islands + self.threads - 1) // self.threads
 
         self.kernels = build_kernel_bundle(self.is_cuda)
-        self.prob_data = prepare_problem_data(problem)
-        self.buf = allocate_buffers(self.is_cuda, self.P, self.R, self.L, self.N, self.num_islands,
-                                    int(self.config.max_iter), self.prob_data)
 
     def _launch(self, name, grid, *args, threads=None):
         kernel = self.kernels[name]
@@ -110,7 +97,7 @@ class PHSHOWOAGpuSolver:
             kernel(*args)
 
     def _local_search(self, pop, only_best):
-        """Improvement 4: local search for the population (or only its best individual, ablation)."""
+        """Improvement 3: local search for the population (or only its best individual, ablation)."""
         cfg, b = self.config, self.buf
         if cfg.ls_strategy == "best":
             self._launch("local_search_bi", 1 if only_best else self.P, *pop, b["slot_r"], b["slot_k"],
@@ -118,18 +105,25 @@ class PHSHOWOAGpuSolver:
                          int(only_best), threads=LS_THREADS)
         elif only_best:
             self._launch("local_search_best_fi", 1, *pop, b["scratch_route"], b["scratch_route2"], b["prob"],
-                         1000000, threads=1)
+                         1000000, int(cfg.ls_2opt_star), threads=1)
         else:
             self._launch("local_search", self.blocks, *pop, b["scratch_route"], b["scratch_route2"], b["prob"],
-                         1000000)
+                         1000000, int(cfg.ls_2opt_star))
 
     def solve(self, run_index: int = 1) -> RunResult:
         start_time = time.time()
         cfg = self.config
-        b = self.buf
+        # Every run is timed on its own: the problem data is prepared and copied to the device and the buffers are
+        # allocated inside the timed part (only the kernel compilation of the first run is shared)
+        self.prob_data = prepare_problem_data(self.problem)
+        # Improvement 1: prefix tables of the block-parallel insertions need integer demands and capacity
+        q, dl, pk = self.prob_data[1], self.prob_data[5], self.prob_data[6]
+        self.opt = 2 if (float(q).is_integer() and np.all(dl == np.round(dl)) and np.all(pk == np.round(pk))) else 0
+        self.buf = b = allocate_buffers(self.is_cuda, self.P, self.R, self.L, self.N, int(cfg.max_iter),
+                                        self.prob_data)
         prob = b["prob"]
         max_iter = int(cfg.max_iter)
-        P_grid, I_grid = self.blocks, self.isl_blocks
+        P_grid = self.blocks
         sr, sr2, su, sf, ss = (b["scratch_route"], b["scratch_route2"], b["scratch_unrouted"],
                                b["scratch_flags"], b["scratch_scores"])
         rng = b["rng_states"]
@@ -138,25 +132,31 @@ class PHSHOWOAGpuSolver:
         stag_zero = np.zeros((1, 3), dtype=np.float64)
         if self.is_cuda:
             stag_state = cuda.to_device(stag_zero)
-            b["ibest"][2].copy_to_device(np.zeros(self.num_islands, dtype=np.int32))
             b["gbest"][2].copy_to_device(np.zeros(1, dtype=np.int32))
         else:
             stag_state = stag_zero
-            b["ibest"][2][:] = 0
             b["gbest"][2][:] = 0
         self._launch("init_device_rng", P_grid, rng, int(cfg.seed))
 
         # Algorithm 1, lines 1-5: initial population and best
-        pop, nxt, cand, bak, ibest, gbest = b["pop"], b["next"], b["cand"], b["bak"], b["ibest"], b["gbest"]
-        init_mode = 1 if cfg.init == "sa" else 0
-        self._launch("init_population", P_grid, *pop, *cand, *bak, sr, sr2, su, sf, ss, prob, init_mode,
-                     float(cfg.grasp_alpha_lo), float(cfg.grasp_alpha_hi), int(cfg.sa_warmup_iterations),
-                     int(cfg.route_elimination_passes), float(cfg.t0_sa), float(cfg.alpha_sa), float(cfg.t_min_sa),
-                     int(cfg.iter_max_sa), rng, int(init_mode == 0 and cfg.ls_strategy == "first"))
-        if init_mode == 0 and cfg.ls_strategy == "best":
+        pop, nxt, cand, bak, gbest = b["pop"], b["next"], b["cand"], b["bak"], b["gbest"]
+        init_mode = {"sa_rcrs_grasp": 0, "sa": 1, "mixed": 2}[cfg.init]
+        ini = (*pop, *cand, *bak, sr, sr2, su, sf, ss, prob, init_mode,
+               float(cfg.grasp_alpha_lo), float(cfg.grasp_alpha_hi), int(cfg.sa_warmup_iterations),
+               int(cfg.route_elimination_passes), float(cfg.t0_sa), float(cfg.alpha_sa), float(cfg.t_min_sa),
+               int(cfg.iter_max_sa), rng,
+               # first-improvement local search in the init kernel: 0 = none, 1 = with Inter 2-opt*, 2 = without
+               int(init_mode != 1 and cfg.ls_strategy == "first") * (1 if cfg.ls_2opt_star else 2))
+        ep_budget = int(cfg.ep_budget) if init_mode != 1 else 0     # init "sa" stays Algorithm 2 of the paper
+        if self.is_cuda:                                               # improvement 1: one block per individual
+            self._launch("init_population", self.P, *ini, ep_budget, self.opt, threads=UPD_THREADS)
+        else:
+            if ep_budget > 0:
+                warnings.warn("the ejection pool (ep_budget > 0) needs the CUDA backend; skipped on the CPU")
+            self._launch("init_population", P_grid, *ini)
+        if init_mode != 1 and cfg.ls_strategy == "best":
             self._local_search(pop, only_best=False)     # last step of the sa_rcrs_grasp chain, every individual
-        self._launch("update_island_bests", I_grid, *pop, *ibest, self.num_islands, self.island_size)
-        self._launch("update_global_best", 1, *ibest, *gbest, self.num_islands)
+        self._launch("update_global_best", 1, *pop, *gbest)
 
         # Lines 6-49: main loop
         cur, nxt_pop = pop, nxt
@@ -164,27 +164,30 @@ class PHSHOWOAGpuSolver:
             a = 2.0 - 2.0 * iteration / max_iter                       # line 7
             p_hybrid = max(0.15, 0.5 * (1.0 - iteration / max_iter))  # line 8
             # Lines 10-33: every whale updated in parallel, population replaced synchronously (ping-pong buffers)
-            self._launch("update_population", P_grid, *cur, *nxt_pop, *cand, ibest[0], ibest[1], ibest[2],
-                         sr, sr2, su, sf, prob, a, p_hybrid, float(cfg.mutation_prob), iteration, max_iter,
-                         rng, self.island_size)
+            upd = (*cur, *nxt_pop, *cand, gbest[0], gbest[1], gbest[2], sr, sr2, su, sf, prob, a, p_hybrid,
+                   float(cfg.mutation_prob), iteration, max_iter, rng)
+            if self.is_cuda:                                           # improvement 1: one block per whale
+                self._launch("update_population", self.P, *upd, self.opt, threads=UPD_THREADS)
+            else:
+                self._launch("update_population", P_grid, *upd)
             cur, nxt_pop = nxt_pop, cur
 
-            # Lines 34-37: periodic local search (improvement 4: every individual; improvement 2: route elimination)
+            # Lines 34-37: periodic local search (improvement 3: every individual; improvement 2: route elimination)
             if iteration % cfg.local_search_interval == 0:
-                self._launch("route_elimination", P_grid, *cur, sr, su, sf, prob, int(cfg.route_elimination_passes))
+                if self.is_cuda:
+                    self._launch("route_elimination", self.P, *cur, su, sf, prob, int(cfg.route_elimination_passes),
+                                 self.opt, threads=UPD_THREADS)
+                else:
+                    self._launch("route_elimination", P_grid, *cur, sr, su, sf, prob,
+                                 int(cfg.route_elimination_passes))
                 self._local_search(cur, only_best=cfg.ls_scope == "best")
 
-            # Improvement 3: ring migration between islands
-            if self.num_islands > 1 and (iteration + 1) % cfg.migration_interval == 0:
-                self._launch("island_migration", 1, *cur, *ibest, self.num_islands, self.island_size)
-
-            self._launch("update_island_bests", I_grid, *cur, *ibest, self.num_islands, self.island_size)
-            self._launch("update_global_best", 1, *ibest, *gbest, self.num_islands)
+            self._launch("update_global_best", 1, *cur, *gbest)
             self._launch("record_log", 1, b["run_log"], gbest[2], gbest[3], iteration + 1)
 
             # Lines 38-48: stagnation counter on the best and DIVERSIFY
-            self._launch("stagnation", 1, *cur, ibest[2], ibest[3], stag_state, self.num_islands,
-                         int(cfg.stagnation_limit), sr, sr2, sf, prob, rng)
+            self._launch("stagnation", 1, *cur, gbest[2], gbest[3], stag_state, int(cfg.stagnation_limit),
+                         sr, sr2, sf, prob, rng)
 
         # Line 50: copy the best back once and verify it with the baseline's check (Section 3 constraints)
         if self.is_cuda:
@@ -235,13 +238,13 @@ def build(dev_fn, k):
     def update_individual(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
                           next_nodes, next_rlen, next_nr, next_dist, next_cost,
                           cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                          ibest_nodes, ibest_rlen, ibest_nr,
+                          best_nodes, best_rlen, best_nr,
                           scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
-                          s, island_id, island_size,
+                          s,
                           prob_data, a_param, p_hybrid, mutation_prob, iteration, max_iter, rng_states):
         # Algorithm 1, lines 11-31 for one whale; the next buffer doubles as WOA's rollback copy
         took = update_position_hybrid(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
-                                      ibest_nodes, ibest_rlen, ibest_nr, island_id, island_size,
+                                      best_nodes, best_rlen, best_nr,
                                       cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                                       next_nodes, next_rlen, next_nr, next_dist, next_cost,
                                       scratch_route, scratch_route2, scratch_unrouted, scratch_flags,

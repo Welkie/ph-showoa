@@ -155,11 +155,11 @@ def prepare_problem_data(problem):
 SOLUTION_SETS = ("pop", "next", "cand", "bak")
 
 
-def allocate_buffers(is_cuda, P, R, L, N, num_islands, max_iter, prob_data):
-    """Allocate every array of a run once (ping-pong population, candidates, island/global bests, scratch)."""
+def allocate_buffers(is_cuda, P, R, L, N, max_iter, prob_data):
+    """Allocate every array of a run once (ping-pong population, candidates, global best, scratch)."""
     zeros = (lambda shape, dt: cuda.device_array(shape, dtype=dt)) if is_cuda else np.zeros
     buf = {}
-    for name, rows in (("pop", P), ("next", P), ("cand", P), ("bak", P), ("ibest", num_islands), ("gbest", 1)):
+    for name, rows in (("pop", P), ("next", P), ("cand", P), ("bak", P), ("gbest", 1)):
         buf[name] = (zeros((rows, R, L), np.int32), zeros((rows, R), np.int32), zeros(rows, np.int32),
                      zeros(rows, np.float64), zeros(rows, np.float64))
     buf["scratch_route"] = zeros((P, L), np.int32)
@@ -167,7 +167,7 @@ def allocate_buffers(is_cuda, P, R, L, N, num_islands, max_iter, prob_data):
     buf["scratch_unrouted"] = zeros((P, N + 1), np.int32)
     buf["scratch_flags"] = zeros((P, N + 1), np.int32)
     buf["scratch_scores"] = zeros((P, N + 1), np.float64)
-    buf["slot_r"] = zeros((P, N + 2 * R), np.int32)          # improvement 4: (route, position) of every slot
+    buf["slot_r"] = zeros((P, N + 2 * R), np.int32)          # improvement 3: (route, position) of every slot
     buf["slot_k"] = zeros((P, N + 2 * R), np.int32)
     buf["rng_states"] = zeros((P, 4), np.uint32)
     buf["run_log"] = zeros((max_iter, 2), np.float64)
@@ -186,7 +186,7 @@ def build_kernel_bundle(is_cuda: bool = False):
     from . import (algorithm1_solver, algorithm2_initialization, algorithm3_hybrid, algorithm4_woa,
                    algorithm5_sho, algorithm6_crossover, algorithm7_mutation, algorithm8_localsearch,
                    algorithm9_feasibility, algorithm10_repair, improvement2_sa_rcrs_grasp,
-                   improvement3_island_model, improvement4_population_local_search)
+                   improvement3_population_local_search)
 
     if is_cuda:
         dev_fn = lambda f: cuda.jit(device=True)(f)
@@ -198,15 +198,21 @@ def build_kernel_bundle(is_cuda: bool = False):
     k = {"dev_fn": dev_fn}
     build(dev_fn, k)
     for module in (algorithm9_feasibility, algorithm7_mutation, algorithm10_repair, algorithm2_initialization,
-                   improvement4_population_local_search, algorithm8_localsearch, improvement2_sa_rcrs_grasp,
+                   improvement3_population_local_search, algorithm8_localsearch, improvement2_sa_rcrs_grasp,
                    algorithm6_crossover, algorithm5_sho, algorithm4_woa, algorithm3_hybrid, algorithm1_solver):
         module.build(dev_fn, k)
+
+    if is_cuda:
+        from . import improvement1_block_parallel, improvement2_ejection_pool
+        improvement1_block_parallel.build(dev_fn, k)
+        improvement2_ejection_pool.build(dev_fn, k)
 
     kernels = {}
     _build_population_kernels(is_cuda, k_fn, k, kernels)
     improvement2_sa_rcrs_grasp.build_kernels(is_cuda, k_fn, k, kernels)
-    improvement3_island_model.build_kernels(is_cuda, k_fn, k, kernels)
-    improvement4_population_local_search.build_kernels(is_cuda, k_fn, k, kernels)
+    improvement3_population_local_search.build_kernels(is_cuda, k_fn, k, kernels)
+    if is_cuda:   # improvement 1: block-parallel init_population, update_population, route_elimination
+        improvement1_block_parallel.build_kernels(k_fn, k, kernels)
     return kernels
 
 
@@ -221,6 +227,8 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
     mark_worst_individuals = k["mark_worst_individuals"]
     mutate_single = k["mutate_single"]
     refresh_solution = k["refresh_solution"]
+    copy_solution = k["copy_solution"]
+    is_better_lex = k["is_better_lex"]
 
     @k["dev_fn"]
     def init_individual(nodes, rlen, nr, dist, cost, s,
@@ -229,6 +237,8 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                         scratch_route, scratch_route2, scratch_unrouted, scratch_flags, scratch_scores,
                         prob_data, init_mode, alpha_lo, alpha_hi, sa_iters, re_passes,
                         t0, alpha_sa, t_min, iter_max, rng_states, init_fi_ls):
+        if init_mode == 2:                       # --init mixed: even individuals Algorithm 2, odd ones RCRS-GRASP
+            init_mode = 1 if s % 2 == 0 else 0
         if init_mode == 1:
             # Algorithm 2 of the paper (--init sa)
             init_paper_sa_single(nodes, rlen, nr, dist, cost, s,
@@ -238,7 +248,7 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                                  prob_data, rng_states, t0, alpha_sa, t_min, iter_max)
         else:
             # Improvement 2 (--init sa_rcrs_grasp): RCRS-GRASP, SA warm-up, route elimination, local search.
-            # With --ls_strategy best (default) the local search is the block-parallel kernel of improvement 4,
+            # With --ls_strategy best (default) the local search is the block-parallel kernel of improvement 3,
             # launched by the host right after this kernel.
             alpha = alpha_lo + rand_u01(rng_states, s) * (alpha_hi - alpha_lo)
             construct_rcrs_grasp(nodes, rlen, nr, dist, cost, s,
@@ -250,7 +260,7 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                                      scratch_route, scratch_unrouted, scratch_flags, prob_data, re_passes)
             if init_fi_ls:
                 deep_local_search_single(nodes, rlen, nr, dist, cost, s,
-                                         scratch_route, scratch_route2, prob_data, 1000000)
+                                         scratch_route, scratch_route2, prob_data, 1000000, init_fi_ls == 1)
 
     @k["dev_fn"]
     def diversify_population(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
@@ -266,22 +276,28 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
                 refresh_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, s, prob_data)
 
     @k["dev_fn"]
-    def stagnation_step(ibest_nr, ibest_dist, stag_state, num_islands):
-        # Algorithm 1 lines 39-44 on the best of the whole population (epsilon = 1e-4 on the cost)
-        best_i = -1
-        for isl in range(num_islands):
-            if ibest_nr[isl] > 0:
-                if best_i < 0 or (2000.0 * ibest_nr[isl] + ibest_dist[isl] <
-                                  2000.0 * ibest_nr[best_i] + ibest_dist[best_i]):
-                    best_i = isl
-        if best_i >= 0:
-            cur = 2000.0 * ibest_nr[best_i] + ibest_dist[best_i]
+    def stagnation_step(best_nr, best_dist, stag_state):
+        # Algorithm 1 lines 39-44 on the global best (epsilon = 1e-4 on the cost)
+        if best_nr[0] > 0:
+            cur = 2000.0 * best_nr[0] + best_dist[0]
             if stag_state[0, 0] <= 0.0 or cur < 2000.0 * stag_state[0, 0] + stag_state[0, 1] - 1e-4:
-                stag_state[0, 0] = float(ibest_nr[best_i])
-                stag_state[0, 1] = ibest_dist[best_i]
+                stag_state[0, 0] = float(best_nr[0])
+                stag_state[0, 1] = best_dist[0]
                 stag_state[0, 2] = 0.0
             else:
                 stag_state[0, 2] += 1.0
+
+    @k["dev_fn"]
+    def global_best(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
+                    gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost):
+        # Algorithm 1 lines 4-5 / 31: the best of the population replaces the global best when it is better
+        best_s = 0
+        for cand_s in range(1, pop_nr.shape[0]):
+            if is_better_lex(pop_nr[cand_s], pop_dist[cand_s], pop_nr[best_s], pop_dist[best_s]):
+                best_s = cand_s
+        if gbest_nr[0] == 0 or is_better_lex(pop_nr[best_s], pop_dist[best_s], gbest_nr[0], gbest_dist[0]):
+            copy_solution(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost, best_s,
+                          gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost, 0)
 
     @k["dev_fn"]
     def seed_rng(rng_states, s, seed):
@@ -311,26 +327,26 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
                                      next_nodes, next_rlen, next_nr, next_dist, next_cost,
                                      cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                     ibest_nodes, ibest_rlen, ibest_nr,
+                                     best_nodes, best_rlen, best_nr,
                                      scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
                                      prob_data, a_param, p_hybrid, mutation_prob, iteration, max_iter,
-                                     rng_states, island_size):
+                                     rng_states):
             s = cuda.grid(1)
             if s < cur_nodes.shape[0]:
                 update_individual(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
                                   next_nodes, next_rlen, next_nr, next_dist, next_cost,
                                   cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                  ibest_nodes, ibest_rlen, ibest_nr,
+                                  best_nodes, best_rlen, best_nr,
                                   scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
-                                  s, s // island_size, island_size,
+                                  s,
                                   prob_data, a_param, p_hybrid, mutation_prob, iteration, max_iter, rng_states)
 
         @k_fn
         def stagnation_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                              ibest_nr, ibest_dist, stag_state, num_islands, stag_interval,
+                              best_nr, best_dist, stag_state, stag_interval,
                               scratch_route, scratch_route2, scratch_flags, prob_data, rng_states):
             if cuda.grid(1) == 0:
-                stagnation_step(ibest_nr, ibest_dist, stag_state, num_islands)
+                stagnation_step(best_nr, best_dist, stag_state)
                 if stag_state[0, 2] >= stag_interval:
                     diversify_population(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                                          scratch_route, scratch_route2, scratch_flags, prob_data, rng_states)
@@ -341,6 +357,13 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
             s = cuda.grid(1)
             if s < rng_states.shape[0]:
                 seed_rng(rng_states, s, seed)
+
+        @k_fn
+        def update_global_best_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
+                                      gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost):
+            if cuda.grid(1) == 0:
+                global_best(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
+                            gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost)
 
         @k_fn
         def record_log_kernel(run_log, gbest_nr, gbest_dist, gen):
@@ -367,24 +390,24 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
         def update_population_kernel(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
                                      next_nodes, next_rlen, next_nr, next_dist, next_cost,
                                      cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                     ibest_nodes, ibest_rlen, ibest_nr,
+                                     best_nodes, best_rlen, best_nr,
                                      scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
                                      prob_data, a_param, p_hybrid, mutation_prob, iteration, max_iter,
-                                     rng_states, island_size):
+                                     rng_states):
             for s in range(cur_nodes.shape[0]):
                 update_individual(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost,
                                   next_nodes, next_rlen, next_nr, next_dist, next_cost,
                                   cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
-                                  ibest_nodes, ibest_rlen, ibest_nr,
+                                  best_nodes, best_rlen, best_nr,
                                   scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
-                                  s, s // island_size, island_size,
+                                  s,
                                   prob_data, a_param, p_hybrid, mutation_prob, iteration, max_iter, rng_states)
 
         @k_fn
         def stagnation_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
-                              ibest_nr, ibest_dist, stag_state, num_islands, stag_interval,
+                              best_nr, best_dist, stag_state, stag_interval,
                               scratch_route, scratch_route2, scratch_flags, prob_data, rng_states):
-            stagnation_step(ibest_nr, ibest_dist, stag_state, num_islands)
+            stagnation_step(best_nr, best_dist, stag_state)
             if stag_state[0, 2] >= stag_interval:
                 diversify_population(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
                                      scratch_route, scratch_route2, scratch_flags, prob_data, rng_states)
@@ -394,6 +417,12 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
         def init_device_rng_kernel(rng_states, seed):
             for s in range(rng_states.shape[0]):
                 seed_rng(rng_states, s, seed)
+
+        @k_fn
+        def update_global_best_kernel(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
+                                      gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost):
+            global_best(pop_nodes, pop_rlen, pop_nr, pop_dist, pop_cost,
+                        gbest_nodes, gbest_rlen, gbest_nr, gbest_dist, gbest_cost)
 
         @k_fn
         def record_log_kernel(run_log, gbest_nr, gbest_dist, gen):
@@ -406,4 +435,5 @@ def _build_population_kernels(is_cuda, k_fn, k, kernels):
         "stagnation": stagnation_kernel,
         "init_device_rng": init_device_rng_kernel,
         "record_log": record_log_kernel,
+        "update_global_best": update_global_best_kernel,
     })

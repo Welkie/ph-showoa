@@ -1,0 +1,52 @@
+sa_100 cdp103: backend=cuda islands=6
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=10 TD=941.86 feasible=True (67.3s)
+  run 02 seed=43 NV=10 TD=1178.82 feasible=True (3.8s)
+  run 03 seed=44 NV=10 TD=981.27 feasible=True (3.5s)
+  run 04 seed=45 NV=10 TD=1077.60 feasible=True (2.8s)
+  run 05 seed=46 NV=10 TD=995.73 feasible=True (2.5s)
+  run 06 seed=47 NV=10 TD=1256.26 feasible=True (3.7s)
+  run 07 seed=48 NV=10 TD=1207.51 feasible=True (3.7s)
+  run 08 seed=49 NV=10 TD=1128.57 feasible=True (3.9s)
+  run 09 seed=50 NV=10 TD=951.01 feasible=True (3.3s)
+  run 10 seed=51 NV=10 TD=1042.70 feasible=True (3.9s)
+  run 11 seed=52 NV=10 TD=995.38 feasible=True (3.0s)
+  run 12 seed=53 NV=11 TD=914.93 feasible=True (5.0s)
+  run 13 seed=54 NV=10 TD=932.91 feasible=True (4.1s)
+  run 14 seed=55 NV=10 TD=1067.55 feasible=True (4.0s)
+  run 15 seed=56 NV=10 TD=969.34 feasible=True (3.3s)
+  run 16 seed=57 NV=10 TD=1096.10 feasible=True (3.5s)
+  run 17 seed=58 NV=11 TD=902.53 feasible=True (4.3s)
+  run 18 seed=59 NV=10 TD=924.81 feasible=True (3.4s)
+  run 19 seed=60 NV=10 TD=1061.31 feasible=True (4.4s)
+  run 20 seed=61 NV=10 TD=1224.99 feasible=True (2.4s)
+  run 21 seed=62 NV=10 TD=1010.75 feasible=True (4.2s)
+  run 22 seed=63 NV=10 TD=1145.37 feasible=True (3.8s)
+  run 23 seed=64 NV=10 TD=1044.58 feasible=True (3.5s)
+  run 24 seed=65 NV=10 TD=1041.38 feasible=True (3.5s)
+  run 25 seed=66 NV=10 TD=1227.20 feasible=True (2.9s)
+  run 26 seed=67 NV=10 TD=1166.35 feasible=True (4.0s)
+  run 27 seed=68 NV=10 TD=1134.60 feasible=True (3.4s)
+  run 28 seed=69 NV=11 TD=903.86 feasible=True (4.4s)
+  run 29 seed=70 NV=10 TD=1059.73 feasible=True (3.8s)
+  run 30 seed=71 NV=10 TD=1184.43 feasible=True (3.3s)
+DONE sa_100 cdp103 173s

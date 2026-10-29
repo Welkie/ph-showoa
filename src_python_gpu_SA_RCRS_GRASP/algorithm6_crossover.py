@@ -2,7 +2,7 @@
 
 Keeps 1 (p = 0.6) or 2 routes of the best, then packs the remaining customers (partner first, then current) into new
 routes, opening a route when the vehicle capacity would be exceeded (line 41, with the load model of Section 3).
-Feasibility repair happens in Algorithm 5. The best here is the island best (improvement 3).
+Feasibility repair happens in Algorithm 5. The best is the global best.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ def build(dev_fn, k):
     @dev_fn
     def guided_crossover_sho_single(cur_nodes, cur_rlen, cur_nr, s,
                                     peer_nodes, peer_rlen, peer_nr, peer_s,
-                                    ibest_nodes, ibest_rlen, ibest_nr, island_id,
+                                    best_nodes, best_rlen, best_nr,
                                     cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                                     scratch_route, scratch_unrouted, scratch_flags,
                                     prob_data, rng_states):
@@ -30,7 +30,7 @@ def build(dev_fn, k):
             scratch_flags[s, i] = 0
         cand_nr[s] = 0
 
-        best_r_count = ibest_nr[island_id]
+        best_r_count = best_nr[0]
         if best_r_count > 0:
             take = 1 if best_r_count == 1 or rand_u01(rng_states, s) < 0.6 else 2
             r1 = randint(rng_states, s, 0, best_r_count - 1)
@@ -41,12 +41,12 @@ def build(dev_fn, k):
                     r2 += 1
             for t in range(take):
                 rb = r1 if t == 0 else r2
-                lb = ibest_rlen[island_id, rb]
+                lb = best_rlen[0, rb]
                 if lb > 2:
                     c_idx = cand_nr[s]
                     cand_rlen[s, c_idx] = lb
                     for k in range(lb):
-                        node = ibest_nodes[island_id, rb, k]
+                        node = best_nodes[0, rb, k]
                         cand_nodes[s, c_idx, k] = node
                         if node != depot:
                             scratch_flags[s, node] = 1

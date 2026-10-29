@@ -1,0 +1,52 @@
+grasp_100 rdp103: backend=cuda islands=6
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=14 TD=1278.80 feasible=True (72.0s)
+  run 02 seed=43 NV=14 TD=1248.72 feasible=True (14.3s)
+  run 03 seed=44 NV=15 TD=1231.92 feasible=True (14.0s)
+  run 04 seed=45 NV=14 TD=1274.56 feasible=True (14.3s)
+  run 05 seed=46 NV=14 TD=1251.75 feasible=True (14.1s)
+  run 06 seed=47 NV=14 TD=1265.73 feasible=True (13.7s)
+  run 07 seed=48 NV=15 TD=1236.56 feasible=True (13.8s)
+  run 08 seed=49 NV=15 TD=1239.90 feasible=True (14.6s)
+  run 09 seed=50 NV=15 TD=1244.83 feasible=True (14.0s)
+  run 10 seed=51 NV=14 TD=1245.08 feasible=True (13.8s)
+  run 11 seed=52 NV=14 TD=1294.57 feasible=True (13.8s)
+  run 12 seed=53 NV=14 TD=1245.47 feasible=True (13.8s)
+  run 13 seed=54 NV=14 TD=1288.14 feasible=True (13.8s)
+  run 14 seed=55 NV=15 TD=1226.84 feasible=True (14.2s)
+  run 15 seed=56 NV=14 TD=1259.25 feasible=True (13.6s)
+  run 16 seed=57 NV=14 TD=1254.67 feasible=True (14.1s)
+  run 17 seed=58 NV=14 TD=1238.58 feasible=True (14.6s)
+  run 18 seed=59 NV=14 TD=1225.52 feasible=True (14.1s)
+  run 19 seed=60 NV=14 TD=1305.65 feasible=True (14.0s)
+  run 20 seed=61 NV=14 TD=1271.55 feasible=True (13.9s)
+  run 21 seed=62 NV=14 TD=1237.09 feasible=True (14.0s)
+  run 22 seed=63 NV=14 TD=1255.33 feasible=True (14.0s)
+  run 23 seed=64 NV=15 TD=1242.31 feasible=True (14.3s)
+  run 24 seed=65 NV=14 TD=1248.18 feasible=True (14.2s)
+  run 25 seed=66 NV=14 TD=1227.56 feasible=True (14.5s)
+  run 26 seed=67 NV=14 TD=1264.96 feasible=True (13.9s)
+  run 27 seed=68 NV=14 TD=1262.44 feasible=True (14.9s)
+  run 28 seed=69 NV=14 TD=1254.15 feasible=True (14.4s)
+  run 29 seed=70 NV=15 TD=1240.79 feasible=True (14.7s)
+  run 30 seed=71 NV=14 TD=1244.95 feasible=True (13.8s)
+DONE grasp_100 rdp103 481s

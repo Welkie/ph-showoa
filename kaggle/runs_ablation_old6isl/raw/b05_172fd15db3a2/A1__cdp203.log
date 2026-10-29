@@ -1,0 +1,52 @@
+A1 cdp203: backend=cuda islands=6
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=3 TD=603.37 feasible=True (130.9s)
+  run 02 seed=43 NV=3 TD=614.51 feasible=True (62.3s)
+  run 03 seed=44 NV=3 TD=591.17 feasible=True (72.9s)
+  run 04 seed=45 NV=3 TD=591.17 feasible=True (72.5s)
+  run 05 seed=46 NV=3 TD=621.21 feasible=True (68.1s)
+  run 06 seed=47 NV=3 TD=612.74 feasible=True (65.6s)
+  run 07 seed=48 NV=3 TD=591.17 feasible=True (69.8s)
+  run 08 seed=49 NV=3 TD=604.58 feasible=True (69.5s)
+  run 09 seed=50 NV=3 TD=604.58 feasible=True (68.3s)
+  run 10 seed=51 NV=3 TD=603.32 feasible=True (64.4s)
+  run 11 seed=52 NV=3 TD=591.17 feasible=True (73.6s)
+  run 12 seed=53 NV=3 TD=591.17 feasible=True (71.7s)
+  run 13 seed=54 NV=3 TD=591.17 feasible=True (72.3s)
+  run 14 seed=55 NV=3 TD=604.58 feasible=True (68.7s)
+  run 15 seed=56 NV=3 TD=600.21 feasible=True (59.2s)
+  run 16 seed=57 NV=3 TD=604.58 feasible=True (67.6s)
+  run 17 seed=58 NV=3 TD=600.21 feasible=True (63.7s)
+  run 18 seed=59 NV=3 TD=603.37 feasible=True (59.7s)
+  run 19 seed=60 NV=3 TD=617.80 feasible=True (63.4s)
+  run 20 seed=61 NV=3 TD=600.54 feasible=True (62.7s)
+  run 21 seed=62 NV=3 TD=591.17 feasible=True (69.8s)
+  run 22 seed=63 NV=3 TD=604.91 feasible=True (67.5s)
+  run 23 seed=64 NV=3 TD=591.17 feasible=True (71.8s)
+  run 24 seed=65 NV=3 TD=591.17 feasible=True (69.9s)
+  run 25 seed=66 NV=3 TD=624.46 feasible=True (65.8s)
+  run 26 seed=67 NV=3 TD=603.37 feasible=True (62.8s)
+  run 27 seed=68 NV=3 TD=591.17 feasible=True (72.1s)
+  run 28 seed=69 NV=3 TD=591.17 feasible=True (73.2s)
+  run 29 seed=70 NV=3 TD=617.80 feasible=True (62.4s)
+  run 30 seed=71 NV=3 TD=591.17 feasible=True (70.2s)
+DONE A1 cdp203 2092s

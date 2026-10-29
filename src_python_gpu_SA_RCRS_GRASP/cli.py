@@ -24,20 +24,21 @@ def parse_args(args=None):
     # GPU version options
     parser.add_argument("--compute_backend", choices=["auto", "cuda", "cpu"], default="auto",
                         help="cuda: one GPU thread per individual; cpu: same Numba code on the CPU (default: auto)")
-    parser.add_argument("--init", choices=["sa_rcrs_grasp", "sa"], default="sa_rcrs_grasp",
-                        help="sa_rcrs_grasp: improvement 2 (default); sa: Algorithm 2 of the paper")
-    parser.add_argument("--num_islands", type=int, default=6, help="Islands (improvement 3, default: 6; 1 = one population)")
-    parser.add_argument("--migration_interval", type=int, default=20, help="Iterations between ring migrations (default: 20)")
+    parser.add_argument("--init", choices=["sa_rcrs_grasp", "sa", "mixed"], default="sa_rcrs_grasp",
+                        help="sa_rcrs_grasp: improvement 2 (default); sa: Algorithm 2 of the paper; mixed: even individuals Algorithm 2, odd ones sa_rcrs_grasp")
     parser.add_argument("--local_search_interval", type=int, default=25, help="Iterations between local searches (default: 25)")
+    parser.add_argument("--ep_budget", type=int, default=5000,
+                        help="Ejection-pool route minimization after RCRS-GRASP: customers taken from the pool "
+                             "(default: 5000; 0 = off; CUDA only, not used with --init sa)")
     parser.add_argument("--grasp_alpha_lo", type=float, default=0.10)
     parser.add_argument("--grasp_alpha_hi", type=float, default=0.40)
     parser.add_argument("--ls_strategy", choices=["best", "first"], default="best",
-                        help="Improvement 4 local search: best = block-parallel best improvement (default); "
+                        help="Improvement 3 local search: best = block-parallel best improvement (default); "
                              "first = Algorithm 8, first improvement, one thread per individual (ablation)")
     parser.add_argument("--ls_scope", choices=["population", "best"], default="population",
                         help="Periodic local search for every individual (default) or only the best (ablation)")
     parser.add_argument("--no_ls_2opt_star", action="store_true",
-                        help="Drop Inter 2-opt* from the local search (ablation; ls_strategy best only)")
+                        help="Drop Inter 2-opt* from the local search (ablation)")
     parser.add_argument("--convergence_csv", type=str, default=None,
                         help="Append the best NV/TD every --convergence_every iterations to this CSV")
     parser.add_argument("--convergence_every", type=int, default=10)
@@ -90,9 +91,8 @@ def main():
         seed=args.seed,
         compute_backend=args.compute_backend,
         init=args.init,
-        num_islands=args.num_islands,
-        migration_interval=args.migration_interval,
         local_search_interval=args.local_search_interval,
+        ep_budget=args.ep_budget,
         grasp_alpha_lo=args.grasp_alpha_lo,
         grasp_alpha_hi=args.grasp_alpha_hi,
         ls_strategy=args.ls_strategy,
@@ -101,8 +101,7 @@ def main():
     )
     # One solver per process: kernels are compiled and device buffers allocated once, then reused by every run
     solver = PHSHOWOAGpuSolver(problem, config)
-    print(f"Backend: {'cuda' if solver.is_cuda else 'cpu'} | init={config.init} | islands={solver.num_islands} "
-          f"x {solver.island_size} | LS={config.ls_strategy}/{config.ls_scope}"
+    print(f"Backend: {'cuda' if solver.is_cuda else 'cpu'} | init={config.init} | pop={solver.P} | LS={config.ls_strategy}/{config.ls_scope}"
           f"{'' if config.ls_2opt_star else ' (no 2-opt*)'}")
 
     conv_csv = Path(args.convergence_csv) if args.convergence_csv else None

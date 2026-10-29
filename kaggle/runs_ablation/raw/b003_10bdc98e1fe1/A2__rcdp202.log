@@ -1,0 +1,48 @@
+A2 rcdp202: backend=cuda
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=3 TD=1508.19 feasible=True (152.2s)
+  run 02 seed=43 NV=3 TD=1662.73 feasible=True (72.6s)
+  run 03 seed=44 NV=3 TD=1537.13 feasible=True (91.6s)
+  run 04 seed=45 NV=3 TD=1627.20 feasible=True (102.8s)
+  run 05 seed=46 NV=3 TD=1548.72 feasible=True (94.7s)
+  run 06 seed=47 NV=3 TD=1687.17 feasible=True (70.4s)
+  run 07 seed=48 NV=3 TD=1594.09 feasible=True (110.0s)
+  run 08 seed=49 NV=3 TD=1629.36 feasible=True (77.2s)
+  run 09 seed=50 NV=4 TD=1247.05 feasible=True (70.7s)
+  run 10 seed=51 NV=3 TD=1567.85 feasible=True (88.2s)
+  run 11 seed=52 NV=4 TD=1241.23 feasible=True (73.0s)
+  run 12 seed=53 NV=3 TD=1654.51 feasible=True (70.5s)
+  run 13 seed=54 NV=4 TD=1217.77 feasible=True (72.7s)
+  run 14 seed=55 NV=3 TD=1527.37 feasible=True (86.2s)
+  run 15 seed=56 NV=3 TD=1552.16 feasible=True (75.5s)
+  run 16 seed=57 NV=3 TD=1527.29 feasible=True (85.4s)
+  run 17 seed=58 NV=3 TD=1700.40 feasible=True (71.7s)
+  run 18 seed=59 NV=4 TD=1258.27 feasible=True (78.8s)
+  run 19 seed=60 NV=3 TD=1594.77 feasible=True (84.9s)
+  run 20 seed=61 NV=4 TD=1283.04 feasible=True (74.1s)
+  run 21 seed=62 NV=3 TD=1519.68 feasible=True (85.7s)
+  run 22 seed=63 NV=3 TD=1550.73 feasible=True (72.3s)
+  run 23 seed=64 NV=3 TD=1647.54 feasible=True (97.8s)
+  run 24 seed=65 NV=4 TD=1208.60 feasible=True (76.0s)
+  run 25 seed=66 NV=3 TD=1804.31 feasible=True (100.8s)
+  run 26 seed=67 NV=3 TD=1633.04 feasible=True (82.7s)
+  run 27 seed=68 NV=4 TD=1165.57 feasible=True (69.9s)
+  run 28 seed=69 NV=3 TD=1588.99 feasible=True (79.4s)
+  run 29 seed=70 NV=3 TD=1603.36 feasible=True (70.8s)
+  run 30 seed=71 NV=3 TD=1559.35 feasible=True (71.8s)
+DONE A2__rcdp202 2511s

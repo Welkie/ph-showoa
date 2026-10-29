@@ -1,0 +1,69 @@
+[{"stream_name":"stderr","time":7.454671007,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.454725063,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.454731802,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.454736315,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.06458532,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.064620518,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.064626281,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.064630413,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":9.256457387,"data":"GPU 0: Tesla T4 (UUID: GPU-52945135-4f26-9a43-e735-2fa8734e01e5)\n"}
+,{"stream_name":"stdout","time":9.256482345,"data":"GPU 1: Tesla T4 (UUID: GPU-bb5bb61a-432c-4be7-e41d-3bcf312ba733)\n"}
+,{"stream_name":"stdout","time":9.463922204,"data":"GPU 0: Tesla T4 (UUID: GPU-52945135-4f26-9a43-e735-2fa8734e01e5)\n"}
+,{"stream_name":"stdout","time":9.46394522,"data":"GPU 1: Tesla T4 (UUID: GPU-bb5bb61a-432c-4be7-e41d-3bcf312ba733)\n"}
+,{"stream_name":"stdout","time":6195.170809903,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.17091945,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.170927117,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.170933373,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.170938545,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.170946377,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.170955483,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.170975695,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.170981426,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.170988343,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.170994175,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.170999908,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171004986,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171026836,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171031227,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171035855,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171041589,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171046362,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171056141,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171073549,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171078403,"data":"DONE grasp_ep_c300f10 rcdp207 3276s\n"}
+,{"stream_name":"stdout","time":6195.1710831,"data":"DONE grasp_ep_c300f10 cdp203 2119s\n"}
+,{"stream_name":"stdout","time":6195.171087415,"data":"DONE grasp_ep_c300f10 rcdp104 538s\n"}
+,{"stream_name":"stdout","time":6195.17109232,"data":"\n"}
+,{"stream_name":"stdout","time":6195.17109651,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.1711015,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171105622,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171110223,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.1711142,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.1711188,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171122815,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171127372,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171131298,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171135907,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171139821,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171144394,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171159875,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171178597,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171183437,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171188411,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171193397,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171198083,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.171202088,"data":"/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: \u001b[1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.\u001b[0m\n"}
+,{"stream_name":"stdout","time":6195.171206639,"data":"  warn(errors.NumbaPerformanceWarning(msg))\n"}
+,{"stream_name":"stdout","time":6195.1712107,"data":"DONE grasp_ep_c300f10 rdp201 2126s\n"}
+,{"stream_name":"stdout","time":6195.171214563,"data":"DONE grasp_ep_c300f10 rcdp101 455s\n"}
+,{"stream_name":"stdout","time":6195.171218613,"data":"DONE grasp_ep_c300f10 rdp107 590s\n"}
+,{"stream_name":"stdout","time":6195.171222675,"data":"\n"}
+,{"stream_name":"stderr","time":6197.601936653,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":6197.601957874,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":6197.774638387,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":6197.774666323,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":6198.564282718,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":6198.636334467,"data":"[NbConvertApp] Writing 96282 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":6201.136593183,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":6201.651601445,"data":"[NbConvertApp] Writing 373931 bytes to __results__.html\n"}
+]

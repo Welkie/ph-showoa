@@ -1,7 +1,9 @@
 """Improvement 2 (docs/improved.md section 2): SA_RCRS_GRASP initialization with route elimination.
 
-Replaces Algorithm 2 by four stages run per individual on the GPU: RCRS-GRASP construction, a short SA warm-up,
-route elimination (also re-applied to the population every 25 iterations) and Algorithm 8.
+Replaces Algorithm 2 by four stages run per individual on the GPU: RCRS-GRASP construction, route elimination
+(also re-applied to the population every 25 iterations, whatever the initialization), the ejection pool of
+improvement2_ejection_pool.py (CUDA only) and the local search of improvement 3. The SA warm-up below is off by
+default (SolverConfig.sa_warmup_iterations = 0).
 """
 
 from __future__ import annotations
@@ -13,6 +15,21 @@ except ImportError:  # pragma: no cover - optional dependency
 
 import math
 
+# RCRS insertion score = delta_TD + RC_WEIGHT * max(0, peak load - RC_THRESHOLD * Q) + RS_WEIGHT * radial deviation.
+# SEED_RULE: customer that opens a new route (0 random, 1 earliest due time, 2 farthest from the depot).
+# Read when the kernels are compiled.
+RC_WEIGHT = 0.5
+RC_THRESHOLD = 0.70
+RS_WEIGHT = 0.3
+SEED_RULE = 0
+# SA warm-up after the construction: temperature SA_T0, multiplied by SA_COOLING down to SA_TMIN, sa_iters moves per
+# level; a worse move is accepted with probability exp(-delta / (T * scale)), scale = 1 (absolute temperature, the
+# default) or the TD of the individual at the start of the warm-up when SA_RELATIVE.
+SA_T0 = 100.0
+SA_COOLING = 0.85
+SA_TMIN = 0.5
+SA_RELATIVE = False
+
 
 def build(dev_fn, k):
     """Compile this module's device functions (CUDA device functions or CPU njit) into the bundle k."""
@@ -21,6 +38,14 @@ def build(dev_fn, k):
     rand_u01 = k["rand_u01"]
     randint = k["randint"]
     shuffle_ints = k["shuffle_ints"]
+    rc_weight = RC_WEIGHT
+    rc_threshold = RC_THRESHOLD
+    rs_weight = RS_WEIGHT
+    seed_rule = SEED_RULE
+    sa_t0 = SA_T0
+    sa_cooling = SA_COOLING
+    sa_tmin = SA_TMIN
+    sa_relative = SA_RELATIVE
 
     @dev_fn
     def rcrs_score(route, length, customer, pos, prob_data):
@@ -49,7 +74,7 @@ def build(dev_fn, k):
 
         cust_dem = delivery[customer] if delivery[customer] > pickup[customer] else pickup[customer]
         c_new = max_load + cust_dem
-        rc_pen = c_new - capacity * 0.70
+        rc_pen = c_new - capacity * rc_threshold
         if rc_pen < 0.0:
             rc_pen = 0.0
 
@@ -57,7 +82,26 @@ def build(dev_fn, k):
         dx_c = dist_matrix[depot, customer]
         rs_pen = abs(dx_prev + dist_matrix[prev, customer] - dx_c)
 
-        return delta_td + 0.5 * rc_pen + 0.3 * rs_pen
+        return delta_td + rc_weight * rc_pen + rs_weight * rs_pen
+
+    @dev_fn
+    def pick_seed(unrouted, count, s, prob_data, rng_states):
+        # Index (in unrouted) of the customer that opens a new route
+        if seed_rule == 0:
+            return randint(rng_states, s, 0, count - 1)
+        end_tw = prob_data[8]
+        dist_matrix = prob_data[10]
+        depot = int(prob_data[0])
+        best = 0
+        for i in range(1, count):
+            c = unrouted[s, i]
+            b = unrouted[s, best]
+            if seed_rule == 1:
+                if end_tw[c] < end_tw[b]:
+                    best = i
+            elif dist_matrix[depot, c] > dist_matrix[depot, b]:
+                best = i
+        return best
 
     @dev_fn
     def construct_rcrs_grasp(nodes, rlen, nr, dist, cost, s,
@@ -81,7 +125,7 @@ def build(dev_fn, k):
         while unrouted_count > 0:
             num_r = nr[s]
             if num_r == 0:
-                pick = randint(rng_states, s, 0, unrouted_count - 1)
+                pick = pick_seed(scratch_unrouted, unrouted_count, s, prob_data, rng_states)
                 c = scratch_unrouted[s, pick]
                 nodes[s, 0, 0] = depot
                 nodes[s, 0, 1] = c
@@ -131,7 +175,7 @@ def build(dev_fn, k):
                         worst_score_global = best_c_score
 
             if best_score_global >= 1e11:
-                pick = randint(rng_states, s, 0, unrouted_count - 1)
+                pick = pick_seed(scratch_unrouted, unrouted_count, s, prob_data, rng_states)
                 c = scratch_unrouted[s, pick]
                 new_r = nr[s]
                 nodes[s, new_r, 0] = depot
@@ -154,7 +198,7 @@ def build(dev_fn, k):
                     rcl_count += 1
 
             if rcl_count == 0:
-                pick = randint(rng_states, s, 0, unrouted_count - 1)
+                pick = pick_seed(scratch_unrouted, unrouted_count, s, prob_data, rng_states)
                 c = scratch_unrouted[s, pick]
                 new_r = nr[s]
                 nodes[s, new_r, 0] = depot
@@ -293,13 +337,14 @@ def build(dev_fn, k):
     def sa_warmup_single(nodes, rlen, nr, dist, cost, s,
                          scratch_route, scratch_route2,
                          prob_data, rng_states, sa_iters=25):
-        temp = 100.0
-        cooling = 0.85
+        temp = sa_t0
+        cooling = sa_cooling
         num_r = nr[s]
         if num_r == 0:
             return
+        scale = dist[s] if sa_relative else 1.0
 
-        while temp > 0.5:
+        while temp > sa_tmin:
             for _ in range(sa_iters):
                 num_r = nr[s]
                 if num_r == 0:
@@ -326,7 +371,7 @@ def build(dev_fn, k):
                         if ok:
                             _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
                             delta = new_d - old_d
-                            if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
+                            if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp * scale + 1e-3)):
                                 for k in range(l):
                                     nodes[s, r, k] = scratch_route[s, k]
                                 dist[s] += delta
@@ -355,7 +400,7 @@ def build(dev_fn, k):
                             if ok:
                                 _, old_d = eval_route(nodes[s, r, :l], l, prob_data)
                                 delta = new_d - old_d
-                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
+                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp * scale + 1e-3)):
                                     for k in range(l):
                                         nodes[s, r, k] = scratch_route[s, k]
                                     dist[s] += delta
@@ -389,7 +434,7 @@ def build(dev_fn, k):
                                 _, old_d1 = eval_route(nodes[s, r1, :l1], l1, prob_data)
                                 _, old_d2 = eval_route(nodes[s, r2, :l2], l2, prob_data)
                                 delta = (new_d1 + new_d2) - (old_d1 + old_d2)
-                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
+                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp * scale + 1e-3)):
                                     for k in range(l1 - 1):
                                         nodes[s, r1, k] = scratch_route[s, k]
                                     nodes[s, r1, l1 - 1] = 0
@@ -423,7 +468,7 @@ def build(dev_fn, k):
                                 _, old_d1 = eval_route(nodes[s, r1, :l1], l1, prob_data)
                                 _, old_d2 = eval_route(nodes[s, r2, :l2], l2, prob_data)
                                 delta = (new_d1 + new_d2) - (old_d1 + old_d2)
-                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp + 1e-3)):
+                                if delta < 0.0 or rand_u01(rng_states, s) < math.exp(-delta / (temp * scale + 1e-3)):
                                     nodes[s, r1, i] = scratch_route[s, i]
                                     nodes[s, r2, j] = scratch_route2[s, j]
                                     dist[s] += delta
@@ -431,7 +476,7 @@ def build(dev_fn, k):
 
             temp *= cooling
 
-    k.update({"rcrs_score": rcrs_score, "construct_rcrs_grasp": construct_rcrs_grasp, "route_elimination_single": route_elimination_single, "sa_warmup_single": sa_warmup_single})
+    k.update({"rcrs_score": rcrs_score, "pick_seed": pick_seed, "construct_rcrs_grasp": construct_rcrs_grasp, "route_elimination_single": route_elimination_single, "sa_warmup_single": sa_warmup_single})
 
 
 def build_kernels(is_cuda, k_fn, k, kernels):

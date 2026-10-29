@@ -1,0 +1,366 @@
+[2026-10-25 18:04:29] Start: 10 workers, 84 batches
+[2026-10-25 18:04:45] [PUSH] d1 <- b64: P30_isl3 cdp203, P30_isl10 cdp203
+==============================================================================
+ 55/84 batches done | failed: -
+  a1  RUNNING   b57  grasp_100 rcdp202, sa_200 rcdp202  0h33m
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             4h49m
+  b1  RUNNING   b40  sa_1000 rcdp202, sa_100 rcdp202    3h15m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             4h55m
+  c1  RUNNING   b58  grasp_200 rcdp202, grasp_100 rcdp207 0h33m
+  c2  RUNNING   b63  P60_isl12 cdp103, P60_isl1 cdp103  0h04m
+  d1  RUNNING   b64  P30_isl3 cdp203, P30_isl10 cdp203  0h00m
+  d2  RUNNING   b62  P30_isl3 cdp103, P30_isl10 cdp103  0h06m
+  e1  RUNNING   b59  sa_200 rcdp207, grasp_200 rcdp207  0h33m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               5h02m
+ GPU quota remaining: a=4.4h, b=8.8h, c=3.6h, d=2.4h, e=4.1h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.331, 0.362, 0.372, 0.522, 0.531, 0.581, 0.62, 0.627, 0.637, 0.647, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.755, 0.767, 0.779, 0.86, 0.861, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 18:17:44] [DONE] b62 on d2 in 0.32h (n_gpu=2)
+[2026-10-25 18:19:56] [PUSH] d2 <- b66: P30_isl3 cdp207, P30_isl10 cdp207
+[2026-10-25 18:20:04] [DONE] b57 on a1 in 0.80h (n_gpu=2)
+[2026-10-25 18:20:27] [DONE] b63 on c2 in 0.32h (n_gpu=2)
+[2026-10-25 18:22:39] [QUOTA] a1: -1.00h left after the running session, no pending batch fits
+[2026-10-25 18:22:43] [PUSH] c2 <- b65: P60_isl12 cdp203, P60_isl1 cdp203
+[2026-10-25 18:25:14] [DONE] b40 on b1 in 3.59h (n_gpu=2)
+[2026-10-25 18:25:27] [DONE] b58 on c1 in 0.89h (n_gpu=2)
+[2026-10-25 18:27:45] [PUSH] b1 <- b68: P30_isl3 rdp103, P30_isl10 rdp103
+[2026-10-25 18:27:49] [PUSH] c1 <- b70: P30_isl3 rdp107, P30_isl10 rdp107
+[2026-10-25 18:28:16] [DONE] b59 on e1 in 0.94h (n_gpu=2)
+[2026-10-25 18:30:21] [QUOTA] e1: -1.28h left after the running session, no pending batch fits
+==============================================================================
+ 61/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             5h19m
+  b1  RUNNING   b68  P30_isl3 rdp103, P30_isl10 rdp103  0h07m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             5h25m
+  c1  RUNNING   b70  P30_isl3 rdp107, P30_isl10 rdp107  0h07m
+  c2  RUNNING   b65  P60_isl12 cdp203, P60_isl1 cdp203  0h12m
+  d1  RUNNING   b64  P30_isl3 cdp203, P30_isl10 cdp203  0h30m
+  d2  RUNNING   b66  P30_isl3 cdp207, P30_isl10 cdp207  0h15m
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               5h32m
+ GPU quota remaining: a=2.8h, b=1.6h, c=2.8h, d=2.0h, e=2.2h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.581, 0.62, 0.627, 0.637, 0.647, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 18:42:17] [DONE] b64 on d1 in 0.63h (n_gpu=2)
+[2026-10-25 18:44:36] [PUSH] d1 <- b78: P30_isl3 rcdp104, P30_isl10 rcdp104
+[2026-10-25 18:56:19] [DONE] b28 on b2 in 5.78h (n_gpu=2)
+[2026-10-25 18:58:32] [QUOTA] b2: 0.06h left after the running session, no pending batch fits
+[2026-10-25 18:58:53] [DONE] b66 on d2 in 0.65h (n_gpu=2)
+[2026-10-25 19:00:59] [QUOTA] d2: 0.23h left after the running session, no pending batch fits
+==============================================================================
+ 64/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             5h50m
+  b1  RUNNING   b68  P30_isl3 rdp103, P30_isl10 rdp103  0h37m
+  b2  NO_QUOTA  -                                       
+  c1  RUNNING   b70  P30_isl3 rdp107, P30_isl10 rdp107  0h37m
+  c2  RUNNING   b65  P60_isl12 cdp203, P60_isl1 cdp203  0h42m
+  d1  RUNNING   b78  P30_isl3 rcdp104, P30_isl10 rcdp104 0h21m
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               6h02m
+ GPU quota remaining: a=2.8h, b=0.6h, c=2.8h, d=0.7h, e=2.2h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.581, 0.62, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+[2026-10-25 19:07:55] [DONE] b65 on c2 in 0.75h (n_gpu=2)
+[2026-10-25 19:10:05] [PUSH] c2 <- b76: P30_isl3 rcdp101, P30_isl10 rcdp101
+[2026-10-25 19:12:34] [DONE] b68 on b1 in 0.75h (n_gpu=2)
+[2026-10-25 19:12:48] [DONE] b70 on c1 in 0.75h (n_gpu=2)
+[2026-10-25 19:15:00] [QUOTA] b1: 0.39h left after the running session, no pending batch fits
+[2026-10-25 19:15:04] [QUOTA] c1: 0.55h left after the running session, no pending batch fits
+[2026-10-25 19:22:01] [DONE] b78 on d1 in 0.62h (n_gpu=2)
+[2026-10-25 19:24:10] [QUOTA] d1: 0.38h left after the running session, no pending batch fits
+==============================================================================
+ 68/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             6h21m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  RUNNING   b76  P30_isl3 rcdp101, P30_isl10 rcdp101 0h27m
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               6h34m
+ GPU quota remaining: a=1.8h, b=0.4h, c=1.4h, d=0.4h, e=1.2h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+[2026-10-25 19:43:43] [DONE] b76 on c2 in 0.56h (n_gpu=2)
+[2026-10-25 19:45:48] [QUOTA] c2: 0.94h left after the running session, no pending batch fits
+==============================================================================
+ 69/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             6h53m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               7h06m
+ GPU quota remaining: a=1.8h, b=0.4h, c=0.9h, d=0.4h, e=1.2h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+==============================================================================
+ 69/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             7h25m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               7h37m
+ GPU quota remaining: a=0.7h, b=0.4h, c=0.9h, d=0.4h, e=0.2h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+==============================================================================
+ 69/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             7h57m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               8h09m
+ GPU quota remaining: a=0.7h, b=0.4h, c=0.9h, d=0.4h, e=0.2h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+==============================================================================
+ 69/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             8h28m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               8h41m
+ GPU quota remaining: a=0.0h, b=0.4h, c=0.9h, d=0.4h, e=0.0h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+[2026-10-25 21:59:16] [WARN] a2 unexpected status ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+[2026-10-25 21:59:49] [WARN] e2 unexpected status WARNING: LOOKS LIKE YOU'RE USING AN OUTDATED `KAGGLE` VERSION (INSTALLED: 2.2.4), PLEASE CONSIDER UPGRADING TO THE LATEST VERSION (2.2.5)
+ ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+[2026-10-25 22:03:28] [WARN] e2 unexpected status TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 470, IN _MAKE_REQUEST
+    SELF._VALIDATE_CONN(CONN)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 1125, IN _VALIDATE_CONN
+    CONN.CONNECT()
+    ~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 878, IN CONNECT
+    WRAPPED_SOCKET, IS_VERIFIED = _SSL_WRAP_SOCKET_AND_MATCH_HOSTNAME(
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        SOCK=SOCK,
+        ^^^^^^^^^^
+    ...<14 LINES>...
+        ASSERT_FINGERPRINT=SELF.ASSERT_FINGERPRINT,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTION.PY", LINE 1080, IN _SSL_WRAP_SOCKET_AND_MATCH_HOSTNAME
+    SSL_SOCK = SSL_WRAP_SOCKET(
+        SOCK=SOCK,
+    ...<8 LINES>...
+        TLS_IN_TLS=TLS_IN_TLS,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\SSL_.PY", LINE 437, IN SSL_WRAP_SOCKET
+    SSL_SOCK = _SSL_WRAP_SOCKET_IMPL(SOCK, CONTEXT, TLS_IN_TLS, SERVER_HOSTNAME)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\SSL_.PY", LINE 481, IN _SSL_WRAP_SOCKET_IMPL
+    RETURN SSL_CONTEXT.WRAP_SOCKET(SOCK, SERVER_HOSTNAME=SERVER_HOSTNAME)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "C:\PROGRAM FILES\PYTHON313\LIB\SSL.PY", LINE 455, IN WRAP_SOCKET
+    RETURN SELF.SSLSOCKET_CLASS._CREATE(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        SOCK=SOCK,
+        ^^^^^^^^^^
+    ...<5 LINES>...
+        SESSION=SESSION
+        ^^^^^^^^^^^^^^^
+    )
+    ^
+  FILE "C:\PROGRAM FILES\PYTHON313\LIB\SSL.PY", LINE 1076, IN _CREATE
+    SELF.DO_HANDSHAKE()
+    ~~~~~~~~~~~~~~~~~^^
+  FILE "C:\PROGRAM FILES\PYTHON313\LIB\SSL.PY", LINE 1372, IN DO_HANDSHAKE
+    SELF._SSLOBJ.DO_HANDSHAKE()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+TIMEOUTERROR: [WINERROR 10060] A CONNECTION ATTEMPT FAILED BECAUSE THE CONNECTED PARTY DID NOT PROPERLY RESPOND AFTER A PERIOD OF TIME, OR ESTABLISHED CONNECTION FAILED BECAUSE CONNECTED HOST HAS FAILED TO RESPOND
+
+THE ABOVE EXCEPTION WAS THE DIRECT CAUSE OF THE FOLLOWING EXCEPTION:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\ADAPTERS.PY", LINE 696, IN SEND
+    RESP = CONN.URLOPEN(
+        METHOD=REQUEST.METHOD,
+    ...<9 LINES>...
+        CHUNKED=CHUNKED,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 847, IN URLOPEN
+    RETRIES = RETRIES.INCREMENT(
+        METHOD, URL, ERROR=NEW_E, _POOL=SELF, _STACKTRACE=SYS.EXC_INFO()[2]
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\RETRY.PY", LINE 510, IN INCREMENT
+    RAISE RERAISE(TYPE(ERROR), ERROR, _STACKTRACE)
+          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\UTIL\UTIL.PY", LINE 39, IN RERAISE
+    RAISE VALUE
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 793, IN URLOPEN
+    RESPONSE = SELF._MAKE_REQUEST(
+        CONN,
+    ...<10 LINES>...
+        **RESPONSE_KW,
+    )
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 494, IN _MAKE_REQUEST
+    RAISE NEW_E
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 472, IN _MAKE_REQUEST
+    SELF._RAISE_TIMEOUT(ERR=E, URL=URL, TIMEOUT_VALUE=CONN.TIMEOUT)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\URLLIB3\CONNECTIONPOOL.PY", LINE 373, IN _RAISE_TIMEOUT
+    RAISE READTIMEOUTERROR(
+        SELF, URL, F"READ TIMED OUT. (READ TIMEOUT={TIMEOUT_VALUE})"
+    ) FROM ERR
+URLLIB3.EXCEPTIONS.READTIMEOUTERROR: HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): READ TIMED OUT. (READ TIMEOUT=NONE)
+
+DURING HANDLING OF THE ABOVE EXCEPTION, ANOTHER EXCEPTION OCCURRED:
+
+TRACEBACK (MOST RECENT CALL LAST):
+  FILE "<FROZEN RUNPY>", LINE 198, IN _RUN_MODULE_AS_MAIN
+  FILE "<FROZEN RUNPY>", LINE 88, IN _RUN_CODE
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\SCRIPTS\KAGGLE.EXE\__MAIN__.PY", LINE 10, IN <MODULE>
+    SYS.EXIT(MAIN())
+             ~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\CLI.PY", LINE 75, IN MAIN
+    API.AUTHENTICATE()
+    ~~~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1239, IN AUTHENTICATE
+    IF SELF._AUTHENTICATE_WITH_ACCESS_TOKEN():
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1310, IN _AUTHENTICATE_WITH_ACCESS_TOKEN
+    USERNAME = SELF._INTROSPECT_TOKEN(ACCESS_TOKEN)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLE\API\KAGGLE_API_EXTENDED.PY", LINE 1352, IN _INTROSPECT_TOKEN
+    RESPONSE = KAGGLE.SECURITY.OAUTH_CLIENT.INTROSPECT_TOKEN(REQUEST)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLESDK\SECURITY\SERVICES\OAUTH_SERVICE.PY", LINE 44, IN INTROSPECT_TOKEN
+    RETURN SELF._CLIENT.CALL("SECURITY.OAUTHSERVICE", "INTROSPECTTOKEN", REQUEST, INTROSPECTTOKENRESPONSE)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\KAGGLESDK\KAGGLE_HTTP_CLIENT.PY", LINE 104, IN CALL
+    HTTP_RESPONSE = SELF._SESSION.SEND(HTTP_REQUEST, **SETTINGS)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\SESSIONS.PY", LINE 784, IN SEND
+    R = ADAPTER.SEND(REQUEST, **KWARGS)
+  FILE "D:\AI_RESEARCH\PH-SHOWOA\.VENV\LIB\SITE-PACKAGES\REQUESTS\ADAPTERS.PY", LINE 742, IN SEND
+    RAISE READTIMEOUT(E, REQUEST=REQUEST)
+REQUESTS.EXCEPTIONS.READTIMEOUT: HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): READ TIMED OUT. (READ TIMEOUT=NONE)
+[2026-10-25 22:06:10] [WARN] could not read GPU quota for account b
+[2026-10-25 22:07:31] [PUSH FAILED] b2 b67: Warning: Looks like you're using an outdated `kaggle` version (installed: 2.2.4), please consider upgrading to the latest version (2.2.5)
+
+HTTPSConnectionPool(host='api.kaggle.com', port=443): Max retries exceeded with url: /v1/kernels.KernelsApiService/SaveKernel (Caused by ConnectTimeoutError(<HTT
+[2026-10-25 22:08:37] [WARN] could not read GPU quota for account d
+[2026-10-25 22:10:08] [PUSH FAILED] d2 b67: Warning: Looks like you're using an outdated `kaggle` version (installed: 2.2.4), please consider upgrading to the latest version (2.2.5)
+
+HTTPSConnectionPool(host='api.kaggle.com', port=443): Max retries exceeded with url: /v1/kernels.KernelsApiService/SaveKernel (Caused by SSLError(SSLEOFError(8, 
+[2026-10-25 22:10:30] [WARN] a2 unexpected status HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY CONNECTTIMEOUTERROR(<HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443) AT 0X1F5E41B3620>, 'CONNECTION TO API.KAGGLE.COM TIMED OUT. (CONNECT TIMEOUT=NONE)'))
+[2026-10-25 22:11:00] [WARN] e2 unexpected status WARNING: LOOKS LIKE YOU'RE USING AN OUTDATED `KAGGLE` VERSION (INSTALLED: 2.2.4), PLEASE CONSIDER UPGRADING TO THE LATEST VERSION (2.2.5)
+ HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY NEWCONNECTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO ESTABLISH A NEW CONNECTION: [WINERROR 10053] AN ESTABLISHED CONNECTION WAS ABORTED BY THE SOFTWARE IN YOUR HOST MACHINE"))
+==============================================================================
+ 69/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             8h59m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               9h12m
+ GPU quota remaining: a=0.0h, b=0.4h, c=0.9h, d=0.4h, e=0.0h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+==============================================================================
+ 69/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             9h30m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               9h42m
+ GPU quota remaining: a=0.0h, b=0.4h, c=0.9h, d=0.4h, e=0.0h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783]
+==============================================================================
+[2026-10-25 23:08:30] [DONE] b27 on e2 in 10.09h (n_gpu=2)
+[2026-10-25 23:10:32] [QUOTA] e2: 0.00h left after the running session, no pending batch fits
+==============================================================================
+ 70/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             10h01m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  NO_QUOTA  -                                       
+ GPU quota remaining: a=0.0h, b=0.4h, c=0.9h, d=0.4h, e=0.0h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783, 10.09]
+==============================================================================
+==============================================================================
+ 70/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             10h31m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  NO_QUOTA  -                                       
+ GPU quota remaining: a=0.0h, b=0.4h, c=0.9h, d=0.4h, e=0.0h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783, 10.09]
+==============================================================================
+==============================================================================
+ 70/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             11h02m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  NO_QUOTA  -                                       
+ GPU quota remaining: a=0.0h, b=0.4h, c=0.9h, d=0.4h, e=0.0h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783, 10.09]
+==============================================================================
+==============================================================================
+ 70/84 batches done | failed: -
+  a1  NO_QUOTA  -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             11h32m
+  b1  NO_QUOTA  -                                       
+  b2  NO_QUOTA  -                                       
+  c1  NO_QUOTA  -                                       
+  c2  NO_QUOTA  -                                       
+  d1  NO_QUOTA  -                                       
+  d2  NO_QUOTA  -                                       
+  e1  NO_QUOTA  -                                       
+  e2  NO_QUOTA  -                                       
+ GPU quota remaining: a=0.0h, b=0.4h, c=0.9h, d=0.4h, e=0.0h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.299, 0.32, 0.32, 0.324, 0.331, 0.362, 0.372, 0.522, 0.531, 0.561, 0.581, 0.62, 0.624, 0.626, 0.627, 0.637, 0.647, 0.649, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.747, 0.75, 0.753, 0.755, 0.767, 0.779, 0.805, 0.86, 0.861, 0.893, 0.938, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.15, 3.316, 3.335, 3.378, 3.449, 3.455, 3.458, 3.533, 3.593, 3.666, 3.713, 3.724, 5.783, 10.09]
+==============================================================================
+[2026-10-26 01:16:55] [FAILED] b29 on a2 status=CANCEL_ACKNOWLEDGED: summary.json missing (attempt 2)

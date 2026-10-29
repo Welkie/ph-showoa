@@ -1,0 +1,6 @@
+[
+  {"name": "sa_ep1k", "cfg": {"init": "sa", "ep_budget": 1000}, "runs": 10},
+  {"name": "sa_ep5k", "cfg": {"init": "sa", "ep_budget": 5000}, "runs": 10},
+  {"name": "grasp_ep1k", "cfg": {"sa_warmup_iterations": 0, "ep_budget": 1000}, "runs": 10},
+  {"name": "mixed_ep1k", "cfg": {"init": "mixed", "sa_warmup_iterations": 0, "ep_budget": 1000}, "runs": 10}
+]

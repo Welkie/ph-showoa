@@ -1,0 +1,52 @@
+A2 cdp101: backend=cuda islands=6
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=11 TD=1153.58 feasible=True (86.3s)
+  run 02 seed=43 NV=11 TD=1093.74 feasible=True (23.8s)
+  run 03 seed=44 NV=11 TD=1068.99 feasible=True (28.4s)
+  run 04 seed=45 NV=11 TD=1333.22 feasible=True (55.9s)
+  run 05 seed=46 NV=11 TD=1085.08 feasible=True (39.8s)
+  run 06 seed=47 NV=11 TD=1027.00 feasible=True (34.7s)
+  run 07 seed=48 NV=11 TD=1042.31 feasible=True (23.3s)
+  run 08 seed=49 NV=11 TD=1079.65 feasible=True (22.7s)
+  run 09 seed=50 NV=12 TD=973.68 feasible=True (48.1s)
+  run 10 seed=51 NV=11 TD=1055.57 feasible=True (28.5s)
+  run 11 seed=52 NV=11 TD=1134.53 feasible=True (17.6s)
+  run 12 seed=53 NV=12 TD=963.96 feasible=True (55.6s)
+  run 13 seed=54 NV=12 TD=967.07 feasible=True (49.5s)
+  run 14 seed=55 NV=11 TD=1029.18 feasible=True (38.0s)
+  run 15 seed=56 NV=11 TD=1025.23 feasible=True (29.3s)
+  run 16 seed=57 NV=11 TD=1069.31 feasible=True (22.1s)
+  run 17 seed=58 NV=11 TD=1018.10 feasible=True (37.6s)
+  run 18 seed=59 NV=11 TD=1084.50 feasible=True (28.6s)
+  run 19 seed=60 NV=11 TD=1052.07 feasible=True (28.5s)
+  run 20 seed=61 NV=11 TD=1062.40 feasible=True (21.3s)
+  run 21 seed=62 NV=11 TD=1011.64 feasible=True (45.4s)
+  run 22 seed=63 NV=11 TD=1100.28 feasible=True (19.7s)
+  run 23 seed=64 NV=11 TD=1027.48 feasible=True (21.7s)
+  run 24 seed=65 NV=12 TD=973.58 feasible=True (51.6s)
+  run 25 seed=66 NV=11 TD=1003.63 feasible=True (26.3s)
+  run 26 seed=67 NV=11 TD=1125.31 feasible=True (33.4s)
+  run 27 seed=68 NV=12 TD=978.38 feasible=True (51.8s)
+  run 28 seed=69 NV=11 TD=1124.19 feasible=True (29.9s)
+  run 29 seed=70 NV=11 TD=1026.48 feasible=True (41.1s)
+  run 30 seed=71 NV=11 TD=1072.30 feasible=True (24.9s)
+DONE A2 cdp101 1066s

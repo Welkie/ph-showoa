@@ -1,0 +1,52 @@
+B cdp103: backend=cuda islands=6
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=10 TD=1105.63 feasible=True (83.2s)
+  run 02 seed=43 NV=10 TD=927.95 feasible=True (18.2s)
+  run 03 seed=44 NV=11 TD=887.47 feasible=True (36.3s)
+  run 04 seed=45 NV=11 TD=887.47 feasible=True (31.3s)
+  run 05 seed=46 NV=10 TD=933.14 feasible=True (19.4s)
+  run 06 seed=47 NV=10 TD=944.50 feasible=True (21.8s)
+  run 07 seed=48 NV=11 TD=887.47 feasible=True (38.4s)
+  run 08 seed=49 NV=10 TD=945.96 feasible=True (23.6s)
+  run 09 seed=50 NV=10 TD=1058.70 feasible=True (41.3s)
+  run 10 seed=51 NV=10 TD=941.29 feasible=True (20.6s)
+  run 11 seed=52 NV=11 TD=887.47 feasible=True (43.5s)
+  run 12 seed=53 NV=10 TD=905.33 feasible=True (22.8s)
+  run 13 seed=54 NV=10 TD=1246.76 feasible=True (26.6s)
+  run 14 seed=55 NV=11 TD=887.47 feasible=True (36.0s)
+  run 15 seed=56 NV=10 TD=920.48 feasible=True (18.4s)
+  run 16 seed=57 NV=11 TD=887.47 feasible=True (40.7s)
+  run 17 seed=58 NV=11 TD=887.47 feasible=True (34.9s)
+  run 18 seed=59 NV=10 TD=907.05 feasible=True (20.6s)
+  run 19 seed=60 NV=11 TD=887.47 feasible=True (37.9s)
+  run 20 seed=61 NV=10 TD=907.84 feasible=True (20.2s)
+  run 21 seed=62 NV=10 TD=975.21 feasible=True (16.4s)
+  run 22 seed=63 NV=10 TD=969.77 feasible=True (26.7s)
+  run 23 seed=64 NV=11 TD=887.47 feasible=True (38.0s)
+  run 24 seed=65 NV=10 TD=903.84 feasible=True (20.4s)
+  run 25 seed=66 NV=11 TD=887.47 feasible=True (38.8s)
+  run 26 seed=67 NV=10 TD=910.85 feasible=True (25.6s)
+  run 27 seed=68 NV=10 TD=916.87 feasible=True (16.7s)
+  run 28 seed=69 NV=11 TD=887.47 feasible=True (41.4s)
+  run 29 seed=70 NV=11 TD=887.47 feasible=True (45.0s)
+  run 30 seed=71 NV=11 TD=888.46 feasible=True (33.0s)
+DONE B cdp103 938s

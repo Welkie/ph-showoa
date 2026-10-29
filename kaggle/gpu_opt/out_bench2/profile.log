@@ -1,0 +1,48 @@
+{"inst": "cdp101", "pkg": "vB", "backend": "cuda", "gens": 200, "compile": 61.0, "wall": [0.789, 0.815], "cost": [22993.794, 22993.794], "kernels": {"update_population": [0.7308, 200], "local_search_bi": [0.0897, 9], "stagnation": [0.0794, 200], "init_population": [0.0529, 1], "update_island_bests": [0.029, 201], "update_global_best": [0.0249, 201], "record_log": [0.0142, 200], "route_elimination": [0.0115, 8], "island_migration": [0.0016, 10], "init_device_rng": [0.0001, 1]}}
+{"inst": "rdp210", "pkg": "vB", "backend": "cuda", "gens": 200, "compile": 9.1, "wall": [9.054, 8.714], "cost": [6963.083, 6976.27], "kernels": {"update_population": [8.2568, 200], "local_search_bi": [0.5416, 9], "init_population": [0.1454, 1], "route_elimination": [0.0935, 8], "stagnation": [0.0798, 200], "update_island_bests": [0.0335, 201], "update_global_best": [0.0257, 201], "record_log": [0.0144, 200], "island_migration": [0.002, 10], "init_device_rng": [0.0001, 1]}}
+{"inst": "rcdp207", "pkg": "vB", "backend": "cuda", "gens": 200, "compile": 7.0, "wall": [7.038, 7.084], "cost": [9019.267, 9016.62], "kernels": {"update_population": [6.3707, 200], "local_search_bi": [0.5227, 9], "init_population": [0.1234, 1], "route_elimination": [0.099, 8], "stagnation": [0.0763, 200], "update_island_bests": [0.0319, 201], "update_global_best": [0.0251, 201], "record_log": [0.0141, 200], "island_migration": [0.0019, 10], "init_device_rng": [0.0001, 1]}}
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+{"inst": "cdp101", "pkg": "vW", "backend": "cuda", "gens": 200, "compile": 60.2, "wall": [0.782, 0.809], "cost": [22993.794, 22993.794], "kernels": {"probe_stage0": [5.2825, 200], "update_population": [0.7528, 200], "probe_stage2": [0.734, 200], "probe_stage1": [0.6999, 200], "local_search_bi": [0.0942, 9], "stagnation": [0.0796, 200], "init_population": [0.0525, 1], "update_island_bests": [0.0292, 201], "update_global_best": [0.0251, 201], "record_log": [0.014, 200], "route_elimination": [0.0129, 8], "island_migration": [0.0017, 10], "init_device_rng": [0.0001, 1]}}
+{"inst": "rdp210", "pkg": "vW", "backend": "cuda", "gens": 200, "compile": 9.1, "wall": [9.081, 8.787], "cost": [6963.083, 6976.27], "kernels": {"update_population": [8.2724, 200], "probe_stage2": [8.2449, 200], "probe_stage1": [7.5321, 200], "local_search_bi": [0.5432, 9], "probe_stage0": [0.2422, 200], "init_population": [0.1461, 1], "route_elimination": [0.0936, 8], "stagnation": [0.0812, 200], "update_island_bests": [0.034, 201], "update_global_best": [0.0264, 201], "record_log": [0.0148, 200], "island_migration": [0.0019, 10], "init_device_rng": [0.0001, 1]}}
+{"inst": "rcdp207", "pkg": "vW", "backend": "cuda", "gens": 200, "compile": 7.0, "wall": [7.038, 7.122], "cost": [9019.267, 9016.62], "kernels": {"update_population": [6.4267, 200], "probe_stage2": [6.4092, 200], "probe_stage1": [6.0741, 200], "local_search_bi": [0.5256, 9], "probe_stage0": [0.2259, 200], "init_population": [0.1245, 1], "route_elimination": [0.0998, 8], "stagnation": [0.0773, 200], "update_island_bests": [0.033, 201], "update_global_best": [0.0257, 201], "record_log": [0.0145, 200], "island_migration": [0.002, 10], "init_device_rng": [0.0001, 1]}}
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))

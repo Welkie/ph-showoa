@@ -1,0 +1,33 @@
+A3 cdp203: backend=cuda
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+  run 01 seed=42 NV=3 TD=591.17 feasible=True (232.2s)
+  run 02 seed=43 NV=3 TD=591.17 feasible=True (149.4s)
+  run 03 seed=44 NV=3 TD=591.17 feasible=True (141.2s)
+  run 04 seed=45 NV=3 TD=600.21 feasible=True (146.9s)
+  run 05 seed=46 NV=3 TD=591.17 feasible=True (158.5s)
+  run 06 seed=47 NV=3 TD=591.17 feasible=True (165.0s)
+  run 07 seed=48 NV=3 TD=591.17 feasible=True (160.7s)
+  run 08 seed=49 NV=3 TD=600.21 feasible=True (159.6s)
+  run 09 seed=50 NV=3 TD=591.17 feasible=True (155.1s)
+  run 10 seed=51 NV=3 TD=591.17 feasible=True (152.8s)
+  run 11 seed=52 NV=3 TD=591.17 feasible=True (147.3s)
+  run 12 seed=53 NV=3 TD=591.17 feasible=True (151.5s)
+  run 13 seed=54 NV=3 TD=591.17 feasible=True (160.0s)
+  run 14 seed=55 NV=3 TD=600.21 feasible=True (146.9s)
+  run 15 seed=56 NV=3 TD=591.17 feasible=True (153.6s)
+DONE A3__cdp203__r01-15 2381s

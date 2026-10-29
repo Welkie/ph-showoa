@@ -11,7 +11,7 @@ def build(dev_fn, k):
 
     @dev_fn
     def update_position_hybrid(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
-                               ibest_nodes, ibest_rlen, ibest_nr, island_id, island_size,
+                               best_nodes, best_rlen, best_nr,
                                cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                                bak_nodes, bak_rlen, bak_nr, bak_dist, bak_cost,
                                scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
@@ -20,12 +20,12 @@ def build(dev_fn, k):
         # Returns True when a feasible candidate is left in cand (False: the current solution is returned).
         if rand_u01(rng_states, s) < p_hybrid:
             return sho_update_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
-                                     ibest_nodes, ibest_rlen, ibest_nr, island_id, island_size,
+                                     best_nodes, best_rlen, best_nr,
                                      cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                                      scratch_route, scratch_route2, scratch_unrouted, scratch_flags,
                                      mutation_prob, prob_data, rng_states)
         return woa_update_single(cur_nodes, cur_rlen, cur_nr, cur_dist, cur_cost, s,
-                                 ibest_nodes, ibest_rlen, ibest_nr, island_id,
+                                 best_nodes, best_rlen, best_nr,
                                  cand_nodes, cand_rlen, cand_nr, cand_dist, cand_cost,
                                  bak_nodes, bak_rlen, bak_nr, bak_dist, bak_cost,
                                  scratch_route, scratch_unrouted, scratch_flags,

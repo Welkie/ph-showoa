@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """
+OBSOLETE: calls src_python_gpu_SA_RCRS_GRASP.main with options the current CLI does not have. Use
+kaggle/orchestrate_gpu_all.py for the full benchmark.
+
 Orchestrator to run benchmark instances across 3 Kaggle accounts (2 workers each = 6 slots).
 Each slot runs instances one-by-one with:
   pop_size=30, max_iter=1000, runs=30
@@ -29,7 +32,7 @@ RUNS_DIR = REPO_ROOT / "kaggle" / "runs"
 WORKERS = [
     {
         "id": "a1",
-        "account": "a",
+        "account": "1",
         "slug": "saostken/ph-showoa",
         "title": "PH-SHOWOA",
         "dir": RUNS_DIR / "a1",
@@ -37,7 +40,7 @@ WORKERS = [
     },
     {
         "id": "a2",
-        "account": "a",
+        "account": "1",
         "slug": "saostken/ph-showoa-gpu-sa-rcrs-grasp-a2",
         "title": "PH-SHOWOA GPU SA-RCRS-GRASP (a2)",
         "dir": RUNS_DIR / "a2",
@@ -45,7 +48,7 @@ WORKERS = [
     },
     {
         "id": "b1",
-        "account": "b",
+        "account": "2",
         "slug": "welkie/wel-ph-showoa-rcrs-grasp",
         "title": "Wel_PH-SHOWOA_rcrs_grasp",
         "dir": RUNS_DIR / "b1",
@@ -53,7 +56,7 @@ WORKERS = [
     },
     {
         "id": "b2",
-        "account": "b",
+        "account": "2",
         "slug": "welkie/wel-ph-showoa-gpu-sa-rcrs-grasp-b2",
         "title": "Wel_PH-SHOWOA GPU SA-RCRS-GRASP (b2)",
         "dir": RUNS_DIR / "b2",
@@ -61,7 +64,7 @@ WORKERS = [
     },
     {
         "id": "c1",
-        "account": "c",
+        "account": "3",
         "slug": "minhanhphm1676/kaggle-gpu-sa-rcrs-grasp",
         "title": "kaggle_gpu_sa_rcrs_grasp",
         "dir": RUNS_DIR / "c1",
@@ -69,7 +72,7 @@ WORKERS = [
     },
     {
         "id": "c2",
-        "account": "c",
+        "account": "3",
         "slug": "minhanhphm1676/ma-ph-showoa-gpu-sa-rcrs-grasp-c2",
         "title": "MA_PH-SHOWOA GPU SA-RCRS-GRASP (c2)",
         "dir": RUNS_DIR / "c2",
@@ -95,7 +98,7 @@ def find_kaggle_exe():
 def run_kaggle_cmd(account: str, args: list, timeout: int = 120):
     """Run a kaggle CLI command under the specified account configuration."""
     kaggle_exe = find_kaggle_exe()
-    acc_dir = REPO_ROOT / "kaggle" / f"account_{account}"
+    acc_dir = next((REPO_ROOT / "kaggle").glob(f"{int(account)}_account_*"))
     env = os.environ.copy()
     env["KAGGLE_CONFIG_DIR"] = str(acc_dir)
     cmd = [kaggle_exe] + args
@@ -716,6 +719,8 @@ def orchestrate(csv_path: Path, pop_size: int, max_iter: int, runs: int, poll_in
 
 
 def main():
+    sys.exit("run_gpu_sa_rcrs_grasp.py is obsolete (it calls options the current CLI does not have); "
+             "use kaggle/orchestrate_gpu_all.py")
     parser = argparse.ArgumentParser(description="PH-SHOWOA Kaggle Multi-Account Benchmark Orchestrator")
     parser.add_argument("--csv", type=str, default=str(DEFAULT_CSV), help="Path to benchmark instances CSV")
     parser.add_argument("--pop_size", type=int, default=30, help="Population size (default: 30)")

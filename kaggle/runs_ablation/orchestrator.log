@@ -1,0 +1,194 @@
+[2026-10-29 19:04:04] Built payload D:\AI_Research\PH-SHOWOA\kaggle\runs_ablation\payload.zip (71 KB)
+[2026-10-29 19:04:04] Start: 36 workers, 54 batches
+[2026-10-29 19:04:05] [QUOTA] a1: 0.00h left after the running session, no pending batch fits
+[2026-10-29 19:04:05] [QUOTA] a2: 0.00h left after the running session, no pending batch fits
+[2026-10-29 19:04:14] [PUSH] b1 <- b048: sa__rdp210, sa__rcdp202
+[2026-10-29 19:04:14] [QUOTA] b2: 0.03h left after the running session, no pending batch fits
+[2026-10-29 19:04:20] [PUSH] c1 <- b039: B__cdp101, B__cdp103
+[2026-10-29 19:04:23] [PUSH] c2 <- b052: sa__cdp207, sa__cdp101
+[2026-10-29 19:04:27] [QUOTA] d1: 0.00h left after the running session, no pending batch fits
+[2026-10-29 19:04:27] [QUOTA] d2: 0.00h left after the running session, no pending batch fits
+[2026-10-29 19:04:33] [PUSH] e1 <- b049: sa__rdp201, sa__rcdp207
+[2026-10-29 19:04:33] [QUOTA] e2: 0.04h left after the running session, no pending batch fits
+[2026-10-29 19:04:40] [PUSH] f1 <- b000: A3__rcdp202__r07-09, A3__rcdp202__r22-24
+[2026-10-29 19:04:45] [PUSH] f2 <- b001: A3__rcdp207__r07-09, A3__rcdp207__r22-24
+[2026-10-29 19:04:47] [QUOTA] g1: 0.00h left after the running session, no pending batch fits
+[2026-10-29 19:04:47] [QUOTA] g2: 0.00h left after the running session, no pending batch fits
+[2026-10-29 19:04:54] [PUSH] h1 <- b002: B__rcdp202, A1__rcdp202
+[2026-10-29 19:04:58] [PUSH] h2 <- b003: A2__rcdp202, A3__cdp203__r01-15
+[2026-10-29 19:05:04] [PUSH] i1 <- b004: A3__cdp203__r16-30, A3__rdp210__r01-04
+[2026-10-29 19:05:08] [PUSH] i2 <- b005: A3__rdp210__r05-08, A3__rdp210__r12-15
+[2026-10-29 19:05:14] [PUSH] j1 <- b006: A3__rdp210__r16-19, A3__rdp210__r23-26
+[2026-10-29 19:05:17] [PUSH] j2 <- b007: A3__rdp210__r27-30, B__rcdp207
+[2026-10-29 19:05:23] [PUSH] k1 <- b008: A1__rcdp207, A2__rcdp207
+[2026-10-29 19:05:26] [PUSH] k2 <- b009: A3__rcdp104__r01-05, A3__rcdp104__r06-10
+[2026-10-29 19:05:34] [PUSH] l1 <- b010: A3__rcdp104__r11-15, A3__rcdp104__r16-20
+[2026-10-29 19:05:37] [PUSH] l2 <- b011: A3__rcdp104__r21-25, A3__rcdp104__r26-30
+[2026-10-29 19:05:42] [PUSH] m1 <- b012: A3__rcdp202__r01-02, A3__rcdp202__r03-04
+[2026-10-29 19:05:46] [PUSH] m2 <- b013: A3__rcdp202__r05-06, A3__rcdp202__r10-11
+[2026-10-29 19:05:51] [PUSH] n1 <- b014: A3__rcdp202__r12-13, A3__rcdp202__r14-15
+[2026-10-29 19:05:54] [PUSH] n2 <- b015: A3__rcdp202__r16-17, A3__rcdp202__r18-19
+[2026-10-29 19:05:59] [PUSH] o1 <- b016: A3__rcdp202__r20-21, A3__rcdp202__r25-26
+[2026-10-29 19:06:02] [PUSH] o2 <- b017: A3__rcdp202__r27-28, A3__rcdp202__r29-30
+[2026-10-29 19:06:07] [PUSH] p1 <- b018: A3__rcdp207__r01-02, A3__rcdp207__r03-04
+[2026-10-29 19:06:10] [PUSH] p2 <- b019: A3__rcdp207__r05-06, A3__rcdp207__r10-11
+[2026-10-29 19:06:16] [PUSH] q1 <- b020: A3__rcdp207__r12-13, A3__rcdp207__r14-15
+[2026-10-29 19:06:19] [PUSH] q2 <- b021: A3__rcdp207__r16-17, A3__rcdp207__r18-19
+[2026-10-29 19:06:25] [PUSH] r1 <- b022: A3__rcdp207__r20-21, A3__rcdp207__r25-26
+[2026-10-29 19:06:30] [PUSH] r2 <- b023: A3__rcdp207__r27-28, A3__rcdp207__r29-30
+[2026-10-29 19:06:59] [FAILED] b008 on k1 status=ERROR: summary.json missing (attempt 1)
+[2026-10-29 19:07:02] [FAILED] b009 on k2 status=ERROR: summary.json missing (attempt 1)
+[2026-10-29 19:07:07] [FAILED] b010 on l1 status=ERROR: summary.json missing (attempt 1)
+[2026-10-29 19:07:10] [FAILED] b011 on l2 status=ERROR: summary.json missing (attempt 1)
+[2026-10-29 19:07:14] [FAILED] b012 on m1 status=ERROR: summary.json missing (attempt 1)
+[2026-10-29 19:08:56] Start: 14 workers, 54 batches
+[2026-10-29 19:09:11] [DONE] b052 on c2 in 0.08h (n_gpu=2)
+[2026-10-29 19:11:03] [QUOTA] c2: 0.24h left after the running session, no pending batch fits
+[2026-10-29 19:13:06] [DONE] b048 on b1 in 0.15h (n_gpu=2)
+[2026-10-29 19:13:15] [DONE] b039 on c1 in 0.15h (n_gpu=2)
+[2026-10-29 19:13:26] [DONE] b049 on e1 in 0.15h (n_gpu=2)
+[2026-10-29 19:15:16] [QUOTA] b1: 0.26h left after the running session, no pending batch fits
+[2026-10-29 19:15:20] [PUSH] c1 <- b040: A1__cdp101, A1__cdp103
+[2026-10-29 19:15:24] [QUOTA] e1: 0.26h left after the running session, no pending batch fits
+[2026-10-29 19:22:44] [DONE] b040 on c1 in 0.12h (n_gpu=2)
+[2026-10-29 19:24:35] [PUSH] c1 <- b041: A2__cdp101, A2__cdp103
+[2026-10-29 19:32:07] [DONE] b041 on c1 in 0.13h (n_gpu=2)
+[2026-10-29 19:34:01] [PUSH] c1 <- b042: B__rdp103, A1__rdp103
+[2026-10-29 19:36:08] [DONE] b001 on f2 in 0.52h (n_gpu=2)
+[2026-10-29 19:37:56] [PUSH] f2 <- b008: A1__rcdp207, A2__rcdp207
+[2026-10-29 19:47:16] [DONE] b042 on c1 in 0.22h (n_gpu=2)
+[2026-10-29 19:47:35] [DONE] b003 on h2 in 0.71h (n_gpu=2)
+[2026-10-29 19:49:18] [PUSH] c1 <- b050: sa__rdp103, sa__rdp107
+[2026-10-29 19:49:25] [PUSH] h2 <- b033: A1__rdp210, A2__rdp210
+[2026-10-29 19:49:43] [DONE] b002 on h1 in 0.75h (n_gpu=2)
+[2026-10-29 19:51:30] [PUSH] h1 <- b034: B__rdp201, A1__rdp201
+[2026-10-29 19:51:41] [DONE] b000 on f1 in 0.78h (n_gpu=2)
+[2026-10-29 19:53:32] [PUSH] f1 <- b035: A2__rdp201, B__cdp203
+[2026-10-29 19:57:13] [DONE] b050 on c1 in 0.13h (n_gpu=2)
+[2026-10-29 19:58:59] [QUOTA] c1: 0.25h left after the running session, no pending batch fits
+[2026-10-29 19:59:16] [DONE] b004 on i1 in 0.90h (n_gpu=2)
+[2026-10-29 20:00:57] [PUSH] i1 <- b036: B__cdp207, A1__cdp203
+[2026-10-29 20:03:05] [DONE] b007 on j2 in 0.96h (n_gpu=2)
+[2026-10-29 20:04:46] [PUSH] j2 <- b037: A1__cdp207, A2__cdp203
+[2026-10-29 20:05:06] [DONE] b005 on i2 in 1.00h (n_gpu=2)
+[2026-10-29 20:05:14] [DONE] b006 on j1 in 1.00h (n_gpu=2)
+[2026-10-29 20:06:53] [PUSH] i2 <- b043: A2__rdp103, B__rdp107
+[2026-10-29 20:06:58] [PUSH] j1 <- b044: A1__rdp107, A2__rdp107
+[2026-10-29 20:19:51] [DONE] b043 on i2 in 0.22h (n_gpu=2)
+[2026-10-29 20:20:00] [DONE] b044 on j1 in 0.22h (n_gpu=2)
+[2026-10-29 20:21:38] [PUSH] i2 <- b045: B__rcdp104, A1__rcdp104
+[2026-10-29 20:21:43] [PUSH] j1 <- b046: A2__rcdp104, B__rcdp101
+[2026-10-29 20:28:56] [DONE] b034 on h1 in 0.62h (n_gpu=2)
+[2026-10-29 20:30:41] [PUSH] h1 <- b047: A1__rcdp101, A2__rcdp101
+[2026-10-29 20:30:53] [DONE] b035 on f1 in 0.62h (n_gpu=2)
+[2026-10-29 20:32:44] [PUSH] f1 <- b051: sa__rcdp101, sa__rcdp104
+[2026-10-29 20:33:03] [DONE] b045 on i2 in 0.19h (n_gpu=2)
+[2026-10-29 20:33:13] [DONE] b046 on j1 in 0.19h (n_gpu=2)
+[2026-10-29 20:34:54] [PUSH] i2 <- b053: sa__cdp103, sa__cdp203
+[2026-10-29 20:34:59] [PUSH] j1 <- b009: A3__rcdp104__r01-05, A3__rcdp104__r06-10
+[2026-10-29 20:35:12] [DONE] b008 on f2 in 0.95h (n_gpu=2)
+[2026-10-29 20:37:04] [PUSH] f2 <- b010: A3__rcdp104__r11-15, A3__rcdp104__r16-20
+[2026-10-29 20:39:00] [DONE] b051 on f1 in 0.10h (n_gpu=2)
+[2026-10-29 20:39:16] [DONE] b036 on i1 in 0.64h (n_gpu=2)
+[2026-10-29 20:39:25] [DONE] b053 on i2 in 0.08h (n_gpu=2)
+[2026-10-29 20:41:05] [PUSH] f1 <- b011: A3__rcdp104__r21-25, A3__rcdp104__r26-30
+[2026-10-29 20:41:11] [PUSH] i1 <- b012: A3__rcdp202__r01-02, A3__rcdp202__r03-04
+[2026-10-29 20:41:15] [PUSH] i2 <- b013: A3__rcdp202__r05-06, A3__rcdp202__r10-11
+[2026-10-29 20:41:31] [DONE] b047 on h1 in 0.18h (n_gpu=2)
+[2026-10-29 20:43:20] [PUSH] h1 <- b014: A3__rcdp202__r12-13, A3__rcdp202__r14-15
+[2026-10-29 20:43:42] [DONE] b037 on j2 in 0.65h (n_gpu=2)
+[2026-10-29 20:45:17] [PUSH] j2 <- b015: A3__rcdp202__r16-17, A3__rcdp202__r18-19
+[2026-10-29 20:56:20] [DONE] b033 on h2 in 1.12h (n_gpu=2)
+[2026-10-29 20:58:04] [PUSH] h2 <- b016: A3__rcdp202__r20-21, A3__rcdp202__r25-26
+[2026-10-29 21:03:47] [DONE] b012 on i1 in 0.38h (n_gpu=2)
+[2026-10-29 21:03:54] [DONE] b013 on i2 in 0.38h (n_gpu=2)
+[2026-10-29 21:05:38] [PUSH] i1 <- b017: A3__rcdp202__r27-28, A3__rcdp202__r29-30
+[2026-10-29 21:05:42] [PUSH] i2 <- b018: A3__rcdp207__r01-02, A3__rcdp207__r03-04
+[2026-10-29 21:07:51] [DONE] b015 on j2 in 0.38h (n_gpu=2)
+[2026-10-29 21:09:27] [PUSH] j2 <- b019: A3__rcdp207__r05-06, A3__rcdp207__r10-11
+[2026-10-29 21:13:21] [DONE] b009 on j1 in 0.64h (n_gpu=2)
+[2026-10-29 21:14:58] [PUSH] j1 <- b020: A3__rcdp207__r12-13, A3__rcdp207__r14-15
+[2026-10-29 21:15:12] [DONE] b014 on h1 in 0.53h (n_gpu=2)
+[2026-10-29 21:17:05] [PUSH] h1 <- b021: A3__rcdp207__r16-17, A3__rcdp207__r18-19
+[2026-10-29 21:19:02] [DONE] b010 on f2 in 0.70h (n_gpu=2)
+[2026-10-29 21:20:49] [PUSH] f2 <- b022: A3__rcdp207__r20-21, A3__rcdp207__r25-26
+[2026-10-29 21:22:57] [DONE] b016 on h2 in 0.41h (n_gpu=2)
+[2026-10-29 21:24:40] [PUSH] h2 <- b023: A3__rcdp207__r27-28, A3__rcdp207__r29-30
+[2026-10-29 21:28:23] [DONE] b011 on f1 in 0.79h (n_gpu=2)
+[2026-10-29 21:28:38] [DONE] b017 on i1 in 0.38h (n_gpu=2)
+[2026-10-29 21:28:47] [DONE] b018 on i2 in 0.38h (n_gpu=2)
+[2026-10-29 21:30:27] [PUSH] f1 <- b024: A3__rdp201__r01-05, A3__rdp201__r06-10
+[2026-10-29 21:30:33] [PUSH] i1 <- b025: A3__rdp201__r11-15, A3__rdp201__r16-20
+[2026-10-29 21:30:37] [PUSH] i2 <- b026: A3__rdp201__r21-25, A3__rdp201__r26-30
+[2026-10-29 21:32:46] [DONE] b019 on j2 in 0.39h (n_gpu=2)
+[2026-10-29 21:34:21] [PUSH] j2 <- b027: A3__rdp103, A3__cdp103__r01-15
+[2026-10-29 21:36:21] [DONE] b021 on h1 in 0.32h (n_gpu=2)
+[2026-10-29 21:36:36] [DONE] b020 on j1 in 0.36h (n_gpu=2)
+[2026-10-29 21:38:15] [PUSH] h1 <- b028: A3__cdp103__r16-30, A3__rdp107__r01-15
+[2026-10-29 21:38:19] [PUSH] j1 <- b029: A3__rdp107__r16-30, A3__cdp207__r01-15
+[2026-10-29 21:42:04] [DONE] b022 on f2 in 0.35h (n_gpu=2)
+[2026-10-29 21:43:51] [PUSH] f2 <- b030: A3__cdp207__r16-30, A3__rdp210__r09-11
+[2026-10-29 21:47:42] [DONE] b023 on h2 in 0.38h (n_gpu=2)
+[2026-10-29 21:49:25] [PUSH] h2 <- b031: A3__rdp210__r20-22, A3__cdp101__r01-15
+[2026-10-29 22:20:19] [DONE] b030 on f2 in 0.61h (n_gpu=2)
+[2026-10-29 22:22:08] [PUSH] f2 <- b032: A3__cdp101__r16-30, B__rdp210
+[2026-10-29 22:27:51] [DONE] b031 on h2 in 0.64h (n_gpu=2)
+[2026-10-29 22:29:36] [PUSH] h2 <- b038: A2__cdp207, A3__rcdp101
+[2026-10-29 22:33:28] [DONE] b025 on i1 in 1.05h (n_gpu=2)
+[2026-10-29 22:33:36] [DONE] b026 on i2 in 1.05h (n_gpu=2)
+[2026-10-29 22:35:34] [DONE] b024 on f1 in 1.09h (n_gpu=2)
+[2026-10-29 22:39:22] [DONE] b027 on j2 in 1.08h (n_gpu=2)
+[2026-10-29 23:01:01] [DONE] b038 on h2 in 0.52h (n_gpu=2)
+[2026-10-29 23:04:24] [DONE] b028 on h1 in 1.44h (n_gpu=2)
+[2026-10-29 23:06:08] [DONE] b029 on j1 in 1.46h (n_gpu=2)
+[2026-10-29 23:27:55] [DONE] b032 on f2 in 1.10h (n_gpu=2)
+[2026-10-29 23:27:55] All batches finished
+[2026-10-30 00:12:46] Start: 8 workers, 6 batches
+[2026-10-30 00:12:55] [PUSH] 6-1 <- b000: A12__rcdp202, A12__rcdp207
+[2026-10-30 00:13:01] [PUSH] 6-2 <- b001: A12__rdp210, A12__rdp201
+[2026-10-30 00:13:09] [PUSH] 8-1 <- b002: A12__cdp203, A12__cdp207
+[2026-10-30 00:13:14] [PUSH] 8-2 <- b003: A12__cdp101, A12__cdp103
+[2026-10-30 00:13:21] [PUSH] 9-1 <- b004: A12__rdp103, A12__rdp107
+[2026-10-30 00:13:25] [PUSH] 9-2 <- b005: A12__rcdp104, A12__rcdp101
+[2026-10-30 00:20:44] [DONE] b003 on 8-2 in 0.12h (n_gpu=2)
+[2026-10-30 00:24:19] [DONE] b005 on 9-2 in 0.18h (n_gpu=2)
+[2026-10-30 00:26:06] [DONE] b004 on 9-1 in 0.21h (n_gpu=2)
+[2026-10-30 00:49:17] Built payload D:\AI_Research\PH-SHOWOA\kaggle\runs_ablation\payload.zip (72 KB)
+[2026-10-30 00:49:17] Start: 4 workers, 18 batches
+[2026-10-30 00:49:22] [PUSH] 9-1 <- b000: A123__rdp210__r01-08, A123__rdp210__r23-30
+[2026-10-30 00:49:27] [PUSH] 9-2 <- b001: A123__rdp201__r01-10, A123__rdp201__r11-20
+[2026-10-30 00:49:33] [PUSH] 10-1 <- b002: A123__rdp201__r21-30, A123__rcdp202__r01-04
+[2026-10-30 00:49:36] [PUSH] 10-2 <- b003: A123__rcdp202__r05-08, A123__rcdp202__r12-15
+[2026-10-30 00:58:00] [DONE] b003 on 10-2 in 0.14h (n_gpu=2)
+[2026-10-30 00:59:37] [PUSH] 10-2 <- b004: A123__rcdp202__r16-19, A123__rcdp202__r23-26
+[2026-10-30 01:04:41] [DONE] b001 on 9-2 in 0.25h (n_gpu=2)
+[2026-10-30 01:04:51] [DONE] b002 on 10-1 in 0.26h (n_gpu=2)
+[2026-10-30 01:06:31] [PUSH] 9-2 <- b005: A123__rcdp202__r27-30, A123__rcdp207__r01-04
+[2026-10-30 01:06:35] [PUSH] 10-1 <- b006: A123__rcdp207__r05-08, A123__rcdp207__r12-15
+[2026-10-30 01:08:23] [DONE] b000 on 9-1 in 0.32h (n_gpu=2)
+[2026-10-30 01:08:33] [DONE] b004 on 10-2 in 0.15h (n_gpu=2)
+[2026-10-30 01:10:10] [PUSH] 9-1 <- b007: A123__rcdp207__r16-19, A123__rcdp207__r23-26
+[2026-10-30 01:10:14] [PUSH] 10-2 <- b008: A123__rcdp207__r27-30, A123__cdp103
+[2026-10-30 01:15:19] [DONE] b006 on 10-1 in 0.15h (n_gpu=2)
+[2026-10-30 01:16:57] [PUSH] 10-1 <- b009: A123__rcdp104__r01-10, A123__rcdp104__r11-20
+[2026-10-30 01:18:49] [DONE] b008 on 10-2 in 0.14h (n_gpu=2)
+[2026-10-30 01:20:25] [PUSH] 10-2 <- b010: A123__rcdp104__r21-30, A123__rdp210__r09-15
+[2026-10-30 01:20:35] [DONE] b007 on 9-1 in 0.17h (n_gpu=2)
+[2026-10-30 01:20:44] [DONE] b005 on 9-2 in 0.24h (n_gpu=2)
+[2026-10-30 01:22:25] [PUSH] 9-1 <- b011: A123__rdp210__r16-22, A123__cdp101
+[2026-10-30 01:22:29] [PUSH] 9-2 <- b012: A123__rdp107, A123__rcdp202__r09-11
+[2026-10-30 01:22:43] [DONE] b009 on 10-1 in 0.10h (n_gpu=2)
+[2026-10-30 01:24:20] [PUSH] 10-1 <- b013: A123__rcdp202__r20-22, A123__rcdp207__r09-11
+[2026-10-30 01:32:43] [DONE] b013 on 10-1 in 0.14h (n_gpu=2)
+[2026-10-30 01:34:21] [PUSH] 10-1 <- b014: A123__rcdp207__r20-22, A123__cdp203__r01-15
+[2026-10-30 01:36:12] [DONE] b010 on 10-2 in 0.26h (n_gpu=2)
+[2026-10-30 01:37:47] [PUSH] 10-2 <- b015: A123__cdp203__r16-30, A123__cdp207__r01-15
+[2026-10-30 01:37:57] [DONE] b012 on 9-2 in 0.26h (n_gpu=2)
+[2026-10-30 01:39:36] [PUSH] 9-2 <- b016: A123__cdp207__r16-30, A123__rdp103
+[2026-10-30 01:39:46] [DONE] b011 on 9-1 in 0.29h (n_gpu=2)
+[2026-10-30 01:41:29] [PUSH] 9-1 <- b017: A123__rcdp101
+[2026-10-30 01:51:28] [DONE] b017 on 9-1 in 0.17h (n_gpu=2)
+[2026-10-30 01:54:49] [DONE] b014 on 10-1 in 0.34h (n_gpu=2)
+[2026-10-30 01:58:06] [DONE] b016 on 9-2 in 0.31h (n_gpu=2)
+[2026-10-30 01:58:15] [DONE] b015 on 10-2 in 0.34h (n_gpu=2)
+[2026-10-30 01:58:16] All batches finished

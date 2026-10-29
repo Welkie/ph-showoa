@@ -55,9 +55,7 @@ src_cpp/*.log
 
 # Kaggle credentials & local run artifacts
 kaggle/account_*/
-kaggle/account_a/
-kaggle/account_b/
-kaggle/account_c/
+kaggle/*_account_*/
 kaggle/**/kaggle.json
 **/kaggle.json
 kaggle/test_output/

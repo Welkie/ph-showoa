@@ -1,0 +1,110 @@
+Warning: Looks like you're using an outdated `kaggle` version (installed: 2.2.4), please consider upgrading to the latest version (2.2.5)
+Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/kanhan162/phshowoa-full-s2
+[  2.0 min] RUNNING
+[  4.1 min] RUNNING
+[  6.1 min] RUNNING
+[  8.1 min] RUNNING
+[ 10.2 min] RUNNING
+[ 12.2 min] RUNNING
+[ 14.3 min] RUNNING
+[ 16.3 min] RUNNING
+[ 18.4 min] RUNNING
+[ 20.4 min] RUNNING
+[ 22.5 min] RUNNING
+[ 24.5 min] RUNNING
+[ 26.6 min] RUNNING
+[ 28.6 min] RUNNING
+[ 30.7 min] RUNNING
+[ 32.7 min] RUNNING
+[ 34.7 min] RUNNING
+[ 36.8 min] RUNNING
+[ 38.8 min] RUNNING
+[ 40.9 min] RUNNING
+[ 42.9 min] RUNNING
+[ 45.0 min] RUNNING
+[ 47.0 min] RUNNING
+[ 49.0 min] RUNNING
+[ 51.1 min] RUNNING
+[ 53.1 min] RUNNING
+[ 55.2 min] RUNNING
+[ 57.2 min] RUNNING
+[ 59.3 min] RUNNING
+[ 61.3 min] RUNNING
+[ 63.4 min] RUNNING
+[ 65.4 min] RUNNING
+[ 67.5 min] RUNNING
+[ 69.5 min] RUNNING
+[ 71.6 min] RUNNING
+[ 73.6 min] RUNNING
+[ 75.7 min] RUNNING
+[ 77.7 min] RUNNING
+[ 79.8 min] RUNNING
+[ 81.8 min] RUNNING
+[ 83.9 min] RUNNING
+[ 85.9 min] RUNNING
+[ 87.9 min] RUNNING
+[ 90.0 min] RUNNING
+[ 92.0 min] RUNNING
+[ 94.1 min] RUNNING
+[ 96.1 min] RUNNING
+[ 98.2 min] RUNNING
+[100.2 min] RUNNING
+[102.3 min] RUNNING
+[104.3 min] RUNNING
+[106.3 min] RUNNING
+[108.4 min] RUNNING
+[110.5 min] RUNNING
+[112.5 min] RUNNING
+[114.5 min] RUNNING
+[116.6 min] RUNNING
+[118.6 min] RUNNING
+[120.7 min] RUNNING
+[122.7 min] RUNNING
+[171.0 min] TIMEOUT
+[358.2 min] COMPLETE
+patcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+DONE mixed_light cdp101 72s
+DONE mixed_light cdp203 63s
+DONE mixed_light rdp103 228s
+DONE mixed_light rdp201 301s
+DONE mixed_light rcdp101 219s
+DONE mixed_light rcdp202 311s
+
+patcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 30 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+/usr/local/lib/python3.13/dist-packages/numba_cuda/numba/cuda/dispatcher.py:696: NumbaPerformanceWarning: [1mGrid size 1 will likely result in GPU under-utilization due to low occupancy.[0m
+  warn(errors.NumbaPerformanceWarning(msg))
+DONE mixed_light cdp103 68s
+DONE mixed_light cdp207 99s
+DONE mixed_light rdp107 229s
+DONE mixed_light rdp210 339s
+DONE mixed_light rcdp104 224s
+DONE mixed_light rcdp207 303s
+

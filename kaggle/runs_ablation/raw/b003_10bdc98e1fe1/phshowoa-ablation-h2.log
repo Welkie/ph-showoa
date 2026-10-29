@@ -1,0 +1,23 @@
+[{"stream_name":"stderr","time":7.928931148,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.928989794,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.928997181,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.929002166,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.602835757,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.602866745,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.60287362,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.602882239,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":9.919632318,"data":"GPU 0: Tesla T4 (UUID: GPU-ea213e2c-c8e4-23f9-51c9-084c1dd67d57)\n"}
+,{"stream_name":"stdout","time":9.919657892,"data":"GPU 1: Tesla T4 (UUID: GPU-b1a2a21b-0b38-c6b5-5a6d-0dcbf926a411)\n"}
+,{"stream_name":"stdout","time":10.271601543,"data":"GPU 0: Tesla T4 (UUID: GPU-ea213e2c-c8e4-23f9-51c9-084c1dd67d57)\n"}
+,{"stream_name":"stdout","time":10.271635234,"data":"GPU 1: Tesla T4 (UUID: GPU-b1a2a21b-0b38-c6b5-5a6d-0dcbf926a411)\n"}
+,{"stream_name":"stdout","time":13.24706024,"data":"GPUs: 2\n"}
+,{"stream_name":"stdout","time":2528.050246856,"data":"SUMMARY: {\"batch_id\": \"10bdc98e1fe1\", \"status\": {\"A2__rcdp202\": \"ok\", \"A3__cdp203__r01-15\": \"ok\"}, \"n_gpu\": 2}\n"}
+,{"stream_name":"stderr","time":2530.594867143,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":2530.594891895,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":2530.765636996,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":2530.765660749,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":2531.584926574,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":2531.656575691,"data":"[NbConvertApp] Writing 103271 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":2534.044070402,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":2534.54532709,"data":"[NbConvertApp] Writing 386269 bytes to __results__.html\n"}
+]

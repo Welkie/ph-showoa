@@ -2,7 +2,7 @@
 
 As src_python_baseline/algorithm8_localsearch.py: first improvement on the hierarchical objective (NV, then TD),
 the scan restarts from 2-opt after every improving move and stops when no move improves; Relocate may empty a
-route (one vehicle less). Step (d), Inter 2-opt*, is improvement 4.
+route (one vehicle less). Step (d), Inter 2-opt*, is improvement 3.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ def build(dev_fn, k):
     @dev_fn
     def deep_local_search_single(nodes, rlen, nr, dist, cost, s,
                                  scratch_route, scratch_route2,
-                                 prob_data, max_moves):
+                                 prob_data, max_moves, use_2opt_star):
         compact_routes(nodes, rlen, nr, s)
         if nr[s] == 0:
             return
@@ -193,8 +193,8 @@ def build(dev_fn, k):
                 moves += 1
                 continue
 
-            # (d) Inter 2-opt* (improvement 4, improvement4_population_local_search.py)
-            if inter_2opt_star_first_improvement(nodes, rlen, nr, s, scratch_route, scratch_route2, prob_data, tol):
+            # (d) Inter 2-opt* (improvement 3, improvement3_population_local_search.py; off for the ablation)
+            if use_2opt_star and inter_2opt_star_first_improvement(nodes, rlen, nr, s, scratch_route, scratch_route2, prob_data, tol):
                 moves += 1
                 continue
             break

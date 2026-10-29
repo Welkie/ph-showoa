@@ -1,0 +1,79 @@
+[{"stream_name":"stderr","time":8.311265791,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.311313221,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.311317857,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.311320729,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.957770342,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.957799781,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.957805673,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.957810014,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":10.240259899,"data":"GPU 0: Tesla T4 (UUID: GPU-d9b06499-dbbe-bd6a-d794-ebae749275be)\n"}
+,{"stream_name":"stdout","time":10.240284737,"data":"GPU 1: Tesla T4 (UUID: GPU-e9ff42b8-5c0e-e567-ef32-cac12492b89b)\n"}
+,{"stream_name":"stdout","time":10.617441873,"data":"GPU 0: Tesla T4 (UUID: GPU-d9b06499-dbbe-bd6a-d794-ebae749275be)\n"}
+,{"stream_name":"stdout","time":10.617472547,"data":"GPU 1: Tesla T4 (UUID: GPU-e9ff42b8-5c0e-e567-ef32-cac12492b89b)\n"}
+,{"stream_name":"stdout","time":13.519036384,"data":"GPUs: 2\n"}
+,{"stream_name":"stderr","time":43210.192994431,"data":"Timeout waiting for execute reply (43200s).\n"}
+,{"stream_name":"stderr","time":43210.923119767,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":43210.923944487,"data":"  File \"/usr/local/lib/python3.13/dist-packages/nbclient/client.py\", line 730, in _async_poll_for_reply\n"}
+,{"stream_name":"stderr","time":43210.923956705,"data":"    msg = await ensure_async(self.kc.shell_channel.get_msg(timeout=new_timeout))\n"}
+,{"stream_name":"stderr","time":43210.923960734,"data":"          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.923964302,"data":"  File \"/usr/local/lib/python3.13/dist-packages/nbclient/util.py\", line 96, in ensure_async\n"}
+,{"stream_name":"stderr","time":43210.923967993,"data":"    result = await obj\n"}
+,{"stream_name":"stderr","time":43210.923971315,"data":"             ^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.923974652,"data":"  File \"/usr/local/lib/python3.13/dist-packages/jupyter_client/channels.py\", line 230, in get_msg\n"}
+,{"stream_name":"stderr","time":43210.923978238,"data":"    raise Empty\n"}
+,{"stream_name":"stderr","time":43210.923981517,"data":"_queue.Empty\n"}
+,{"stream_name":"stderr","time":43210.924165409,"data":"\n"}
+,{"stream_name":"stderr","time":43210.924188047,"data":"During handling of the above exception, another exception occurred:\n"}
+,{"stream_name":"stderr","time":43210.924194227,"data":"\n"}
+,{"stream_name":"stderr","time":43210.924199334,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":43210.925969394,"data":"  File \"\u003cstring\u003e\", line 1, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":43210.925989994,"data":"    import sys;import papermill as pm;pm.execute_notebook(\"__notebook__.ipynb\",\"__notebook__.ipynb\",progress_bar=False,log_output=True,stdout_file=sys.stdout,stderr_file=sys.stderr,allow_errors=False,timeout=43200)\n"}
+,{"stream_name":"stderr","time":43210.926006133,"data":"                                      ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.926024591,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/execute.py\", line 116, in execute_notebook\n"}
+,{"stream_name":"stderr","time":43210.92602966,"data":"    nb = papermill_engines.execute_notebook_with_engine(\n"}
+,{"stream_name":"stderr","time":43210.92603358,"data":"        engine_name,\n"}
+,{"stream_name":"stderr","time":43210.926037681,"data":"    ...\u003c9 lines\u003e...\n"}
+,{"stream_name":"stderr","time":43210.926041529,"data":"        **engine_kwargs,\n"}
+,{"stream_name":"stderr","time":43210.926045556,"data":"    )\n"}
+,{"stream_name":"stderr","time":43210.926049379,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/engines.py\", line 49, in execute_notebook_with_engine\n"}
+,{"stream_name":"stderr","time":43210.9260533,"data":"    return self.get_engine(engine_name).execute_notebook(nb, kernel_name, **kwargs)\n"}
+,{"stream_name":"stderr","time":43210.926057168,"data":"           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.92606114,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/engines.py\", line 371, in execute_notebook\n"}
+,{"stream_name":"stderr","time":43210.926065048,"data":"    cls.execute_managed_notebook(nb_man, kernel_name, log_output=log_output, **kwargs)\n"}
+,{"stream_name":"stderr","time":43210.926068944,"data":"    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.926072754,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/engines.py\", line 443, in execute_managed_notebook\n"}
+,{"stream_name":"stderr","time":43210.926076341,"data":"    return PapermillNotebookClient(nb_man, **final_kwargs).execute()\n"}
+,{"stream_name":"stderr","time":43210.926079834,"data":"           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n"}
+,{"stream_name":"stderr","time":43210.926083124,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/clientwrap.py\", line 45, in execute\n"}
+,{"stream_name":"stderr","time":43210.926087174,"data":"    self.papermill_execute_cells()\n"}
+,{"stream_name":"stderr","time":43210.926091608,"data":"    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n"}
+,{"stream_name":"stderr","time":43210.926096363,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/clientwrap.py\", line 72, in papermill_execute_cells\n"}
+,{"stream_name":"stderr","time":43210.926102034,"data":"    self.execute_cell(cell, index)\n"}
+,{"stream_name":"stderr","time":43210.926105436,"data":"    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.926109476,"data":"  File \"/usr/local/lib/python3.13/dist-packages/nbclient/util.py\", line 84, in wrapped\n"}
+,{"stream_name":"stderr","time":43210.926113257,"data":"    return just_run(coro(*args, **kwargs))\n"}
+,{"stream_name":"stderr","time":43210.926118006,"data":"  File \"/usr/local/lib/python3.13/dist-packages/nbclient/util.py\", line 62, in just_run\n"}
+,{"stream_name":"stderr","time":43210.926122277,"data":"    return loop.run_until_complete(coro)\n"}
+,{"stream_name":"stderr","time":43210.926125707,"data":"           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.926129371,"data":"  File \"/usr/lib/python3.13/asyncio/base_events.py\", line 726, in run_until_complete\n"}
+,{"stream_name":"stderr","time":43210.926133622,"data":"    return future.result()\n"}
+,{"stream_name":"stderr","time":43210.926137337,"data":"           ~~~~~~~~~~~~~^^\n"}
+,{"stream_name":"stderr","time":43210.926141102,"data":"  File \"/usr/local/lib/python3.13/dist-packages/nbclient/client.py\", line 949, in async_execute_cell\n"}
+,{"stream_name":"stderr","time":43210.926151027,"data":"    exec_reply = await self.task_poll_for_reply\n"}
+,{"stream_name":"stderr","time":43210.926155262,"data":"                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":43210.926159113,"data":"  File \"/usr/local/lib/python3.13/dist-packages/nbclient/client.py\", line 754, in _async_poll_for_reply\n"}
+,{"stream_name":"stderr","time":43210.926163038,"data":"    await self._async_handle_timeout(timeout, cell)\n"}
+,{"stream_name":"stderr","time":43210.926167128,"data":"  File \"/usr/local/lib/python3.13/dist-packages/nbclient/client.py\", line 801, in _async_handle_timeout\n"}
+,{"stream_name":"stderr","time":43210.926171328,"data":"    raise CellTimeoutError.error_from_timeout_and_cell(\n"}
+,{"stream_name":"stderr","time":43210.926175822,"data":"        \"Cell execution timed out\", timeout, cell\n"}
+,{"stream_name":"stderr","time":43210.92617944,"data":"    )\n"}
+,{"stream_name":"stderr","time":43210.926182798,"data":"nbclient.exceptions.CellTimeoutError: A cell timed out while it was being executed, after 43200 seconds.\n"}
+,{"stream_name":"stderr","time":43210.926186519,"data":"The message was: Cell execution timed out.\n"}
+,{"stream_name":"stderr","time":43210.926190028,"data":"Here is a preview of the cell contents:\n"}
+,{"stream_name":"stderr","time":43210.926193575,"data":"-------------------\n"}
+,{"stream_name":"stderr","time":43210.926197158,"data":"['import base64, io, json, os, subprocess, sys, time, zipfile', 'ROOT = \"/tmp/ab\"', 'OUT = \"/kaggle/working\"', 'RES = os.path.join(OUT, \"results\")', 'os.makedirs(RES, exist_ok=True)']\n"}
+,{"stream_name":"stderr","time":43210.926202314,"data":"...\n"}
+,{"stream_name":"stderr","time":43210.926206251,"data":"['json.dump(summary, open(os.path.join(OUT, \"summary.json\"), \"w\"), indent=1)', 'print(\"SUMMARY:\", json.dumps(summary))', 'for name, s in status.items():', '    if s != \"ok\":', '        print(open(os.path.join(OUT, name + \".log\")).read()[-3000:])']\n"}
+,{"stream_name":"stderr","time":43210.926211979,"data":"-------------------\n"}
+,{"stream_name":"stderr","time":43210.926215336,"data":"\n"}
+]

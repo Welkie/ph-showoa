@@ -1,0 +1,4 @@
+[
+  {"name": "grasp_ep_a1000", "cfg": {"sa_warmup_iterations": 0, "ep_budget": 5000}, "ep": {"EP_ATTEMPT_POPS": 1000, "EP_MAX_FAILS": 3}, "runs": 30},
+  {"name": "grasp_ep_nocap", "cfg": {"sa_warmup_iterations": 0, "ep_budget": 3000}, "ep": {"EP_ATTEMPT_POPS": 3000, "EP_MAX_FAILS": 2}, "runs": 30}
+]

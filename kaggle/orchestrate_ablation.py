@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 """
-Kaggle orchestrator for the ablation study of docs/improved.md (sections 2-4) on T4 GPUs.
+Kaggle orchestrator for the ablation study of docs/improved.md (sections 2 and 3) on T4 GPUs.
 
-- 5 accounts (a..e) x 2 concurrent kernels = 10 workers (Kaggle allows at most 2 GPU sessions per account).
+- 10 accounts (1..10 = kaggle/1_account_*/ .. 10_account_*/) x 2 concurrent kernels = 20 workers (Kaggle allows at most 2 GPU sessions per account).
 - Each push is one batch of up to 2 jobs; a T4 x2 session runs them in parallel, one job per GPU
-  (CUDA_VISIBLE_DEVICES), via kaggle/ablation_driver.py. A job = one configuration x one instance, 30 runs,
-  seeds 42..71, kernels compiled once per job (run 1 includes the JIT compile).
+  (CUDA_VISIBLE_DEVICES), via kaggle/ablation_driver.py. A job = one configuration x one instance x a chunk of the
+  30 runs (seed 41 + run), sized from the estimated time per run so that a chunk takes about CHUNK_TARGET_S; kernels
+  are compiled once per job (the first run of a chunk includes the JIT compile). The longest batches go first, the
+  A3 batches after all the others.
 - The code is not fetched from GitHub: the current src_python_gpu_SA_RCRS_GRASP and the .txt instances are zipped
   once into kaggle/runs_ablation/payload.zip and embedded in every notebook, so every batch runs exactly the same
-  code. The variants are SolverConfig fields (--num_islands, --init, --ls_scope, --ls_2opt_star, --ls_strategy).
-- Results are downloaded to kaggle/runs_ablation/results/ (<name>__<inst>.csv and <name>__<inst>__conv.csv).
+  code. The variants are SolverConfig fields (--init, --ls_scope, --ls_2opt_star, --ls_strategy).
+- The chunks are downloaded to kaggle/runs_ablation/chunks/; once all chunks of a (configuration, instance) are
+  there they are merged into kaggle/runs_ablation/results/<name>__<inst>.csv and <name>__<inst>__conv.csv.
 - Before each push the remaining weekly GPU quota of the account is checked.
 
 Usage:
     python kaggle/orchestrate_ablation.py            # run until all jobs are done or quota is exhausted
     python kaggle/orchestrate_ablation.py --status   # print progress and exit
+    python kaggle/orchestrate_ablation.py --accounts 6,8,9,10   # only these accounts
 """
 
 import argparse
@@ -40,11 +44,14 @@ WORK_DIR = REPO_ROOT / "kaggle" / "runs_ablation"
 STATE_FILE = WORK_DIR / "state.json"
 LOG_FILE = WORK_DIR / "orchestrator.log"
 RESULTS_DIR = WORK_DIR / "results"
+CHUNKS_DIR = WORK_DIR / "chunks"
 RAW_DIR = WORK_DIR / "raw"
 PAYLOAD = WORK_DIR / "payload.zip"
-ACCOUNTS = ["a", "b", "c", "d", "e"]
+ACCOUNTS = [str(n) for n in range(1, 11)]       # n = kaggle/<n>_account_<username>/
 SLOTS_PER_ACCOUNT = 2
-DEFAULT_EST_HOURS = 3.0
+RUNS = 30
+CHUNK_TARGET_S = 3600
+SESSION_OVERHEAD_H = 0.2       # start-up, payload, JIT compile
 QUOTA_SAFETY = 1.2
 MAX_RETRIES = 2
 STALE_GUARD_S = 180
@@ -52,30 +59,67 @@ STALE_GUARD_S = 180
 # 2 instances per class of the 100-customer Wang & Chen set: Cdp1, Cdp2, Rdp1, Rdp2, RCdp1, RCdp2
 ALL12 = ["cdp101", "cdp103", "cdp203", "cdp207", "rdp103", "rdp107", "rdp201", "rdp210",
          "rcdp101", "rcdp104", "rcdp202", "rcdp207"]
-SEC2 = ALL12          # every section uses the same 12 instances
-SEC3B = ALL12
+VARIANTS = {"B": {}, "sa": {"init": "sa"}, "A1": {"ls_scope": "best"}, "A2": {"ls_2opt_star": False},
+            "A3": {"ls_strategy": "first"},
+            "A123": {"ls_scope": "best", "ls_2opt_star": False, "ls_strategy": "first"}}   # local search of the paper
+
+# Estimated seconds per run on a T4: B/A1/A2 from the runs of the current code (6 instances) and guesses for the
+# others; sa from section 2; A3 = B + the extra time of first improvement measured with the earlier code
+B_EST_S = {"cdp101": 40, "cdp103": 40, "cdp203": 70, "cdp207": 70, "rdp103": 25, "rdp107": 21, "rdp201": 71,
+           "rdp210": 80, "rcdp101": 16, "rcdp104": 18, "rcdp202": 120, "rcdp207": 113}
+SA_EST_S = {"cdp101": 3, "cdp103": 3, "cdp203": 2, "cdp207": 4, "rdp103": 8, "rdp107": 8, "rdp201": 10,
+            "rdp210": 12, "rcdp101": 8, "rcdp104": 8, "rcdp202": 11, "rcdp207": 10}
+FI_EXTRA_S = {"cdp101": 130, "cdp103": 150, "cdp203": 170, "cdp207": 110, "rdp103": 75, "rdp107": 160,
+              "rdp201": 560, "rdp210": 780, "rcdp101": 30, "rcdp104": 630, "rcdp202": 1500, "rcdp207": 1500}
 
 
-def build_jobs():
-    """Batches of 2 jobs in priority order: section 4 and 3a, then 2, then 3b (docs/improved.md, Ablation)."""
-    batches = []
-    for inst in ALL12:
-        batches.append([("B", inst, {}), ("isl1", inst, {"num_islands": 1})])
-        batches.append([("A1", inst, {"ls_scope": "best"}), ("A2", inst, {"ls_2opt_star": False})])
-    for i in range(0, len(ALL12), 2):
-        batches.append([("A3", inst, {"ls_strategy": "first"}) for inst in ALL12[i:i + 2]])
-    for inst in SEC2:
-        batches.append([("sa_1000", inst, {"init": "sa"}), ("sa_100", inst, {"init": "sa", "max_iter": 100})])
-    shorts = [(f"{k}_{it}", inst, dict({"max_iter": it}, **({"init": "sa"} if k == "sa" else {})))
-              for inst in SEC2 for it in (100, 200) for k in ("sa", "grasp") if (k, it) != ("sa", 100)]
-    for i in range(0, len(shorts), 2):
-        batches.append(shorts[i:i + 2])
-    for inst in SEC3B:
-        batches.append([("P30_isl3", inst, {"num_islands": 3}), ("P30_isl10", inst, {"num_islands": 10})])
-        batches.append([("P60_isl12", inst, {"pop_size": 60, "num_islands": 12}),
-                        ("P60_isl1", inst, {"pop_size": 60, "num_islands": 1})])
-    return [{"batch": f"b{k:02d}", "jobs": [{"name": n, "variant": "main", "inst": i, "cfg": c} for n, i, c in b]}
-            for k, b in enumerate(batches)]
+def run_est_s(name, inst):
+    if name == "sa":
+        return SA_EST_S[inst]
+    # A123: first improvement only for the best in the main loop, still for every individual after the init
+    return B_EST_S[inst] + int({"A3": 1.0, "A123": 0.5}.get(name, 0) * FI_EXTRA_S[inst])
+
+
+def build_jobs(pending_only=False):
+    """Chunks of the 30 runs of every (configuration, instance), paired into batches of 2 jobs of similar length,
+    longest batch first. pending_only: only the chunks not downloaded yet (a configuration added later is paired
+    among its own chunks instead of with finished ones)."""
+    jobs = []
+    for name, cfg in VARIANTS.items():
+        for inst in ALL12:
+            per = run_est_s(name, inst)
+            n_chunks = -(-RUNS * per // CHUNK_TARGET_S)
+            bounds = [round(RUNS * k / n_chunks) for k in range(n_chunks + 1)]
+            for lo, hi in zip(bounds[:-1], bounds[1:]):
+                stem = f"{name}__{inst}" + (f"__r{lo + 1:02d}-{hi:02d}" if n_chunks > 1 else "")
+                jobs.append({"name": name, "variant": "main", "inst": inst, "cfg": cfg, "stem": stem,
+                             "run_lo": lo + 1, "run_hi": hi, "est_s": per * (hi - lo)})
+    if pending_only:
+        jobs = [j for j in jobs if not (CHUNKS_DIR / f"{j['stem']}.csv").exists()]
+    jobs.sort(key=lambda j: -j["est_s"])
+    return [{"batch": f"b{k:03d}", "jobs": jobs[i:i + 2]} for k, i in enumerate(range(0, len(jobs), 2))]
+
+
+def est_hours(batch):
+    return max(j["est_s"] for j in batch["jobs"]) / 3600 + SESSION_OVERHEAD_H
+
+
+def merge_results(batches):
+    """Merge the chunks of every (configuration, instance) whose chunks are all downloaded into RESULTS_DIR."""
+    groups = {}
+    for b in batches:
+        for j in b["jobs"]:
+            groups.setdefault(f"{j['name']}__{j['inst']}", []).append(j["stem"])
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    for key, stems in groups.items():
+        if (RESULTS_DIR / f"{key}.csv").exists() or not all((CHUNKS_DIR / f"{s}.csv").exists() for s in stems):
+            continue
+        for suffix in ("__conv.csv", ".csv"):                   # the main CSV last: it marks the merge as done
+            lines = []
+            for s in sorted(stems):
+                part = (CHUNKS_DIR / f"{s}{suffix}").read_text(encoding="utf-8").splitlines()
+                lines += part if not lines else part[1:]
+            (RESULTS_DIR / f"{key}{suffix}").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 # --------------------------------------------------------------------------------------
@@ -116,7 +160,7 @@ for k, job in enumerate(JOBS):
     jf = os.path.join(ROOT, f"job{k}.json")
     json.dump(dict(job, backend="cuda"), open(jf, "w"))
     env = dict(os.environ, CUDA_VISIBLE_DEVICES=str(k % n_gpu))
-    log = open(os.path.join(OUT, f"{job['name']}__{job['inst']}.log"), "w")
+    log = open(os.path.join(OUT, f"{job['stem']}.log"), "w")
     cmd = [sys.executable, os.path.join(ROOT, "ablation_driver.py"), os.path.join(ROOT, "pkg", job["variant"]),
            jf, RES, os.path.join(ROOT, "dataset")]
     procs.append((job, subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, env=env), log))
@@ -126,8 +170,8 @@ for k, job in enumerate(JOBS):
 status = {}
 for job, p, log in procs:
     p.wait(); log.close()
-    ok = p.returncode == 0 and os.path.exists(os.path.join(RES, f"{job['name']}__{job['inst']}.csv"))
-    status[f"{job['name']}__{job['inst']}"] = "ok" if ok else f"failed rc={p.returncode}"
+    ok = p.returncode == 0 and os.path.exists(os.path.join(RES, f"{job['stem']}.csv"))
+    status[job["stem"]] = "ok" if ok else f"failed rc={p.returncode}"
 summary = {"batch_id": BATCH_ID, "status": status, "n_gpu": n_gpu}
 json.dump(summary, open(os.path.join(OUT, "summary.json"), "w"), indent=1)
 print("SUMMARY:", json.dumps(summary))
@@ -138,13 +182,13 @@ for name, s in status.items():
 
 
 def make_notebook(batch, batch_id, payload_b64):
-    params = f"BATCH_ID = {batch_id!r}\nJOBS = {json.dumps(batch['jobs'])}\nPAYLOAD = {payload_b64!r}\n"
+    params = f"BATCH_ID = {batch_id!r}\nJOBS = {batch['jobs']!r}\nPAYLOAD = {payload_b64!r}\n"   # Python literals
 
     def cell(src):
         return {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [],
                 "source": src.strip("\n").splitlines(keepends=True)}
 
-    title = ", ".join(f"{j['name']} {j['inst']}" for j in batch["jobs"])
+    title = ", ".join(j["stem"] for j in batch["jobs"])
     return {"cells": [{"cell_type": "markdown", "metadata": {}, "source": [f"# PH-SHOWOA ablation: {title}\n"]},
                       cell(params), cell(NOTEBOOK_RUN)],
             "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
@@ -193,7 +237,7 @@ def build_workers():
     for acc in ACCOUNTS:
         user = account_username(acc)
         for slot in range(1, SLOTS_PER_ACCOUNT + 1):
-            wid = f"{acc}{slot}"
+            wid = f"{acc}-{slot}"
             name = f"phshowoa-ablation-{wid}"
             workers.append({"id": wid, "account": acc, "slug": f"{user}/{name}", "title": name,
                             "dir": WORK_DIR / "workers" / wid})
@@ -201,7 +245,7 @@ def build_workers():
 
 
 def batch_done(batch):
-    return all((RESULTS_DIR / f"{j['name']}__{j['inst']}.csv").exists() for j in batch["jobs"])
+    return all((CHUNKS_DIR / f"{j['stem']}.csv").exists() for j in batch["jobs"])
 
 
 def push(worker, batch, batch_id, payload_b64):
@@ -231,13 +275,12 @@ def collect(worker, ws, batches_by_id):
     summary = json.loads(sp.read_text(encoding="utf-8"))
     if summary.get("batch_id") != ws["batch_id"]:
         return None, f"stale output ({summary.get('batch_id')})"
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    CHUNKS_DIR.mkdir(parents=True, exist_ok=True)
     for job in batches_by_id[ws["batch"]]["jobs"]:
-        stem = f"{job['name']}__{job['inst']}"
-        for suffix in (".csv", "__conv.csv"):
-            src = dest / "results" / f"{stem}{suffix}"
+        for suffix in ("__conv.csv", ".csv"):
+            src = dest / "results" / f"{job['stem']}{suffix}"
             if src.exists():
-                shutil.copy2(src, RESULTS_DIR / src.name)
+                shutil.copy2(src, CHUNKS_DIR / src.name)
     bad = {k: v for k, v in summary["status"].items() if v != "ok"}
     return (not bad), (f"failed jobs {bad}" if bad else f"n_gpu={summary.get('n_gpu')}")
 
@@ -245,7 +288,10 @@ def collect(worker, ws, batches_by_id):
 def print_status(state, workers, batches):
     done = sum(batch_done(b) for b in batches)
     print("=" * 78)
-    print(f" {done}/{len(batches)} batches done | failed: {list(state['failed']) or '-'}")
+    merged = len([p for p in RESULTS_DIR.glob("*.csv") if not p.name.endswith("__conv.csv")]) \
+        if RESULTS_DIR.exists() else 0
+    print(f" {done}/{len(batches)} batches done, {merged}/{len(VARIANTS) * len(ALL12)} (configuration, instance) "
+          f"merged | failed: {list(state['failed']) or '-'}")
     for w in workers:
         ws = state["workers"].get(w["id"], {})
         el = ""
@@ -254,9 +300,8 @@ def print_status(state, workers, batches):
             el = f"{s // 3600}h{(s % 3600) // 60:02d}m"
         jobs = ""
         if ws.get("batch"):
-            jobs = ", ".join(f"{j['name']} {j['inst']}" for j in
-                             next(b for b in batches if b["batch"] == ws["batch"])["jobs"])
-        print(f"  {w['id']:<3} {ws.get('status', 'IDLE'):<9} {ws.get('batch') or '-':<4} {jobs:<34} {el}")
+            jobs = ", ".join(j["stem"] for j in next(b for b in batches if b["batch"] == ws["batch"])["jobs"])
+        print(f"  {w['id']:<4} {ws.get('status', 'IDLE'):<9} {ws.get('batch') or '-':<4} {jobs:<50} {el}")
     q = state.get("quota", {})
     print(" GPU quota remaining: " + ", ".join(f"{a}={v['remaining']:.1f}h" for a, v in sorted(q.items())))
     if state["hours"]:
@@ -267,7 +312,8 @@ def print_status(state, workers, batches):
 def orchestrate(poll):
     state = load_state()
     workers = build_workers()
-    batches = build_jobs()
+    batches = build_jobs(pending_only=True)
+    all_batches = build_jobs()
     by_id = {b["batch"]: b for b in batches}
     if not PAYLOAD.exists():
         build_payload()
@@ -279,8 +325,8 @@ def orchestrate(poll):
         active = {ws.get("batch") for ws in state["workers"].values() if ws.get("status") == "RUNNING"}
         pending = [b for b in batches if not batch_done(b) and b["batch"] not in active
                    and b["batch"] not in state["failed"]]
-        est = max(state["hours"]) if state["hours"] else DEFAULT_EST_HOURS
-
+        # A3 (first improvement) last: the other configurations give the first complete columns of the table
+        pending.sort(key=lambda b: (any(j["name"] == "A3" for j in b["jobs"]), -est_hours(b)))
         for w in workers:
             ws = state["workers"].get(w["id"], {"status": "IDLE"})
             if ws.get("status") == "RUNNING" or not pending:
@@ -288,20 +334,28 @@ def orchestrate(poll):
             if ws.get("status") == "NO_QUOTA" and time.time() - ws.get("since", 0) < 3600:
                 continue
             remaining = quota_remaining(w["account"], state)
-            if remaining is not None and remaining < est * QUOTA_SAFETY:
+            if remaining is not None:
+                # quota still to be used by the other running session of this account (2 sessions per account)
+                for w2 in workers:
+                    ws2 = state["workers"].get(w2["id"], {})
+                    if w2["account"] == w["account"] and ws2.get("status") == "RUNNING":
+                        left = est_hours(by_id[ws2["batch"]]) * QUOTA_SAFETY - (time.time() - ws2["pushed_at"]) / 3600
+                        remaining -= max(0.25, left)
+            fits = [bb for bb in pending if remaining is None or est_hours(bb) * QUOTA_SAFETY <= remaining]
+            if not fits:
                 if ws.get("status") != "NO_QUOTA":
-                    log(f"[QUOTA] {w['id']}: {remaining:.2f}h left < {est * QUOTA_SAFETY:.2f}h needed")
+                    log(f"[QUOTA] {w['id']}: {remaining:.2f}h left after the running session, no pending batch fits")
                 state["workers"][w["id"]] = {"status": "NO_QUOTA", "since": time.time()}
                 save_state(state)
                 continue
-            b = pending[0]
+            b = fits[0]
             batch_id = uuid.uuid4().hex[:12]
             ok, text = push(w, b, batch_id, payload_b64)
             if ok:
-                pending.pop(0)
+                pending.remove(b)
                 state["workers"][w["id"]] = {"status": "RUNNING", "batch": b["batch"], "batch_id": batch_id,
                                              "pushed_at": time.time(), "seen_running": False}
-                log(f"[PUSH] {w['id']} <- {b['batch']}: " + ", ".join(f"{j['name']} {j['inst']}" for j in b["jobs"]))
+                log(f"[PUSH] {w['id']} <- {b['batch']}: " + ", ".join(j["stem"] for j in b["jobs"]))
             else:
                 log(f"[PUSH FAILED] {w['id']} {b['batch']}: {text[:300]}")
             save_state(state)
@@ -333,6 +387,7 @@ def orchestrate(poll):
                         state["failed"][ws["batch"]] = msg
                 state["workers"][w["id"]] = {"status": "IDLE"}
                 save_state(state)
+                merge_results(all_batches)
             else:
                 log(f"[WARN] {w['id']} unexpected status {st}")
         save_state(state)
@@ -352,7 +407,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--poll", type=int, default=120)
+    ap.add_argument("--accounts", help="comma-separated subset of ACCOUNTS (e.g. accounts without GPU access left out)")
     args = ap.parse_args()
+    if args.accounts:
+        ACCOUNTS = [a for a in args.accounts.split(",") if a in ACCOUNTS]
     if args.status:
         print_status(load_state(), build_workers(), build_jobs())
     else:

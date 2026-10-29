@@ -1,0 +1,380 @@
+[2026-10-25 09:09:23] Built payload D:\AI_Research\PH-SHOWOA\kaggle\runs_ablation\payload.zip (60 KB)
+[2026-10-25 09:09:23] Start: 10 workers, 84 batches
+[2026-10-25 09:09:56] [PUSH] a1 <- b00: B cdp101, isl1 cdp101
+[2026-10-25 09:10:17] [PUSH] a2 <- b01: A1 cdp101, A2 cdp101
+[2026-10-25 09:11:05] [PUSH] b1 <- b02: B cdp103, isl1 cdp103
+[2026-10-25 09:11:22] [PUSH] b2 <- b03: A1 cdp103, A2 cdp103
+[2026-10-25 09:12:04] [PUSH] c1 <- b04: B cdp203, isl1 cdp203
+[2026-10-25 09:12:19] [PUSH] c2 <- b05: A1 cdp203, A2 cdp203
+[2026-10-25 09:12:58] [PUSH] d1 <- b06: B cdp207, isl1 cdp207
+[2026-10-25 09:13:10] [PUSH] d2 <- b07: A1 cdp207, A2 cdp207
+[2026-10-25 09:13:37] [PUSH] e1 <- b08: B rdp103, isl1 rdp103
+[2026-10-25 09:13:54] [PUSH] e2 <- b09: A1 rdp103, A2 rdp103
+[2026-10-25 09:14:37] [FAILED] b01 on a2 status=ERROR: summary.json missing (attempt 1)
+[2026-10-25 09:15:43] [FAILED] b03 on b2 status=ERROR: summary.json missing (attempt 1)
+[2026-10-25 09:16:20] Start: 10 workers, 84 batches
+[2026-10-25 09:17:19] Start: 10 workers, 84 batches
+[2026-10-25 09:18:02] [PUSH] a2 <- b01: A1 cdp101, A2 cdp101
+[2026-10-25 09:18:37] [PUSH] b2 <- b03: A1 cdp103, A2 cdp103
+[2026-10-25 09:19:52] [FAILED] b05 on c2 status=ERROR: summary.json missing (attempt 1)
+[2026-10-25 09:20:47] [FAILED] b07 on d2 status=ERROR: summary.json missing (attempt 1)
+[2026-10-25 09:21:44] [FAILED] b09 on e2 status=ERROR: summary.json missing (attempt 1)
+==============================================================================
+ 0/84 batches done | failed: -
+  a1  RUNNING   b00  B cdp101, isl1 cdp101              0h11m
+  a2  RUNNING   b01  A1 cdp101, A2 cdp101               0h03m
+  b1  RUNNING   b02  B cdp103, isl1 cdp103              0h10m
+  b2  RUNNING   b03  A1 cdp103, A2 cdp103               0h03m
+  c1  RUNNING   b04  B cdp203, isl1 cdp203              0h09m
+  c2  IDLE      -                                       
+  d1  RUNNING   b06  B cdp207, isl1 cdp207              0h08m
+  d2  IDLE      -                                       
+  e1  RUNNING   b08  B rdp103, isl1 rdp103              0h08m
+  e2  IDLE      -                                       
+ GPU quota remaining: a=18.9h, b=19.2h
+==============================================================================
+[2026-10-25 09:24:13] [PUSH] c2 <- b05: A1 cdp203, A2 cdp203
+[2026-10-25 09:24:47] [PUSH] d2 <- b07: A1 cdp207, A2 cdp207
+[2026-10-25 09:25:33] [PUSH FAILED] e2 b09: Warning: Looks like you're using an outdated `kaggle` version (installed: 2.2.4), please consider upgrading to the latest version (2.2.5)
+
+('Connection aborted.', ConnectionAbortedError(10053, 'An established connection was aborted by the software in your host machine', None, 10053, None))
+[2026-10-25 09:25:41] [WARN] a1 unexpected status HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY NAMERESOLUTIONERROR("HTTPSCONNECTION(HOST='API.KAGGLE.COM', PORT=443): FAILED TO RESOLVE 'API.KAGGLE.COM' ([ERRNO 11001] GETADDRINFO FAILED)"))
+[2026-10-25 09:29:13] [PUSH] e2 <- b09: A1 rdp103, A2 rdp103
+[2026-10-25 09:29:47] [DONE] b00 on a1 in 0.33h (n_gpu=2)
+[2026-10-25 09:30:16] [DONE] b02 on b1 in 0.32h (n_gpu=2)
+[2026-10-25 09:33:03] [PUSH] a1 <- b10: B rdp107, isl1 rdp107
+[2026-10-25 09:33:52] [PUSH] b1 <- b11: A1 rdp107, A2 rdp107
+[2026-10-25 09:35:47] [DONE] b03 on b2 in 0.29h (n_gpu=2)
+[2026-10-25 09:39:18] [PUSH] b2 <- b12: B rdp201, isl1 rdp201
+[2026-10-25 09:40:21] [DONE] b01 on a2 in 0.37h (n_gpu=2)
+[2026-10-25 09:45:05] [PUSH] a2 <- b13: A1 rdp201, A2 rdp201
+[2026-10-25 09:51:53] [DONE] b04 on c1 in 0.66h (n_gpu=2)
+[2026-10-25 09:53:32] [DONE] b06 on d1 in 0.68h (n_gpu=2)
+==============================================================================
+ 6/84 batches done | failed: -
+  a1  RUNNING   b10  B rdp107, isl1 rdp107              0h21m
+  a2  RUNNING   b13  A1 rdp201, A2 rdp201               0h09m
+  b1  RUNNING   b11  A1 rdp107, A2 rdp107               0h20m
+  b2  RUNNING   b12  B rdp201, isl1 rdp201              0h15m
+  c1  IDLE      -                                       
+  c2  RUNNING   b05  A1 cdp203, A2 cdp203               0h30m
+  d1  IDLE      -                                       
+  d2  RUNNING   b07  A1 cdp207, A2 cdp207               0h29m
+  e1  RUNNING   b08  B rdp103, isl1 rdp103              0h40m
+  e2  RUNNING   b09  A1 rdp103, A2 rdp103               0h25m
+ GPU quota remaining: a=18.2h, b=18.7h, e=18.9h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.664, 0.676]
+==============================================================================
+[2026-10-25 09:56:45] [PUSH] c1 <- b14: B rdp210, isl1 rdp210
+[2026-10-25 09:57:21] [PUSH] d1 <- b15: A1 rdp210, A2 rdp210
+[2026-10-25 10:03:00] [DONE] b05 on c2 in 0.65h (n_gpu=2)
+[2026-10-25 10:04:13] [DONE] b07 on d2 in 0.66h (n_gpu=2)
+[2026-10-25 10:05:17] [DONE] b08 on e1 in 0.86h (n_gpu=2)
+[2026-10-25 10:08:01] [PUSH] c2 <- b16: B rcdp101, isl1 rcdp101
+[2026-10-25 10:08:58] [PUSH] d2 <- b17: A1 rcdp101, A2 rcdp101
+[2026-10-25 10:09:43] [PUSH] e1 <- b18: B rcdp104, isl1 rcdp104
+[2026-10-25 10:15:14] [DONE] b09 on e2 in 0.77h (n_gpu=2)
+[2026-10-25 10:17:49] [PUSH] e2 <- b19: A1 rcdp104, A2 rcdp104
+[2026-10-25 10:19:09] [DONE] b11 on b1 in 0.75h (n_gpu=2)
+[2026-10-25 10:23:06] [PUSH] b1 <- b20: B rcdp202, isl1 rcdp202
+[2026-10-25 10:24:38] [DONE] b10 on a1 in 0.86h (n_gpu=2)
+==============================================================================
+ 12/84 batches done | failed: -
+  a1  IDLE      -                                       
+  a2  RUNNING   b13  A1 rdp201, A2 rdp201               0h41m
+  b1  RUNNING   b20  B rcdp202, isl1 rcdp202            0h03m
+  b2  RUNNING   b12  B rdp201, isl1 rdp201              0h47m
+  c1  RUNNING   b14  B rdp210, isl1 rdp210              0h29m
+  c2  RUNNING   b16  B rcdp101, isl1 rcdp101            0h18m
+  d1  RUNNING   b15  A1 rdp210, A2 rdp210               0h29m
+  d2  RUNNING   b17  A1 rcdp101, A2 rcdp101             0h17m
+  e1  RUNNING   b18  B rcdp104, isl1 rcdp104            0h16m
+  e2  RUNNING   b19  A1 rcdp104, A2 rcdp104             0h08m
+ GPU quota remaining: b=17.4h, c=17.7h, d=17.7h, e=17.4h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.647, 0.657, 0.664, 0.676, 0.755, 0.767, 0.86, 0.861]
+==============================================================================
+[2026-10-25 10:28:48] [PUSH] a1 <- b21: A1 rcdp202, A2 rcdp202
+[2026-10-25 10:46:11] [DONE] b17 on d2 in 0.62h (n_gpu=2)
+[2026-10-25 10:47:20] [DONE] b18 on e1 in 0.63h (n_gpu=2)
+[2026-10-25 10:50:39] [PUSH] d2 <- b22: B rcdp207, isl1 rcdp207
+[2026-10-25 10:51:48] [PUSH] e1 <- b23: A1 rcdp207, A2 rcdp207
+[2026-10-25 10:52:26] [WARN] a2 unexpected status HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY SSLERROR(SSLEOFERROR(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF OCCURRED IN VIOLATION OF PROTOCOL (_SSL.C:1028)')))
+[2026-10-25 10:54:44] [DONE] b16 on c2 in 0.78h (n_gpu=2)
+[2026-10-25 10:57:04] [DONE] b19 on e2 in 0.65h (n_gpu=2)
+==============================================================================
+ 16/84 batches done | failed: -
+  a1  RUNNING   b21  A1 rcdp202, A2 rcdp202             0h28m
+  a2  RUNNING   b13  A1 rdp201, A2 rdp201               1h11m
+  b1  RUNNING   b20  B rcdp202, isl1 rcdp202            0h33m
+  b2  RUNNING   b12  B rdp201, isl1 rdp201              1h17m
+  c1  RUNNING   b14  B rdp210, isl1 rdp210              1h00m
+  c2  IDLE      -                                       
+  d1  RUNNING   b15  A1 rdp210, A2 rdp210               0h59m
+  d2  RUNNING   b22  B rcdp207, isl1 rcdp207            0h06m
+  e1  RUNNING   b23  A1 rcdp207, A2 rcdp207             0h05m
+  e2  IDLE      -                                       
+ GPU quota remaining: a=16.9h, b=17.4h, d=16.4h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861]
+==============================================================================
+[2026-10-25 10:59:39] [PUSH] c2 <- b24: A3 cdp101, A3 cdp103
+[2026-10-25 11:00:18] [PUSH] e2 <- b25: A3 cdp203, A3 cdp207
+==============================================================================
+ 16/84 batches done | failed: -
+  a1  RUNNING   b21  A1 rcdp202, A2 rcdp202             1h00m
+  a2  RUNNING   b13  A1 rdp201, A2 rdp201               1h44m
+  b1  RUNNING   b20  B rcdp202, isl1 rcdp202            1h06m
+  b2  RUNNING   b12  B rdp201, isl1 rdp201              1h50m
+  c1  RUNNING   b14  B rdp210, isl1 rdp210              1h32m
+  c2  RUNNING   b24  A3 cdp101, A3 cdp103               0h30m
+  d1  RUNNING   b15  A1 rdp210, A2 rdp210               1h32m
+  d2  RUNNING   b22  B rcdp207, isl1 rcdp207            0h39m
+  e1  RUNNING   b23  A1 rcdp207, A2 rcdp207             0h37m
+  e2  RUNNING   b25  A3 cdp203, A3 cdp207               0h29m
+ GPU quota remaining: a=16.9h, b=17.4h, c=16.2h, d=16.4h, e=16.2h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861]
+==============================================================================
+==============================================================================
+ 16/84 batches done | failed: -
+  a1  RUNNING   b21  A1 rcdp202, A2 rcdp202             1h33m
+  a2  RUNNING   b13  A1 rdp201, A2 rdp201               2h17m
+  b1  RUNNING   b20  B rcdp202, isl1 rcdp202            1h39m
+  b2  RUNNING   b12  B rdp201, isl1 rdp201              2h23m
+  c1  RUNNING   b14  B rdp210, isl1 rdp210              2h05m
+  c2  RUNNING   b24  A3 cdp101, A3 cdp103               1h02m
+  d1  RUNNING   b15  A1 rdp210, A2 rdp210               2h05m
+  d2  RUNNING   b22  B rcdp207, isl1 rcdp207            1h11m
+  e1  RUNNING   b23  A1 rcdp207, A2 rcdp207             1h10m
+  e2  RUNNING   b25  A3 cdp203, A3 cdp207               1h02m
+ GPU quota remaining: a=16.9h, b=17.4h, c=16.2h, d=16.4h, e=16.2h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861]
+==============================================================================
+[2026-10-25 12:32:41] [DONE] b24 on c2 in 1.55h (n_gpu=2)
+==============================================================================
+ 17/84 batches done | failed: -
+  a1  RUNNING   b21  A1 rcdp202, A2 rcdp202             2h04m
+  a2  RUNNING   b13  A1 rdp201, A2 rdp201               2h48m
+  b1  RUNNING   b20  B rcdp202, isl1 rcdp202            2h10m
+  b2  RUNNING   b12  B rdp201, isl1 rdp201              2h54m
+  c1  RUNNING   b14  B rdp210, isl1 rdp210              2h36m
+  c2  IDLE      -                                       
+  d1  RUNNING   b15  A1 rdp210, A2 rdp210               2h35m
+  d2  RUNNING   b22  B rcdp207, isl1 rcdp207            1h42m
+  e1  RUNNING   b23  A1 rcdp207, A2 rcdp207             1h41m
+  e2  RUNNING   b25  A3 cdp203, A3 cdp207               1h33m
+ GPU quota remaining: a=16.9h, b=17.4h, d=16.4h, e=16.2h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55]
+==============================================================================
+[2026-10-25 12:35:27] [PUSH] c2 <- b26: A3 rdp103, A3 rdp107
+[2026-10-25 13:00:58] [DONE] b25 on e2 in 2.01h (n_gpu=2)
+[2026-10-25 13:03:07] [PUSH] e2 <- b27: A3 rdp201, A3 rdp210
+==============================================================================
+ 18/84 batches done | failed: -
+  a1  RUNNING   b21  A1 rcdp202, A2 rcdp202             2h35m
+  a2  RUNNING   b13  A1 rdp201, A2 rdp201               3h18m
+  b1  RUNNING   b20  B rcdp202, isl1 rcdp202            2h40m
+  b2  RUNNING   b12  B rdp201, isl1 rdp201              3h24m
+  c1  RUNNING   b14  B rdp210, isl1 rdp210              3h07m
+  c2  RUNNING   b26  A3 rdp103, A3 rdp107               0h28m
+  d1  RUNNING   b15  A1 rdp210, A2 rdp210               3h06m
+  d2  RUNNING   b22  B rcdp207, isl1 rcdp207            2h13m
+  e1  RUNNING   b23  A1 rcdp207, A2 rcdp207             2h12m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               0h00m
+ GPU quota remaining: a=16.9h, b=17.4h, c=13.1h, d=16.4h, e=12.2h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55, 2.011]
+==============================================================================
+[2026-10-25 13:06:35] [DONE] b12 on b2 in 3.45h (n_gpu=2)
+[2026-10-25 13:09:20] [PUSH] b2 <- b28: A3 rcdp101, A3 rcdp104
+[2026-10-25 13:12:32] [DONE] b13 on a2 in 3.46h (n_gpu=2)
+[2026-10-25 13:15:21] [PUSH] a2 <- b29: A3 rcdp202, A3 rcdp207
+[2026-10-25 13:29:21] [DONE] b15 on d1 in 3.53h (n_gpu=2)
+[2026-10-25 13:31:48] [PUSH] d1 <- b30: sa_1000 cdp101, sa_100 cdp101
+==============================================================================
+ 21/84 batches done | failed: -
+  a1  RUNNING   b21  A1 rcdp202, A2 rcdp202             3h06m
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             0h19m
+  b1  RUNNING   b20  B rcdp202, isl1 rcdp202            3h12m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             0h25m
+  c1  RUNNING   b14  B rdp210, isl1 rdp210              3h38m
+  c2  RUNNING   b26  A3 rdp103, A3 rdp107               0h59m
+  d1  RUNNING   b30  sa_1000 cdp101, sa_100 cdp101      0h03m
+  d2  RUNNING   b22  B rcdp207, isl1 rcdp207            2h44m
+  e1  RUNNING   b23  A1 rcdp207, A2 rcdp207             2h43m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               0h32m
+ GPU quota remaining: a=11.4h, b=11.9h, c=13.1h, d=11.1h, e=12.2h
+ batch wall time (h): [0.286, 0.32, 0.331, 0.372, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55, 2.011, 3.455, 3.458, 3.533]
+==============================================================================
+[2026-10-25 13:40:12] [DONE] b14 on c1 in 3.72h (n_gpu=2)
+[2026-10-25 13:42:45] [PUSH] c1 <- b31: sa_1000 cdp103, sa_100 cdp103
+[2026-10-25 13:43:50] [DONE] b30 on d1 in 0.20h (n_gpu=2)
+[2026-10-25 13:46:19] [PUSH] d1 <- b32: sa_1000 cdp203, sa_100 cdp203
+[2026-10-25 13:54:57] [DONE] b31 on c1 in 0.20h (n_gpu=2)
+[2026-10-25 13:57:21] [PUSH] c1 <- b33: sa_1000 cdp207, sa_100 cdp207
+[2026-10-25 14:05:53] [DONE] b20 on b1 in 3.71h (n_gpu=2)
+==============================================================================
+ 25/84 batches done | failed: -
+  a1  RUNNING   b21  A1 rcdp202, A2 rcdp202             3h37m
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             0h50m
+  b1  IDLE      -                                       
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             0h56m
+  c1  RUNNING   b33  sa_1000 cdp207, sa_100 cdp207      0h08m
+  c2  RUNNING   b26  A3 rdp103, A3 rdp107               1h30m
+  d1  RUNNING   b32  sa_1000 cdp203, sa_100 cdp203      0h19m
+  d2  RUNNING   b22  B rcdp207, isl1 rcdp207            3h15m
+  e1  RUNNING   b23  A1 rcdp207, A2 rcdp207             3h14m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               1h03m
+ GPU quota remaining: a=11.4h, c=10.5h, d=10.7h, e=12.2h
+ batch wall time (h): [0.201, 0.203, 0.286, 0.32, 0.331, 0.372, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55, 2.011, 3.455, 3.458, 3.533, 3.713, 3.724]
+==============================================================================
+[2026-10-25 14:08:27] [PUSH] b1 <- b34: sa_1000 rdp103, sa_100 rdp103
+[2026-10-25 14:08:46] [DONE] b21 on a1 in 3.67h (n_gpu=2)
+[2026-10-25 14:09:36] [DONE] b22 on d2 in 3.32h (n_gpu=2)
+[2026-10-25 14:11:59] [PUSH] a1 <- b35: sa_1000 rdp107, sa_100 rdp107
+[2026-10-25 14:12:16] [PUSH] d2 <- b36: sa_1000 rdp201, sa_100 rdp201
+[2026-10-25 14:18:11] [DONE] b32 on d1 in 0.53h (n_gpu=2)
+[2026-10-25 14:18:46] [DONE] b23 on e1 in 3.45h (n_gpu=2)
+[2026-10-25 14:21:26] [PUSH] d1 <- b37: sa_1000 rdp210, sa_100 rdp210
+[2026-10-25 14:21:53] [PUSH] e1 <- b38: sa_1000 rcdp101, sa_100 rcdp101
+[2026-10-25 14:32:13] [DONE] b33 on c1 in 0.58h (n_gpu=2)
+[2026-10-25 14:35:01] [PUSH] c1 <- b39: sa_1000 rcdp104, sa_100 rcdp104
+==============================================================================
+ 30/84 batches done | failed: -
+  a1  RUNNING   b35  sa_1000 rdp107, sa_100 rdp107      0h26m
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             1h23m
+  b1  RUNNING   b34  sa_1000 rdp103, sa_100 rdp103      0h30m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             1h29m
+  c1  RUNNING   b39  sa_1000 rcdp104, sa_100 rcdp104    0h03m
+  c2  RUNNING   b26  A3 rdp103, A3 rdp107               2h03m
+  d1  RUNNING   b37  sa_1000 rdp210, sa_100 rdp210      0h17m
+  d2  RUNNING   b36  sa_1000 rdp201, sa_100 rdp201      0h26m
+  e1  RUNNING   b38  sa_1000 rcdp101, sa_100 rcdp101    0h17m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               1h35m
+ GPU quota remaining: a=9.6h, b=10.1h, c=9.3h, d=9.7h, e=9.6h
+ batch wall time (h): [0.201, 0.203, 0.286, 0.32, 0.331, 0.372, 0.531, 0.581, 0.62, 0.627, 0.647, 0.654, 0.657, 0.664, 0.676, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55, 2.011, 3.316, 3.449, 3.455, 3.458, 3.533, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 14:46:41] [DONE] b34 on b1 in 0.64h (n_gpu=2)
+[2026-10-25 14:47:07] [DONE] b26 on c2 in 2.19h (n_gpu=2)
+[2026-10-25 14:49:39] [PUSH] b1 <- b40: sa_1000 rcdp202, sa_100 rcdp202
+[2026-10-25 14:49:48] [PUSH] c2 <- b41: sa_1000 rcdp207, sa_100 rcdp207
+[2026-10-25 14:52:50] [DONE] b35 on a1 in 0.68h (n_gpu=2)
+[2026-10-25 14:53:13] [DONE] b38 on e1 in 0.52h (n_gpu=2)
+[2026-10-25 14:55:25] [PUSH] a1 <- b42: grasp_100 cdp101, sa_200 cdp101
+[2026-10-25 14:55:34] [PUSH] e1 <- b43: grasp_200 cdp101, grasp_100 cdp103
+[2026-10-25 15:00:34] [WARN] c1 unexpected status HTTPSCONNECTIONPOOL(HOST='API.KAGGLE.COM', PORT=443): MAX RETRIES EXCEEDED WITH URL: /V1/KERNELS.KERNELSAPISERVICE/GETKERNELSESSIONSTATUS (CAUSED BY SSLERROR(SSLEOFERROR(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF OCCURRED IN VIOLATION OF PROTOCOL (_SSL.C:1028)')))
+[2026-10-25 15:06:25] [DONE] b42 on a1 in 0.18h (n_gpu=2)
+[2026-10-25 15:09:39] [DONE] b43 on e1 in 0.23h (n_gpu=2)
+==============================================================================
+ 36/84 batches done | failed: -
+  a1  IDLE      -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             1h54m
+  b1  RUNNING   b40  sa_1000 rcdp202, sa_100 rcdp202    0h20m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             2h00m
+  c1  RUNNING   b39  sa_1000 rcdp104, sa_100 rcdp104    0h34m
+  c2  RUNNING   b41  sa_1000 rcdp207, sa_100 rcdp207    0h20m
+  d1  RUNNING   b37  sa_1000 rdp210, sa_100 rdp210      0h48m
+  d2  RUNNING   b36  sa_1000 rdp201, sa_100 rdp201      0h57m
+  e1  IDLE      -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               2h06m
+ GPU quota remaining: b=8.8h, c=8.9h, d=9.7h
+ batch wall time (h): [0.183, 0.201, 0.203, 0.235, 0.286, 0.32, 0.331, 0.372, 0.522, 0.531, 0.581, 0.62, 0.627, 0.637, 0.647, 0.654, 0.657, 0.664, 0.676, 0.681, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55, 2.011, 2.194, 3.316, 3.449, 3.455, 3.458, 3.533, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 15:13:04] [PUSH] a1 <- b44: sa_200 cdp103, grasp_200 cdp103
+[2026-10-25 15:14:17] [PUSH] e1 <- b45: grasp_100 cdp203, sa_200 cdp203
+[2026-10-25 15:16:30] [DONE] b39 on c1 in 0.69h (n_gpu=2)
+[2026-10-25 15:20:53] [PUSH] c1 <- b46: grasp_200 cdp203, grasp_100 cdp207
+[2026-10-25 15:21:45] [DONE] b44 on a1 in 0.14h (n_gpu=2)
+[2026-10-25 15:24:43] [DONE] b45 on e1 in 0.17h (n_gpu=2)
+[2026-10-25 15:27:21] [PUSH] a1 <- b47: sa_200 cdp207, grasp_200 cdp207
+[2026-10-25 15:27:43] [PUSH] e1 <- b48: grasp_100 rdp103, sa_200 rdp103
+[2026-10-25 15:33:22] [DONE] b46 on c1 in 0.21h (n_gpu=2)
+[2026-10-25 15:35:41] [PUSH] c1 <- b49: grasp_200 rdp103, grasp_100 rdp107
+[2026-10-25 15:38:44] [DONE] b48 on e1 in 0.18h (n_gpu=2)
+[2026-10-25 15:40:53] [PUSH] e1 <- b50: sa_200 rdp107, grasp_200 rdp107
+[2026-10-25 15:41:02] [DONE] b47 on a1 in 0.23h (n_gpu=2)
+==============================================================================
+ 42/84 batches done | failed: -
+  a1  IDLE      -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             2h26m
+  b1  RUNNING   b40  sa_1000 rcdp202, sa_100 rcdp202    0h51m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             2h32m
+  c1  RUNNING   b49  grasp_200 rdp103, grasp_100 rdp107 0h05m
+  c2  RUNNING   b41  sa_1000 rcdp207, sa_100 rcdp207    0h51m
+  d1  RUNNING   b37  sa_1000 rdp210, sa_100 rdp210      1h19m
+  d2  RUNNING   b36  sa_1000 rdp201, sa_100 rdp201      1h29m
+  e1  RUNNING   b50  sa_200 rdp107, grasp_200 rdp107    0h00m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               2h38m
+ GPU quota remaining: b=8.8h, c=7.6h, d=9.7h, e=7.3h
+ batch wall time (h): [0.145, 0.174, 0.183, 0.184, 0.201, 0.203, 0.208, 0.228, 0.235, 0.286, 0.32, 0.331, 0.372, 0.522, 0.531, 0.581, 0.62, 0.627, 0.637, 0.647, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55, 2.011, 2.194, 3.316, 3.449, 3.455, 3.458, 3.533, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 15:43:25] [PUSH] a1 <- b51: grasp_100 rdp201, sa_200 rdp201
+[2026-10-25 15:50:36] [DONE] b49 on c1 in 0.25h (n_gpu=2)
+[2026-10-25 15:52:50] [PUSH] c1 <- b52: grasp_200 rdp201, grasp_100 rdp210
+[2026-10-25 15:55:34] [DONE] b50 on e1 in 0.24h (n_gpu=2)
+[2026-10-25 15:57:42] [PUSH] e1 <- b53: sa_200 rdp210, grasp_200 rdp210
+==============================================================================
+ 44/84 batches done | failed: -
+  a1  RUNNING   b51  grasp_100 rdp201, sa_200 rdp201    0h28m
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             2h56m
+  b1  RUNNING   b40  sa_1000 rcdp202, sa_100 rcdp202    1h21m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             3h02m
+  c1  RUNNING   b52  grasp_200 rdp201, grasp_100 rdp210 0h18m
+  c2  RUNNING   b41  sa_1000 rcdp207, sa_100 rcdp207    1h21m
+  d1  RUNNING   b37  sa_1000 rdp210, sa_100 rdp210      1h50m
+  d2  RUNNING   b36  sa_1000 rdp201, sa_100 rdp201      1h59m
+  e1  RUNNING   b53  sa_200 rdp210, grasp_200 rdp210    0h13m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               3h08m
+ GPU quota remaining: a=7.1h, b=8.8h, c=7.1h, d=9.7h, e=6.8h
+ batch wall time (h): [0.145, 0.174, 0.183, 0.184, 0.201, 0.203, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.32, 0.331, 0.372, 0.522, 0.531, 0.581, 0.62, 0.627, 0.637, 0.647, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.755, 0.767, 0.779, 0.86, 0.861, 1.55, 2.011, 2.194, 3.316, 3.449, 3.455, 3.458, 3.533, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 17:16:14] [DONE] b51 on a1 in 1.55h (n_gpu=2)
+[2026-10-25 17:16:29] [DONE] b52 on c1 in 1.39h (n_gpu=2)
+[2026-10-25 17:16:47] [DONE] b53 on e1 in 1.32h (n_gpu=2)
+==============================================================================
+ 47/84 batches done | failed: -
+  a1  IDLE      -                                       
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             4h01m
+  b1  RUNNING   b40  sa_1000 rcdp202, sa_100 rcdp202    2h27m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             4h07m
+  c1  IDLE      -                                       
+  c2  RUNNING   b41  sa_1000 rcdp207, sa_100 rcdp207    2h27m
+  d1  RUNNING   b37  sa_1000 rdp210, sa_100 rdp210      2h55m
+  d2  RUNNING   b36  sa_1000 rdp201, sa_100 rdp201      3h04m
+  e1  IDLE      -                                       
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               4h13m
+ GPU quota remaining: b=8.8h, d=9.7h
+ batch wall time (h): [0.145, 0.174, 0.183, 0.184, 0.201, 0.203, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.32, 0.331, 0.372, 0.522, 0.531, 0.581, 0.62, 0.627, 0.637, 0.647, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.755, 0.767, 0.779, 0.86, 0.861, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.316, 3.449, 3.455, 3.458, 3.533, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 17:18:53] [PUSH] a1 <- b54: grasp_100 rcdp101, sa_200 rcdp101
+[2026-10-25 17:18:58] [PUSH] c1 <- b55: grasp_200 rcdp101, grasp_100 rcdp104
+[2026-10-25 17:19:05] [PUSH] e1 <- b56: sa_200 rcdp104, grasp_200 rcdp104
+[2026-10-25 17:28:37] [DONE] b54 on a1 in 0.16h (n_gpu=2)
+[2026-10-25 17:30:55] [QUOTA] a1: 4.42h left < 4.47h needed
+[2026-10-25 17:31:10] [DONE] b55 on c1 in 0.20h (n_gpu=2)
+[2026-10-25 17:31:25] [DONE] b56 on e1 in 0.21h (n_gpu=2)
+[2026-10-25 17:31:44] Start: 10 workers, 84 batches
+[2026-10-25 17:31:47] [PUSH] a1 <- b57: grasp_100 rcdp202, sa_200 rcdp202
+[2026-10-25 17:31:51] [PUSH] c1 <- b58: grasp_200 rcdp202, grasp_100 rcdp207
+[2026-10-25 17:31:58] [PUSH] e1 <- b59: sa_200 rcdp207, grasp_200 rcdp207
+[2026-10-25 17:32:23] [DONE] b36 on d2 in 3.34h (n_gpu=2)
+==============================================================================
+ 51/84 batches done | failed: -
+  a1  RUNNING   b57  grasp_100 rcdp202, sa_200 rcdp202  0h00m
+  a2  RUNNING   b29  A3 rcdp202, A3 rcdp207             4h17m
+  b1  RUNNING   b40  sa_1000 rcdp202, sa_100 rcdp202    2h42m
+  b2  RUNNING   b28  A3 rcdp101, A3 rcdp104             4h23m
+  c1  RUNNING   b58  grasp_200 rcdp202, grasp_100 rcdp207 0h00m
+  c2  RUNNING   b41  sa_1000 rcdp207, sa_100 rcdp207    2h42m
+  d1  RUNNING   b37  sa_1000 rdp210, sa_100 rdp210      3h11m
+  d2  IDLE      -                                       
+  e1  RUNNING   b59  sa_200 rcdp207, grasp_200 rcdp207  0h00m
+  e2  RUNNING   b27  A3 rdp201, A3 rdp210               4h29m
+ GPU quota remaining: a=4.4h, b=8.8h, c=4.5h, e=4.1h
+ batch wall time (h): [0.145, 0.162, 0.174, 0.183, 0.184, 0.201, 0.203, 0.203, 0.206, 0.208, 0.228, 0.235, 0.245, 0.248, 0.286, 0.32, 0.331, 0.372, 0.522, 0.531, 0.581, 0.62, 0.627, 0.637, 0.647, 0.654, 0.657, 0.664, 0.676, 0.681, 0.691, 0.755, 0.767, 0.779, 0.86, 0.861, 1.318, 1.394, 1.547, 1.55, 2.011, 2.194, 3.316, 3.335, 3.449, 3.455, 3.458, 3.533, 3.666, 3.713, 3.724]
+==============================================================================
+[2026-10-25 17:34:33] [PUSH] d2 <- b60: P30_isl3 cdp101, P30_isl10 cdp101
+[2026-10-25 17:44:08] [DONE] b37 on d1 in 3.38h (n_gpu=2)
+[2026-10-25 17:46:20] [PUSH] d1 <- b61: P60_isl12 cdp101, P60_isl1 cdp101
+[2026-10-25 17:53:35] [WARN] a2 unexpected status ('CONNECTION ABORTED.', REMOTEDISCONNECTED('REMOTE END CLOSED CONNECTION WITHOUT RESPONSE'))
+[2026-10-25 17:56:17] [DONE] b60 on d2 in 0.36h (n_gpu=2)
+[2026-10-25 17:58:30] [PUSH] d2 <- b62: P30_isl3 cdp103, P30_isl10 cdp103
+[2026-10-25 17:58:47] [DONE] b41 on c2 in 3.15h (n_gpu=2)
+[2026-10-25 18:01:02] [PUSH] c2 <- b63: P60_isl12 cdp103, P60_isl1 cdp103

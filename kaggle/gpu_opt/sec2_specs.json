@@ -1,0 +1,10 @@
+[
+ {"name": "sa", "cfg": {"init": "sa"}},
+ {"name": "grasp_nosa", "cfg": {"sa_warmup_iterations": 0}},
+ {"name": "grasp_light", "cfg": {"sa_warmup_iterations": 10},
+  "i2": {"SA_T0": 0.01, "SA_COOLING": 0.5, "SA_TMIN": 0.0005, "SA_RELATIVE": true}},
+ {"name": "mixed", "cfg": {"init": "mixed"}},
+ {"name": "mixed_nosa", "cfg": {"init": "mixed", "sa_warmup_iterations": 0}},
+ {"name": "mixed_light", "cfg": {"init": "mixed", "sa_warmup_iterations": 10},
+  "i2": {"SA_T0": 0.01, "SA_COOLING": 0.5, "SA_TMIN": 0.0005, "SA_RELATIVE": true}}
+]
