@@ -1,0 +1,15 @@
+[2026-10-30 03:20:35] Built payload D:\AI_Research\PH-SHOWOA\kaggle\runs_full\payload.zip (53 KB), code d614a139f3e12337
+[2026-10-30 03:20:35] Start: 1 workers, 1 batches, runs=2, max_iter=20, pop_size=30, code=d614a139f3e12337, smoke=True
+[2026-10-30 03:20:41] [PUSH] 8-1 <- RCdp1001+RCdp1004 (batch 55bcbce96a0c, est 0.23h)
+==============================================================================
+ 0/65 instances done | code d614a139f3e12337 | failed: -
+  8-1   ptundat/phshowoa-gpu-bench-8-1                RUNNING   RCdp1001+RCdp1004    0h00m
+ GPU quota remaining: 8=21.9h
+==============================================================================
+[2026-10-30 03:22:59] [DONE] RCdp1001+RCdp1004 on 8-1 in 0.04h: RCdp1001: best NV=3 TD=348.98 avg/run=38.8s (run 1 incl. JIT: 77.1s); RCdp1004: best NV=2 TD=216.69 avg/run=38.8s (run 1 incl. JIT: 76.8s)
+[2026-10-30 03:22:59] Smoke test finished.
+==============================================================================
+ 0/65 instances done | code d614a139f3e12337 | failed: -
+  8-1   ptundat/phshowoa-gpu-bench-8-1                IDLE      -                    
+ GPU quota remaining: 
+==============================================================================

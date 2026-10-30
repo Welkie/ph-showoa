@@ -1,0 +1,205 @@
+[2026-10-30 03:23:24] Built payload D:\AI_Research\PH-SHOWOA\kaggle\runs_full\payload.zip (53 KB), code d614a139f3e12337
+[2026-10-30 03:23:25] Start: 20 workers, 33 batches, runs=30, max_iter=1000, pop_size=30, code=d614a139f3e12337, smoke=False
+[2026-10-30 03:23:26] [QUOTA] 1-1: 0.00h left after the running session, no pending batch fits
+[2026-10-30 03:23:26] [QUOTA] 1-2: 0.00h left after the running session, no pending batch fits
+[2026-10-30 03:23:29] [QUOTA] 2-1: 0.26h left after the running session, no pending batch fits
+[2026-10-30 03:23:29] [QUOTA] 2-2: 0.26h left after the running session, no pending batch fits
+[2026-10-30 03:23:31] [QUOTA] 3-1: 0.25h left after the running session, no pending batch fits
+[2026-10-30 03:23:31] [QUOTA] 3-2: 0.25h left after the running session, no pending batch fits
+[2026-10-30 03:23:34] [QUOTA] 4-1: 0.00h left after the running session, no pending batch fits
+[2026-10-30 03:23:34] [QUOTA] 4-2: 0.00h left after the running session, no pending batch fits
+[2026-10-30 03:23:37] [QUOTA] 5-1: 0.26h left after the running session, no pending batch fits
+[2026-10-30 03:23:38] [QUOTA] 5-2: 0.26h left after the running session, no pending batch fits
+[2026-10-30 03:23:45] [PUSH] 6-1 <- Rdp201+Rdp202 (batch dcd6a2e95256, est 1.85h)
+[2026-10-30 03:23:49] [PUSH] 6-2 <- Rdp203+Rdp204 (batch c9af7b016874, est 1.85h)
+[2026-10-30 03:23:52] [QUOTA] 7-1: 0.00h left after the running session, no pending batch fits
+[2026-10-30 03:23:52] [QUOTA] 7-2: 0.00h left after the running session, no pending batch fits
+[2026-10-30 03:23:58] [PUSH] 8-1 <- Rdp205+Rdp206 (batch d7c751608bc1, est 1.85h)
+[2026-10-30 03:24:02] [PUSH] 8-2 <- Rdp207+Rdp208 (batch 4835724acf40, est 1.85h)
+[2026-10-30 03:24:11] [PUSH] 9-1 <- Rdp209+Rdp210 (batch 1dce6ff7fa4e, est 1.85h)
+[2026-10-30 03:24:15] [PUSH] 9-2 <- Rdp211+RCdp201 (batch 23d16c7016f8, est 1.85h)
+[2026-10-30 03:24:20] [PUSH] 10-1 <- RCdp202+RCdp203 (batch 6ffefd632e5f, est 1.64h)
+[2026-10-30 03:24:23] [PUSH] 10-2 <- RCdp204+RCdp205 (batch e5128a59a513, est 1.64h)
+==============================================================================
+ 0/65 instances done | code d614a139f3e12337 | failed: -
+  1-1   saostken/phshowoa-gpu-bench-1-1               NO_QUOTA  -                    
+  1-2   saostken/phshowoa-gpu-bench-1-2               NO_QUOTA  -                    
+  2-1   welkie/phshowoa-gpu-bench-2-1                 NO_QUOTA  -                    
+  2-2   welkie/phshowoa-gpu-bench-2-2                 NO_QUOTA  -                    
+  3-1   minhanhphm1676/phshowoa-gpu-bench-3-1         NO_QUOTA  -                    
+  3-2   minhanhphm1676/phshowoa-gpu-bench-3-2         NO_QUOTA  -                    
+  4-1   dautromduoicuop/phshowoa-gpu-bench-4-1        NO_QUOTA  -                    
+  4-2   dautromduoicuop/phshowoa-gpu-bench-4-2        NO_QUOTA  -                    
+  5-1   tafuhihi/phshowoa-gpu-bench-5-1               NO_QUOTA  -                    
+  5-2   tafuhihi/phshowoa-gpu-bench-5-2               NO_QUOTA  -                    
+  6-1   kanhan162/phshowoa-gpu-bench-6-1              RUNNING   Rdp201+Rdp202        0h00m
+  6-2   kanhan162/phshowoa-gpu-bench-6-2              RUNNING   Rdp203+Rdp204        0h00m
+  7-1   marcusnguyen007/phshowoa-gpu-bench-7-1        NO_QUOTA  -                    
+  7-2   marcusnguyen007/phshowoa-gpu-bench-7-2        NO_QUOTA  -                    
+  8-1   ptundat/phshowoa-gpu-bench-8-1                RUNNING   Rdp205+Rdp206        0h00m
+  8-2   ptundat/phshowoa-gpu-bench-8-2                RUNNING   Rdp207+Rdp208        0h00m
+  9-1   keith1101/phshowoa-gpu-bench-9-1              RUNNING   Rdp209+Rdp210        0h00m
+  9-2   keith1101/phshowoa-gpu-bench-9-2              RUNNING   Rdp211+RCdp201       0h00m
+  10-1  giahaohuynh/phshowoa-gpu-bench-10-1           RUNNING   RCdp202+RCdp203      0h00m
+  10-2  giahaohuynh/phshowoa-gpu-bench-10-2           RUNNING   RCdp204+RCdp205      0h00m
+ GPU quota remaining: 1=0.0h, 10=21.1h, 2=0.3h, 3=0.2h, 4=0.0h, 5=0.3h, 6=11.7h, 7=0.0h, 8=21.9h, 9=21.4h
+==============================================================================
+[2026-10-30 11:24:25] Built payload D:\AI_Research\PH-SHOWOA\kaggle\runs_full\payload.zip (53 KB), code d614a139f3e12337
+[2026-10-30 11:24:25] Start: 20 workers, 33 batches, runs=30, max_iter=1000, pop_size=30, code=d614a139f3e12337, smoke=False
+[2026-10-30 11:25:05] Built payload D:\AI_Research\PH-SHOWOA\kaggle\runs_full\payload.zip (53 KB), code d614a139f3e12337
+[2026-10-30 11:25:05] Start: 20 workers, 33 batches, runs=30, max_iter=1000, pop_size=30, code=d614a139f3e12337, smoke=False
+[2026-10-30 11:25:30] [DONE] Rdp201+Rdp202 on 6-1 in 8.03h: Rdp201: best NV=4 TD=1252.37 avg/run=72.9s (run 1 incl. JIT: 137.4s); Rdp202: best NV=3 TD=1195.30 avg/run=109.9s (run 1 incl. JIT: 178.8s)
+[2026-10-30 11:25:42] [DONE] Rdp203+Rdp204 on 6-2 in 8.03h: Rdp203: best NV=3 TD=949.68 avg/run=139.3s (run 1 incl. JIT: 201.9s); Rdp204: best NV=2 TD=849.48 avg/run=157.1s (run 1 incl. JIT: 239.9s)
+[2026-10-30 11:25:54] [DONE] Rdp205+Rdp206 on 8-1 in 8.03h: Rdp205: best NV=3 TD=1010.75 avg/run=109.2s (run 1 incl. JIT: 180.2s); Rdp206: best NV=3 TD=906.70 avg/run=128.5s (run 1 incl. JIT: 194.4s)
+[2026-10-30 11:26:11] [DONE] Rdp207+Rdp208 on 8-2 in 8.04h: Rdp207: best NV=2 TD=938.54 avg/run=155.9s (run 1 incl. JIT: 225.5s); Rdp208: best NV=2 TD=740.66 avg/run=183.6s (run 1 incl. JIT: 238.3s)
+[2026-10-30 11:26:21] [DONE] Rdp209+Rdp210 on 9-1 in 8.04h: Rdp209: best NV=3 TD=914.48 avg/run=115.8s (run 1 incl. JIT: 190.4s); Rdp210: best NV=3 TD=957.76 avg/run=129.3s (run 1 incl. JIT: 190.5s)
+[2026-10-30 11:26:30] [DONE] Rdp211+RCdp201 on 9-2 in 8.04h: Rdp211: best NV=2 TD=958.09 avg/run=170.9s (run 1 incl. JIT: 240.2s); RCdp201: best NV=4 TD=1406.94 avg/run=72.1s (run 1 incl. JIT: 134.5s)
+[2026-10-30 11:26:43] [DONE] RCdp202+RCdp203 on 10-1 in 8.04h: RCdp202: best NV=3 TD=1439.60 avg/run=84.5s (run 1 incl. JIT: 156.6s); RCdp203: best NV=3 TD=1075.16 avg/run=123.7s (run 1 incl. JIT: 181.8s)
+[2026-10-30 11:26:53] [DONE] RCdp204+RCdp205 on 10-2 in 8.04h: RCdp204: best NV=3 TD=798.46 avg/run=137.1s (run 1 incl. JIT: 200.6s); RCdp205: best NV=4 TD=1297.65 avg/run=85.9s (run 1 incl. JIT: 154.0s)
+==============================================================================
+ 16/65 instances done | code d614a139f3e12337 | failed: -
+  1-1   saostken/phshowoa-gpu-bench-1-1               NO_QUOTA  -                    
+  1-2   saostken/phshowoa-gpu-bench-1-2               NO_QUOTA  -                    
+  2-1   welkie/phshowoa-gpu-bench-2-1                 NO_QUOTA  -                    
+  2-2   welkie/phshowoa-gpu-bench-2-2                 NO_QUOTA  -                    
+  3-1   minhanhphm1676/phshowoa-gpu-bench-3-1         NO_QUOTA  -                    
+  3-2   minhanhphm1676/phshowoa-gpu-bench-3-2         NO_QUOTA  -                    
+  4-1   dautromduoicuop/phshowoa-gpu-bench-4-1        NO_QUOTA  -                    
+  4-2   dautromduoicuop/phshowoa-gpu-bench-4-2        NO_QUOTA  -                    
+  5-1   tafuhihi/phshowoa-gpu-bench-5-1               NO_QUOTA  -                    
+  5-2   tafuhihi/phshowoa-gpu-bench-5-2               NO_QUOTA  -                    
+  6-1   kanhan162/phshowoa-gpu-bench-6-1              IDLE      -                    
+  6-2   kanhan162/phshowoa-gpu-bench-6-2              IDLE      -                    
+  7-1   marcusnguyen007/phshowoa-gpu-bench-7-1        NO_QUOTA  -                    
+  7-2   marcusnguyen007/phshowoa-gpu-bench-7-2        NO_QUOTA  -                    
+  8-1   ptundat/phshowoa-gpu-bench-8-1                IDLE      -                    
+  8-2   ptundat/phshowoa-gpu-bench-8-2                IDLE      -                    
+  9-1   keith1101/phshowoa-gpu-bench-9-1              IDLE      -                    
+  9-2   keith1101/phshowoa-gpu-bench-9-2              IDLE      -                    
+  10-1  giahaohuynh/phshowoa-gpu-bench-10-1           IDLE      -                    
+  10-2  giahaohuynh/phshowoa-gpu-bench-10-2           IDLE      -                    
+ GPU quota remaining: 1=0.0h, 2=0.3h, 3=0.2h, 4=0.0h, 5=0.3h, 7=0.0h
+==============================================================================
+[2026-10-30 11:29:00] [PUSH] 6-1 <- RCdp206+RCdp207 (batch 02e019e2f9b2, est 1.64h)
+[2026-10-30 11:29:05] [PUSH] 6-2 <- RCdp208+Cdp201 (batch d4c05cd05ad8, est 1.64h)
+[2026-10-30 11:29:16] [PUSH] 8-1 <- Cdp202+Cdp203 (batch a40a09fe909c, est 1.14h)
+[2026-10-30 11:29:20] [PUSH] 8-2 <- Cdp204+Cdp205 (batch 94a18c111870, est 1.14h)
+[2026-10-30 11:29:31] [PUSH] 9-1 <- Cdp206+Cdp207 (batch 8ff01233e3b4, est 1.14h)
+[2026-10-30 11:29:35] [PUSH] 9-2 <- Cdp208+Rdp101 (batch ab37b2eeda9d, est 1.14h)
+[2026-10-30 11:29:43] [PUSH] 10-1 <- Rdp102+Rdp103 (batch 75e8d74767df, est 0.52h)
+[2026-10-30 11:29:46] [PUSH] 10-2 <- Rdp104+Rdp105 (batch ffd473c704b7, est 0.52h)
+[2026-10-30 11:41:30] [DONE] Rdp102+Rdp103 on 10-1 in 0.20h: Rdp102: best NV=17 TD=1490.95 avg/run=18.7s (run 1 incl. JIT: 85.7s); Rdp103: best NV=13 TD=1320.58 avg/run=21.3s (run 1 incl. JIT: 87.2s)
+[2026-10-30 11:43:37] [PUSH] 10-1 <- Rdp106+Rdp107 (batch b240bd9bd932, est 0.52h)
+[2026-10-30 11:44:00] [DONE] Rdp104+Rdp105 on 10-2 in 0.24h: Rdp104: best NV=10 TD=996.89 avg/run=24.5s (run 1 incl. JIT: 87.2s); Rdp105: best NV=14 TD=1395.00 avg/run=18.7s (run 1 incl. JIT: 85.2s)
+[2026-10-30 11:46:04] [PUSH] 10-2 <- Rdp108+Rdp109 (batch 193d95c29d82, est 0.52h)
+[2026-10-30 11:57:55] [DONE] Rdp106+Rdp107 on 10-1 in 0.24h: Rdp106: best NV=12 TD=1284.63 avg/run=21.0s (run 1 incl. JIT: 85.7s); Rdp107: best NV=10 TD=1186.74 avg/run=22.9s (run 1 incl. JIT: 86.7s)
+==============================================================================
+ 22/65 instances done | code d614a139f3e12337 | failed: -
+  1-1   saostken/phshowoa-gpu-bench-1-1               NO_QUOTA  -                    
+  1-2   saostken/phshowoa-gpu-bench-1-2               NO_QUOTA  -                    
+  2-1   welkie/phshowoa-gpu-bench-2-1                 NO_QUOTA  -                    
+  2-2   welkie/phshowoa-gpu-bench-2-2                 NO_QUOTA  -                    
+  3-1   minhanhphm1676/phshowoa-gpu-bench-3-1         NO_QUOTA  -                    
+  3-2   minhanhphm1676/phshowoa-gpu-bench-3-2         NO_QUOTA  -                    
+  4-1   dautromduoicuop/phshowoa-gpu-bench-4-1        NO_QUOTA  -                    
+  4-2   dautromduoicuop/phshowoa-gpu-bench-4-2        NO_QUOTA  -                    
+  5-1   tafuhihi/phshowoa-gpu-bench-5-1               NO_QUOTA  -                    
+  5-2   tafuhihi/phshowoa-gpu-bench-5-2               NO_QUOTA  -                    
+  6-1   kanhan162/phshowoa-gpu-bench-6-1              RUNNING   RCdp206+RCdp207      0h28m
+  6-2   kanhan162/phshowoa-gpu-bench-6-2              RUNNING   RCdp208+Cdp201       0h28m
+  7-1   marcusnguyen007/phshowoa-gpu-bench-7-1        NO_QUOTA  -                    
+  7-2   marcusnguyen007/phshowoa-gpu-bench-7-2        NO_QUOTA  -                    
+  8-1   ptundat/phshowoa-gpu-bench-8-1                RUNNING   Cdp202+Cdp203        0h28m
+  8-2   ptundat/phshowoa-gpu-bench-8-2                RUNNING   Cdp204+Cdp205        0h28m
+  9-1   keith1101/phshowoa-gpu-bench-9-1              RUNNING   Cdp206+Cdp207        0h28m
+  9-2   keith1101/phshowoa-gpu-bench-9-2              RUNNING   Cdp208+Rdp101        0h28m
+  10-1  giahaohuynh/phshowoa-gpu-bench-10-1           IDLE      -                    
+  10-2  giahaohuynh/phshowoa-gpu-bench-10-2           RUNNING   Rdp108+Rdp109        0h11m
+ GPU quota remaining: 1=0.0h, 2=0.3h, 3=0.2h, 4=0.0h, 5=0.3h, 6=9.4h, 7=0.0h, 8=19.2h, 9=18.9h
+==============================================================================
+[2026-10-30 12:00:01] [PUSH] 10-1 <- Rdp110+Rdp111 (batch 6ecec126ba63, est 0.52h)
+[2026-10-30 12:00:29] [DONE] Cdp206+Cdp207 on 9-1 in 0.52h: Cdp206: best NV=3 TD=588.49 avg/run=59.9s (run 1 incl. JIT: 127.9s); Cdp207: best NV=3 TD=588.29 avg/run=59.5s (run 1 incl. JIT: 128.8s)
+[2026-10-30 12:00:46] [DONE] Rdp108+Rdp109 on 10-2 in 0.24h: Rdp108: best NV=9 TD=1016.56 avg/run=24.2s (run 1 incl. JIT: 92.5s); Rdp109: best NV=11 TD=1217.40 avg/run=20.9s (run 1 incl. JIT: 90.6s)
+[2026-10-30 12:02:52] [PUSH] 9-1 <- Rdp112+RCdp101 (batch 297e59b5398d, est 0.52h)
+[2026-10-30 12:02:59] [PUSH] 10-2 <- RCdp102+RCdp103 (batch 3a61b58344c8, est 0.48h)
+[2026-10-30 12:03:29] [DONE] Cdp208+Rdp101 on 9-2 in 0.56h: Cdp208: best NV=3 TD=588.32 avg/run=61.2s (run 1 incl. JIT: 126.9s); Rdp101: best NV=19 TD=1651.10 avg/run=16.2s (run 1 incl. JIT: 86.8s)
+[2026-10-30 12:05:42] [PUSH] 9-2 <- RCdp104+RCdp105 (batch 3ada26dba255, est 0.48h)
+[2026-10-30 12:08:20] [DONE] Cdp202+Cdp203 on 8-1 in 0.65h: Cdp202: best NV=3 TD=591.56 avg/run=64.1s (run 1 incl. JIT: 140.4s); Cdp203: best NV=3 TD=591.17 avg/run=73.7s (run 1 incl. JIT: 140.5s)
+[2026-10-30 12:10:40] [PUSH] 8-1 <- RCdp106+RCdp107 (batch a6d9dee88370, est 0.48h)
+[2026-10-30 12:13:19] [DONE] Cdp204+Cdp205 on 8-2 in 0.73h: Cdp204: best NV=3 TD=590.60 avg/run=82.2s (run 1 incl. JIT: 142.5s); Cdp205: best NV=3 TD=588.88 avg/run=58.8s (run 1 incl. JIT: 135.8s)
+[2026-10-30 12:13:35] [DONE] Rdp110+Rdp111 on 10-1 in 0.23h: Rdp110: best NV=10 TD=1181.21 avg/run=22.7s (run 1 incl. JIT: 90.9s); Rdp111: best NV=10 TD=1145.16 avg/run=23.0s (run 1 incl. JIT: 90.5s)
+[2026-10-30 12:15:42] [PUSH] 8-2 <- RCdp108+Cdp101 (batch 2a556b598da5, est 0.48h)
+[2026-10-30 12:15:49] [PUSH] 10-1 <- Cdp102+Cdp103 (batch 84788d8732fc, est 0.39h)
+[2026-10-30 12:16:11] [DONE] Rdp112+RCdp101 on 9-1 in 0.22h: Rdp112: best NV=10 TD=968.54 avg/run=23.9s (run 1 incl. JIT: 97.2s); RCdp101: best NV=14 TD=1725.56 avg/run=17.9s (run 1 incl. JIT: 95.4s)
+[2026-10-30 12:16:21] [DONE] RCdp104+RCdp105 on 9-2 in 0.18h: RCdp104: best NV=10 TD=1196.32 avg/run=19.2s (run 1 incl. JIT: 83.9s); RCdp105: best NV=13 TD=1674.31 avg/run=18.5s (run 1 incl. JIT: 85.0s)
+[2026-10-30 12:16:32] [DONE] RCdp102+RCdp103 on 10-2 in 0.23h: RCdp102: best NV=13 TD=1507.55 avg/run=19.5s (run 1 incl. JIT: 87.7s); RCdp103: best NV=11 TD=1325.37 avg/run=21.3s (run 1 incl. JIT: 88.6s)
+[2026-10-30 12:18:38] [PUSH] 9-1 <- Cdp104+Cdp105 (batch 683a12ac7c0d, est 0.39h)
+[2026-10-30 12:18:42] [PUSH] 9-2 <- Cdp106+Cdp107 (batch c385955ac829, est 0.39h)
+[2026-10-30 12:18:47] [PUSH] 10-2 <- Cdp108+Cdp109 (batch 4a8471404428, est 0.39h)
+[2026-10-30 12:23:30] [DONE] RCdp106+RCdp107 on 8-1 in 0.21h: RCdp106: best NV=12 TD=1405.27 avg/run=20.3s (run 1 incl. JIT: 95.8s); RCdp107: best NV=11 TD=1262.35 avg/run=21.6s (run 1 incl. JIT: 97.2s)
+[2026-10-30 12:23:44] [DONE] Cdp102+Cdp103 on 10-1 in 0.13h: Cdp102: best NV=10 TD=961.48 avg/run=13.5s (run 1 incl. JIT: 77.4s); Cdp103: best NV=10 TD=905.16 avg/run=11.7s (run 1 incl. JIT: 76.6s)
+[2026-10-30 12:26:06] [PUSH] 8-1 <- RCdp1001+RCdp1004 (batch aab8494e6c3e, est 0.35h)
+[2026-10-30 12:26:11] [PUSH] 10-1 <- RCdp1007+RCdp2501 (batch 79d20ac49455, est 0.35h)
+[2026-10-30 12:26:22] [DONE] RCdp206+RCdp207 on 6-1 in 0.96h: RCdp206: best NV=3 TD=1180.94 avg/run=102.5s (run 1 incl. JIT: 173.8s); RCdp207: best NV=3 TD=1071.25 avg/run=112.0s (run 1 incl. JIT: 172.6s)
+[2026-10-30 12:26:41] [DONE] Cdp104+Cdp105 on 9-1 in 0.13h: Cdp104: best NV=10 TD=874.51 avg/run=12.4s (run 1 incl. JIT: 76.6s); Cdp105: best NV=10 TD=1073.82 avg/run=13.1s (run 1 incl. JIT: 77.8s)
+[2026-10-30 12:26:53] [DONE] Cdp108+Cdp109 on 10-2 in 0.13h: Cdp108: best NV=10 TD=950.55 avg/run=13.2s (run 1 incl. JIT: 82.6s); Cdp109: best NV=10 TD=915.64 avg/run=12.4s (run 1 incl. JIT: 81.8s)
+[2026-10-30 12:28:58] [PUSH] 6-1 <- RCdp2504+RCdp2507 (batch 98ebcfac5a2c, est 0.35h)
+[2026-10-30 12:29:03] [PUSH] 9-1 <- RCdp5001+RCdp5004 (batch c22ef19575d2, est 0.35h)
+[2026-10-30 12:29:08] [PUSH] 10-2 <- RCdp5007 (batch 6d45de1842a3, est 0.35h)
+[2026-10-30 12:29:23] [DONE] RCdp1001+RCdp1004 on 8-1 in 0.05h: RCdp1001: best NV=3 TD=348.98 avg/run=3.9s (run 1 incl. JIT: 84.3s); RCdp1004: best NV=2 TD=216.69 avg/run=4.2s (run 1 incl. JIT: 84.6s)
+[2026-10-30 12:29:34] [DONE] RCdp108+Cdp101 on 8-2 in 0.23h: RCdp108: best NV=10 TD=1194.04 avg/run=20.6s (run 1 incl. JIT: 87.6s); Cdp101: best NV=11 TD=982.03 avg/run=13.0s (run 1 incl. JIT: 82.8s)
+[2026-10-30 12:29:43] [DONE] Cdp106+Cdp107 on 9-2 in 0.18h: Cdp106: best NV=10 TD=977.36 avg/run=15.2s (run 1 incl. JIT: 82.2s); Cdp107: best NV=10 TD=1000.48 avg/run=14.3s (run 1 incl. JIT: 81.3s)
+[2026-10-30 12:29:51] [DONE] RCdp1007+RCdp2501 on 10-1 in 0.06h: RCdp1007: best NV=2 TD=310.81 avg/run=3.6s (run 1 incl. JIT: 76.0s); RCdp2501: best NV=5 TD=551.05 avg/run=4.2s (run 1 incl. JIT: 76.0s)
+==============================================================================
+ 58/65 instances done | code d614a139f3e12337 | failed: -
+  1-1   saostken/phshowoa-gpu-bench-1-1               NO_QUOTA  -                    
+  1-2   saostken/phshowoa-gpu-bench-1-2               NO_QUOTA  -                    
+  2-1   welkie/phshowoa-gpu-bench-2-1                 NO_QUOTA  -                    
+  2-2   welkie/phshowoa-gpu-bench-2-2                 NO_QUOTA  -                    
+  3-1   minhanhphm1676/phshowoa-gpu-bench-3-1         NO_QUOTA  -                    
+  3-2   minhanhphm1676/phshowoa-gpu-bench-3-2         NO_QUOTA  -                    
+  4-1   dautromduoicuop/phshowoa-gpu-bench-4-1        NO_QUOTA  -                    
+  4-2   dautromduoicuop/phshowoa-gpu-bench-4-2        NO_QUOTA  -                    
+  5-1   tafuhihi/phshowoa-gpu-bench-5-1               NO_QUOTA  -                    
+  5-2   tafuhihi/phshowoa-gpu-bench-5-2               NO_QUOTA  -                    
+  6-1   kanhan162/phshowoa-gpu-bench-6-1              RUNNING   RCdp2504+RCdp2507    0h00m
+  6-2   kanhan162/phshowoa-gpu-bench-6-2              RUNNING   RCdp208+Cdp201       1h00m
+  7-1   marcusnguyen007/phshowoa-gpu-bench-7-1        NO_QUOTA  -                    
+  7-2   marcusnguyen007/phshowoa-gpu-bench-7-2        NO_QUOTA  -                    
+  8-1   ptundat/phshowoa-gpu-bench-8-1                IDLE      -                    
+  8-2   ptundat/phshowoa-gpu-bench-8-2                IDLE      -                    
+  9-1   keith1101/phshowoa-gpu-bench-9-1              RUNNING   RCdp5001+RCdp5004    0h00m
+  9-2   keith1101/phshowoa-gpu-bench-9-2              IDLE      -                    
+  10-1  giahaohuynh/phshowoa-gpu-bench-10-1           IDLE      -                    
+  10-2  giahaohuynh/phshowoa-gpu-bench-10-2           RUNNING   RCdp5007             0h00m
+ GPU quota remaining: 1=0.0h, 2=0.3h, 3=0.2h, 4=0.0h, 5=0.3h, 6=7.5h, 7=0.0h
+==============================================================================
+[2026-10-30 12:34:09] [DONE] RCdp2504+RCdp2507 on 6-1 in 0.09h: RCdp2504: best NV=4 TD=473.46 avg/run=5.4s (run 1 incl. JIT: 79.0s); RCdp2507: best NV=5 TD=540.87 avg/run=4.6s (run 1 incl. JIT: 78.7s)
+[2026-10-30 12:34:20] [DONE] RCdp5007 on 10-2 in 0.09h: RCdp5007: best NV=7 TD=809.71 avg/run=8.3s (run 1 incl. JIT: 77.0s)
+[2026-10-30 12:36:30] [DONE] RCdp208+Cdp201 on 6-2 in 1.12h: RCdp208: best NV=3 TD=834.71 avg/run=129.9s (run 1 incl. JIT: 191.8s); Cdp201: best NV=3 TD=591.56 avg/run=61.6s (run 1 incl. JIT: 121.0s)
+[2026-10-30 12:36:40] [DONE] RCdp5001+RCdp5004 on 9-1 in 0.13h: RCdp5001: best NV=9 TD=994.18 avg/run=7.6s (run 1 incl. JIT: 78.3s); RCdp5004: best NV=6 TD=733.21 avg/run=9.7s (run 1 incl. JIT: 78.3s)
+[2026-10-30 12:36:40] All instances completed (or failed permanently).
+==============================================================================
+ 65/65 instances done | code d614a139f3e12337 | failed: -
+  1-1   saostken/phshowoa-gpu-bench-1-1               NO_QUOTA  -                    
+  1-2   saostken/phshowoa-gpu-bench-1-2               NO_QUOTA  -                    
+  2-1   welkie/phshowoa-gpu-bench-2-1                 NO_QUOTA  -                    
+  2-2   welkie/phshowoa-gpu-bench-2-2                 NO_QUOTA  -                    
+  3-1   minhanhphm1676/phshowoa-gpu-bench-3-1         NO_QUOTA  -                    
+  3-2   minhanhphm1676/phshowoa-gpu-bench-3-2         NO_QUOTA  -                    
+  4-1   dautromduoicuop/phshowoa-gpu-bench-4-1        NO_QUOTA  -                    
+  4-2   dautromduoicuop/phshowoa-gpu-bench-4-2        NO_QUOTA  -                    
+  5-1   tafuhihi/phshowoa-gpu-bench-5-1               NO_QUOTA  -                    
+  5-2   tafuhihi/phshowoa-gpu-bench-5-2               NO_QUOTA  -                    
+  6-1   kanhan162/phshowoa-gpu-bench-6-1              IDLE      -                    
+  6-2   kanhan162/phshowoa-gpu-bench-6-2              IDLE      -                    
+  7-1   marcusnguyen007/phshowoa-gpu-bench-7-1        NO_QUOTA  -                    
+  7-2   marcusnguyen007/phshowoa-gpu-bench-7-2        NO_QUOTA  -                    
+  8-1   ptundat/phshowoa-gpu-bench-8-1                IDLE      -                    
+  8-2   ptundat/phshowoa-gpu-bench-8-2                IDLE      -                    
+  9-1   keith1101/phshowoa-gpu-bench-9-1              IDLE      -                    
+  9-2   keith1101/phshowoa-gpu-bench-9-2              IDLE      -                    
+  10-1  giahaohuynh/phshowoa-gpu-bench-10-1           IDLE      -                    
+  10-2  giahaohuynh/phshowoa-gpu-bench-10-2           IDLE      -                    
+ GPU quota remaining: 1=0.0h, 2=0.3h, 3=0.2h, 4=0.0h, 5=0.3h, 7=0.0h
+==============================================================================
